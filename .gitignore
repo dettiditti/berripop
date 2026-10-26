@@ -1,0 +1,14 @@
+# Secrets (never commit)
+.env*
+
+# Dependencies and build output
+node_modules
+.next
+out
+*.tsbuildinfo
+
+# Local tooling
+.vercel
+.agents
+.claude
+.DS_Store

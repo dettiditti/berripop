@@ -1,0 +1,6 @@
+# Never upload local secrets or tooling with `vercel deploy`.
+.env*
+.claude
+.agents
+.next
+node_modules

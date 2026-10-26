@@ -1,0 +1,48 @@
+{
+  "name": "kozos-fejlodes-mvp",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "dotenv -e .env.local -- drizzle-kit migrate",
+    "typecheck": "tsc --noEmit",
+    "verify:shared": "dotenv -e .env.local -- tsx --conditions=react-server scripts/verify-shared.ts",
+    "stripe:setup": "dotenv -e .env.local -- tsx scripts/stripe-setup.ts",
+    "test": "vitest run",
+    "verify:billing": "dotenv -e .env.local -- tsx --conditions=react-server scripts/verify-billing.ts",
+    "verify:journal": "dotenv -e .env.local -- tsx --conditions=react-server scripts/verify-journal.ts",
+    "verify:ai": "dotenv -e .env.local -- tsx --conditions=react-server scripts/verify-ai.ts",
+    "verify:assessment": "dotenv -e .env.local -- tsx --conditions=react-server scripts/verify-assessment.ts",
+    "verify:account": "dotenv -e .env.local -- tsx --conditions=react-server scripts/verify-account.ts",
+    "verify:progress": "dotenv -e .env.local -- tsx --conditions=react-server scripts/verify-progress.ts",
+    "verify:goal-journey": "dotenv -e .env.local -- tsx --conditions=react-server scripts/verify-goal-journey.ts"
+  },
+  "dependencies": {
+    "@clerk/localizations": "^4.24.1",
+    "@clerk/nextjs": "^7.9.20",
+    "@neondatabase/serverless": "^1.2.0",
+    "ai": "^7.0.153",
+    "drizzle-orm": "^0.45.4",
+    "lucide-react": "^0.468.0",
+    "next": "^15.3.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "stripe": "^23.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "dotenv-cli": "^11.0.0",
+    "drizzle-kit": "^0.31.11",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "^15.3.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.7.0",
+    "vitest": "^4.1.12"
+  }
+}
