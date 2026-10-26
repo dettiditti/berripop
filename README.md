@@ -44,7 +44,7 @@ Test users and their analytics events are deleted at the end of each run.
 
 ### Remaining production blockers
 
-- Clerk runs as a **development instance**. Production needs a Clerk production instance and domain. Rename the Clerk application (currently "kozos-clerk") in the Clerk dashboard.
+- Clerk production instance is live. Deleting a user in the Clerk dashboard deletes their data via `POST /api/clerk/webhook` (event `user.deleted`; renewal of a paid subscription is turned off first). It needs a webhook endpoint in the Clerk dashboard and `CLERK_WEBHOOK_SIGNING_SECRET` in Vercel (Production); without it the route answers 503.
 - Migrations are applied manually (`npm run db:migrate`); add them to the deploy pipeline.
 - No rate limiting on server actions yet; no email or push notifications.
 - Anyone with a valid invite code can join (no owner approval step).

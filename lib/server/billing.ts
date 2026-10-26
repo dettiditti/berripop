@@ -198,6 +198,24 @@ export async function createPlanChangeSession(userId: string, target: PaidPlanId
   }
 }
 
+/**
+ * Turns off renewal of the member's subscription (it still ends at the period
+ * end, as when they cancel in the portal). Used when the login was deleted
+ * outside the app, so a deleted account never keeps being charged.
+ */
+export async function stopRenewal(userId: string): Promise<void> {
+  const [row] = await getDb().select().from(subscriptions).where(eq(subscriptions.userId, userId)).limit(1);
+  if (!row?.stripeSubscriptionId) return;
+  const stripe = getStripe();
+  if (!stripe) throw new Error("Stripe is not configured");
+  try {
+    await stripe.subscriptions.update(row.stripeSubscriptionId, { cancel_at_period_end: true });
+  } catch (err) {
+    // Already gone at Stripe (or from another mode): nothing left to renew.
+    if ((err as { code?: string }).code !== "resource_missing") throw err;
+  }
+}
+
 /** Verifies the signature, then processes the event idempotently. */
 export async function handleWebhook(rawBody: string, signature: string | null): Promise<{ status: number; body: string }> {
   const stripe = getStripe();

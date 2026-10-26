@@ -7,6 +7,7 @@ import {
 } from "../db/schema";
 import { deletionBlock, isDeleteConfirmation, type DeletionBlock } from "../account/policy";
 import { exportJournal } from "./journal";
+import { stopRenewal } from "./billing";
 import { getUserEntitlements } from "./entitlements";
 
 /*
@@ -71,7 +72,21 @@ export async function deleteAccountData(userId: string, confirmation: unknown): 
   if (!isDeleteConfirmation(confirmation)) return { ok: false, error: "confirmation" };
   const block = deletionBlock(await getUserEntitlements(userId));
   if (block) return { ok: false, error: block };
+  await purgeAccount(userId);
+  return { ok: true };
+}
 
+/**
+ * The Clerk login was deleted outside the app (Clerk dashboard or API, or the
+ * in-app deletion's own Clerk call): stop any renewal, then delete the data.
+ * Safe to repeat; an already deleted member is a no-op.
+ */
+export async function deleteAccountForRemovedLogin(userId: string): Promise<void> {
+  if (deletionBlock(await getUserEntitlements(userId))) await stopRenewal(userId);
+  await purgeAccount(userId);
+}
+
+async function purgeAccount(userId: string): Promise<void> {
   const db = getDb();
   const owned = await db.select({ id: circles.id }).from(circles).where(eq(circles.createdBy, userId));
   const ownedByRole = await db.select({ id: circleMembers.circleId }).from(circleMembers).where(and(eq(circleMembers.userId, userId), eq(circleMembers.role, "owner")));
@@ -92,5 +107,4 @@ export async function deleteAccountData(userId: string, confirmation: unknown): 
   await db.delete(users).where(eq(users.id, userId));
   const [left] = await db.select({ id: users.id }).from(users).where(inArray(users.id, [userId])).limit(1);
   if (left) throw new Error("account deletion did not complete");
-  return { ok: true };
 }
