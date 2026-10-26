@@ -4,6 +4,7 @@
  *
  *   npm run verify:journal
  */
+import "./db-guard";
 import { eq, inArray } from "drizzle-orm";
 import { getDb } from "../lib/db";
 import { circles, funnelEvents, growthInsights, journalReflections, users } from "../lib/db/schema";
@@ -121,6 +122,7 @@ async function main() {
     check("delete all removes every entry and insight", (await journal.loadJournal(A)).entries.length === 0 && leftover.length === 0);
   } finally {
     if (circleId) await db.delete(circles).where(eq(circles.id, circleId));
+    await db.delete(funnelEvents).where(inArray(funnelEvents.userId, [A, B]));
     await db.delete(users).where(inArray(users.id, [A, B]));
     console.log("cleaned up test data");
   }

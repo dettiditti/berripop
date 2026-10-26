@@ -4,6 +4,7 @@
  *
  *   npm run verify:billing
  */
+import "./db-guard";
 import { eq, inArray } from "drizzle-orm";
 import { getDb } from "../lib/db";
 import { circles, funnelEvents, subscriptions, users } from "../lib/db/schema";
@@ -159,6 +160,7 @@ async function main() {
     check("when Premium Plus ends, the member is back on Free and keeps their goals", xg.plan === "free" && xg.ended && (await growth.updateGoal(X, (await svc.getSnapshot(X) as { ok: true; snapshot: { account: { goals: { id: string }[] } } }).snapshot.account.goals[0].id, { title: "Still mine", details: "" })).ok);
   } finally {
     if (circleIds.length) await db.delete(circles).where(inArray(circles.id, circleIds));
+    await db.delete(funnelEvents).where(inArray(funnelEvents.userId, [F, P, L, X]));
     await db.delete(users).where(inArray(users.id, [F, P, L, X]));
     await db.delete(subscriptions).where(eq(subscriptions.userId, P));
     console.log("cleaned up test data");

@@ -5,9 +5,10 @@
  *
  *   npm run verify:assessment   (requires migration 0004_my_path)
  */
+import "./db-guard";
 import { eq, inArray } from "drizzle-orm";
 import { getDb } from "../lib/db";
-import { aiCalls, growthGoals, growthSteps, pathAssessments, users } from "../lib/db/schema";
+import { aiCalls, funnelEvents, growthGoals, growthSteps, pathAssessments, users } from "../lib/db/schema";
 import { MAX_AI_CALLS } from "../lib/assessment/model";
 import type { GenerateFn } from "../lib/ai/run";
 import * as as from "../lib/server/assessment";
@@ -122,6 +123,7 @@ async function main() {
   } finally {
     setAiGeneratorForTesting(null);
     await db.delete(pathAssessments).where(inArray(pathAssessments.userId, [A, B]));
+    await db.delete(funnelEvents).where(inArray(funnelEvents.userId, [A, B]));
     await db.delete(users).where(inArray(users.id, [A, B]));
     console.log("cleaned up test data");
   }

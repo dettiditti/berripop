@@ -4,9 +4,10 @@
  *
  *   npm run verify:progress
  */
+import "./db-guard";
 import { eq, inArray } from "drizzle-orm";
 import { getDb } from "../lib/db";
-import { circles, growthSteps, userActivity, users } from "../lib/db/schema";
+import { circles, funnelEvents, growthSteps, userActivity, users } from "../lib/db/schema";
 import { journeyNodes, XP_RULES } from "../lib/content";
 import * as svc from "../lib/server/service";
 import * as personal from "../lib/server/personal";
@@ -145,6 +146,7 @@ async function main() {
     check("the export has the member's progress and moments", exp.progress.activity.length >= 2 && exp.progress.xp.length > 0 && exp.progress.badges.length > 0 && exp.innerWorldMoments.length === 2);
   } finally {
     if (circleId) await db.delete(circles).where(eq(circles.id, circleId));
+    await db.delete(funnelEvents).where(inArray(funnelEvents.userId, [P, Q, A, B, R]));
     await db.delete(users).where(inArray(users.id, [P, Q, A, B, R]));
     console.log("cleaned up test data");
   }

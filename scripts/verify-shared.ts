@@ -5,9 +5,10 @@
  *
  *   npm run verify:shared
  */
+import "./db-guard";
 import { eq, inArray } from "drizzle-orm";
 import { getDb } from "../lib/db";
-import { circles, users } from "../lib/db/schema";
+import { circles, funnelEvents, users } from "../lib/db/schema";
 import * as svc from "../lib/server/service";
 import type { ActionResult, Snapshot } from "../lib/domain/types";
 
@@ -115,6 +116,7 @@ async function main() {
     if (soloCircle.circle) await db.delete(circles).where(eq(circles.id, soloCircle.circle.id));
   } finally {
     if (circleId) await db.delete(circles).where(eq(circles.id, circleId));
+    await db.delete(funnelEvents).where(inArray(funnelEvents.userId, [A, B, C, Z]));
     await db.delete(users).where(inArray(users.id, [A, B, C, Z]));
     console.log("cleaned up test data");
   }

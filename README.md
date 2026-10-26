@@ -9,7 +9,7 @@ Requires Node.js 20.9+ and the linked Vercel project (Neon + Clerk are provision
 ```bash
 npm install
 vercel env pull .env.local --yes
-npm run db:migrate
+ALLOW_PRODUCTION_DB=1 npm run db:migrate   # the only database is production; back it up first
 npm run dev
 ```
 
@@ -34,9 +34,13 @@ Then open http://localhost:3000, sign up, and create a circle.
 ### Verify
 
 ```bash
-npm run verify:shared   # 30 end-to-end checks against the database with temporary users
+ALLOW_PRODUCTION_DB=1 npm run verify:shared   # 30 end-to-end checks against the database with temporary users
 npm run lint && npm run typecheck && npm run build
 ```
+
+The `verify:*` scripts and `db:migrate` refuse to run against a remote database (for
+Berripop that is production) unless `ALLOW_PRODUCTION_DB=1` is set (`scripts/db-guard.ts`).
+Test users and their analytics events are deleted at the end of each run.
 
 ### Remaining production blockers
 

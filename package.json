@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "dotenv -e .env.local -- drizzle-kit migrate",
+    "db:migrate": "dotenv -e .env.local -- tsx scripts/db-guard.ts db:migrate && dotenv -e .env.local -- drizzle-kit migrate",
     "typecheck": "tsc --noEmit",
     "verify:shared": "dotenv -e .env.local -- tsx --conditions=react-server scripts/verify-shared.ts",
     "stripe:setup": "dotenv -e .env.local -- tsx scripts/stripe-setup.ts",

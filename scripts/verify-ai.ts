@@ -6,9 +6,10 @@
  *
  *   npm run verify:ai
  */
+import "./db-guard";
 import { desc, eq, inArray } from "drizzle-orm";
 import { getDb } from "../lib/db";
-import { aiCalls, circles, subscriptions, users } from "../lib/db/schema";
+import { aiCalls, circles, funnelEvents, subscriptions, users } from "../lib/db/schema";
 import { PLAN_LIMITS } from "../lib/billing/plans";
 import type { GenerateFn, GenerateRequest } from "../lib/ai/run";
 import { defaultAiModel, setAiGeneratorForTesting } from "../lib/server/ai";
@@ -113,6 +114,7 @@ async function main() {
   } finally {
     setAiGeneratorForTesting(null);
     if (circleId) await db.delete(circles).where(eq(circles.id, circleId));
+    await db.delete(funnelEvents).where(inArray(funnelEvents.userId, [P]));
     await db.delete(users).where(inArray(users.id, [P]));
     console.log("cleaned up test data");
   }

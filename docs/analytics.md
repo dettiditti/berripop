@@ -61,5 +61,5 @@ from (select user_id, min((created_at at time zone 'Europe/Budapest')::date) d0
 Notes:
 - Counting starts with this release; earlier members have no `app_opened` rows,
   so their cohort day is their first open after it.
-- Test users from `verify:*` scripts are deleted at the end of each run (their
-  events keep a null `user_id` and drop out of the queries above).
+- Test users from `verify:*` scripts and their events are deleted at the end of
+  each run. Events with a null `user_id` from earlier runs drop out of the queries above.

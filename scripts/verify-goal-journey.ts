@@ -4,9 +4,10 @@
  *
  *   npm run verify:goal-journey
  */
+import "./db-guard";
 import { eq, inArray } from "drizzle-orm";
 import { getDb } from "../lib/db";
-import { aiCalls, circles, goalJourneys, growthGoals, userActivity, users } from "../lib/db/schema";
+import { aiCalls, circles, funnelEvents, goalJourneys, growthGoals, userActivity, users } from "../lib/db/schema";
 import { XP_RULES } from "../lib/content";
 import { goalRef } from "../lib/journey/goal";
 import type { GenerateFn } from "../lib/ai/run";
@@ -132,6 +133,7 @@ async function main() {
   } finally {
     setAiGeneratorForTesting(null);
     if (circleId) await db.delete(circles).where(eq(circles.id, circleId));
+    await db.delete(funnelEvents).where(inArray(funnelEvents.userId, [A, B]));
     await db.delete(users).where(inArray(users.id, [A, B]));
     console.log("cleaned up test data");
   }

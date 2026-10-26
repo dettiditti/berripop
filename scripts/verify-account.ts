@@ -4,6 +4,7 @@
  *
  *   npm run verify:account
  */
+import "./db-guard";
 import { eq, inArray } from "drizzle-orm";
 import { getDb } from "../lib/db";
 import { aiCalls, circleMembers, circles, funnelEvents, growthGoals, journalEntries, subscriptions, users } from "../lib/db/schema";
@@ -69,6 +70,7 @@ async function main() {
     check("a free member can delete their account", (await account.deleteAccountData(P, "DELETE")).ok);
   } finally {
     for (const id of [sharedId, soloId]) if (id) await db.delete(circles).where(eq(circles.id, id));
+    await db.delete(funnelEvents).where(inArray(funnelEvents.userId, [A, B, P]));
     await db.delete(users).where(inArray(users.id, [A, B, P]));
     console.log("cleaned up test data");
   }
