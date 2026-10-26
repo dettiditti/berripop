@@ -1566,3 +1566,4 @@ html:has(.lp) { scroll-behavior: smooth; }
 /* Journey chapters. */
 .journey-chapter-title { font-size: 17px; margin: 4px 0 -4px; }
 .segmented-option:disabled { opacity: 0.5; cursor: not-allowed; }
+.segmented--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }

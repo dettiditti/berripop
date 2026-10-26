@@ -72,7 +72,7 @@ export default function JourneyScreen({ view, notify, go, startQuest, openQuesti
       )}
 
       {!goalMode && (
-        <div className="segmented" role="tablist" aria-label={j.chaptersAria}>
+        <div className="segmented segmented--3" role="tablist" aria-label={j.chaptersAria}>
           {Array.from({ length: CHAPTERS }, (_, i) => i + 1).map(c => (
             <button
               key={c} role="tab" aria-selected={c === chapter} disabled={c > openChapter}
