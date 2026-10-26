@@ -2,6 +2,7 @@
 
 import { cookies, headers } from "next/headers";
 import { clerkClient, currentUser } from "@clerk/nextjs/server";
+import { appOrigin } from "../billing/origin";
 import { isPaidPlan, type BillingInterval, type PaidPlanId } from "../billing/plans";
 import type { ActionResult, AnswerContext, QuestionRef, RewardDTO } from "../domain/types";
 import { isLocale, LOCALE_COOKIE } from "../i18n/config";
@@ -21,10 +22,7 @@ import { requireUserId } from "./session";
 /** Server actions: authenticate the caller, then delegate to the circle, growth or billing services. */
 
 async function origin() {
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
-  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
-  return `${proto}://${host}`;
+  return appOrigin(process.env, await headers());
 }
 
 async function locale(): Promise<"hu" | "en"> {

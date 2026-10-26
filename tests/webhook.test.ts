@@ -5,15 +5,20 @@ import { shouldApplySubscription } from "../lib/billing/entitlements";
 import { snapshotFromStripe } from "../lib/billing/subscription";
 import { processStripeEvent, subscriptionIdFromEvent, type WebhookDeps } from "../lib/billing/webhook";
 
-const ev = (type: string, object: Record<string, unknown>, id = "evt_1") => ({ id, type, data: { object } }) as unknown as Stripe.Event;
+const ev = (type: string, object: Record<string, unknown>, id = "evt_1", livemode = false) => ({ id, type, livemode, data: { object } }) as unknown as Stripe.Event;
 
-function deps(seen = new Set<string>()): WebhookDeps & { synced: string[] } {
+function deps(seen = new Set<string>()): WebhookDeps & { synced: string[]; ended: string[] } {
   const synced: string[] = [];
+  const ended: string[] = [];
   return {
     synced,
+    ended,
     claim: async id => (seen.has(id) ? false : (seen.add(id), true)),
     release: async id => { seen.delete(id); },
     syncSubscription: async id => { synced.push(id); },
+    livemode: false,
+    subscriptionForPayment: async pi => (pi === "pi_sub" ? "sub_paid" : null),
+    endSubscription: async id => { ended.push(id); },
   };
 }
 
@@ -52,6 +57,46 @@ describe("webhook processing", () => {
     const e = ev("customer.subscription.deleted", { id: "sub_5" }, "evt_retry");
     await expect(processStripeEvent(e, d)).rejects.toThrow();
     expect(seen.has("evt_retry")).toBe(false);
+  });
+});
+
+describe("Stripe mode", () => {
+  it("ignores events from the other mode (a test event never touches live data, and vice versa)", async () => {
+    const d = deps();
+    expect(await processStripeEvent(ev("customer.subscription.updated", { id: "sub_1" }, "evt_live", true), d)).toBe("ignored");
+    expect(d.synced).toEqual([]);
+    const live = { ...deps(), livemode: true };
+    expect(await processStripeEvent(ev("customer.subscription.updated", { id: "sub_1" }, "evt_test", false), live)).toBe("ignored");
+    expect(await processStripeEvent(ev("customer.subscription.updated", { id: "sub_1" }, "evt_live", true), live)).toBe("processed");
+  });
+});
+
+describe("refunds and disputes", () => {
+  it("a full refund of a subscription payment ends the subscription", async () => {
+    const d = deps();
+    expect(await processStripeEvent(ev("charge.refunded", { refunded: true, payment_intent: "pi_sub" }), d)).toBe("processed");
+    expect(d.ended).toEqual(["sub_paid"]);
+  });
+  it("a partial refund, or a payment that paid no subscription, changes nothing", async () => {
+    const d = deps();
+    await processStripeEvent(ev("charge.refunded", { refunded: false, amount_refunded: 500, payment_intent: "pi_sub" }, "evt_a"), d);
+    await processStripeEvent(ev("charge.refunded", { refunded: true, payment_intent: "pi_other" }, "evt_b"), d);
+    expect(d.ended).toEqual([]);
+    expect(d.synced).toEqual([]);
+  });
+  it("only a lost dispute ends the subscription", async () => {
+    const d = deps();
+    await processStripeEvent(ev("charge.dispute.closed", { status: "won", payment_intent: "pi_sub" }, "evt_won"), d);
+    expect(d.ended).toEqual([]);
+    await processStripeEvent(ev("charge.dispute.closed", { status: "lost", payment_intent: { id: "pi_sub" } }, "evt_lost"), d);
+    expect(d.ended).toEqual(["sub_paid"]);
+  });
+  it("releases the claim when ending fails, so the retry is processed", async () => {
+    const seen = new Set<string>();
+    const d = deps(seen);
+    d.endSubscription = vi.fn().mockRejectedValueOnce(new Error("Stripe down"));
+    await expect(processStripeEvent(ev("charge.refunded", { refunded: true, payment_intent: "pi_sub" }, "evt_r"), d)).rejects.toThrow();
+    expect(seen.has("evt_r")).toBe(false);
   });
 });
 

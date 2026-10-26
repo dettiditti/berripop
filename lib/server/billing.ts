@@ -5,9 +5,9 @@ import { getDb } from "../db";
 import { stripeEvents, subscriptions, users } from "../db/schema";
 import { entitlementsFrom, shouldApplySubscription, type Entitlements } from "../billing/entitlements";
 import { isPaidPlan, planForLookupKey, priceFor, type BillingInterval, type PaidPlanId } from "../billing/plans";
-import { getStripe } from "../billing/stripe";
+import { getStripe, isTestMode } from "../billing/stripe";
 import { snapshotFromStripe, type SubscriptionSnapshot } from "../billing/subscription";
-import { processStripeEvent } from "../billing/webhook";
+import { processStripeEvent, subscriptionIdFromInvoice } from "../billing/webhook";
 import { track } from "./analytics";
 import { getUserEntitlements } from "./entitlements";
 
@@ -234,6 +234,17 @@ export async function handleWebhook(rawBody: string, signature: string | null): 
       claim: async (id, type) => (await db.insert(stripeEvents).values({ id, type }).onConflictDoNothing().returning({ id: stripeEvents.id })).length > 0,
       release: async id => { await db.delete(stripeEvents).where(eq(stripeEvents.id, id)); },
       syncSubscription: syncSubscriptionFromStripe,
+      livemode: !isTestMode(),
+      subscriptionForPayment: async paymentIntent => {
+        const list = await stripe.invoicePayments.list({ payment: { type: "payment_intent", payment_intent: paymentIntent }, limit: 1, expand: ["data.invoice"] });
+        const invoice = list.data[0]?.invoice;
+        return invoice && typeof invoice !== "string" ? subscriptionIdFromInvoice(invoice as unknown as Record<string, unknown>) : null;
+      },
+      endSubscription: async subscriptionId => {
+        const sub = await stripe.subscriptions.retrieve(subscriptionId);
+        if (sub.status !== "canceled" && sub.status !== "incomplete_expired") await stripe.subscriptions.cancel(subscriptionId);
+        await syncSubscriptionFromStripe(subscriptionId);
+      },
     });
     return { status: 200, body: outcome };
   } catch {

@@ -11,6 +11,12 @@ export type WebhookDeps = {
   release: (eventId: string) => Promise<void>;
   /** Re-reads the subscription from Stripe and stores it. */
   syncSubscription: (subscriptionId: string) => Promise<void>;
+  /** Whether the configured Stripe key is live; events from the other mode are ignored. */
+  livemode: boolean;
+  /** The subscription a payment (PaymentIntent) paid an invoice of, if any. */
+  subscriptionForPayment: (paymentIntentId: string) => Promise<string | null>;
+  /** Cancels the subscription at Stripe right away, then stores it. */
+  endSubscription: (subscriptionId: string) => Promise<void>;
 };
 
 export const HANDLED_EVENTS = new Set([
@@ -23,6 +29,8 @@ export const HANDLED_EVENTS = new Set([
   "customer.subscription.resumed",
   "invoice.paid",
   "invoice.payment_failed",
+  "charge.refunded",
+  "charge.dispute.closed",
 ]);
 
 type IdOrObject = string | { id: string } | null | undefined;
@@ -35,20 +43,42 @@ export function subscriptionIdFromEvent(event: Stripe.Event): string | null {
   if (event.type.startsWith("checkout.session.")) {
     return obj.mode === "subscription" ? idOf(obj.subscription as IdOrObject) : null;
   }
-  if (event.type.startsWith("invoice.")) {
-    // Newer API versions nest it under parent.subscription_details; older ones expose `subscription`.
-    const parent = obj.parent as { subscription_details?: { subscription?: IdOrObject } } | undefined;
-    return idOf(parent?.subscription_details?.subscription) ?? idOf(obj.subscription as IdOrObject);
-  }
+  if (event.type.startsWith("invoice.")) return subscriptionIdFromInvoice(obj);
   return null;
+}
+
+export function subscriptionIdFromInvoice(invoice: Record<string, unknown>): string | null {
+  // Newer API versions nest it under parent.subscription_details; older ones expose `subscription`.
+  const parent = invoice.parent as { subscription_details?: { subscription?: IdOrObject } } | undefined;
+  return idOf(parent?.subscription_details?.subscription) ?? idOf(invoice.subscription as IdOrObject);
+}
+
+/**
+ * A payment that was taken back ends Premium: a fully refunded charge, or a
+ * dispute the member won (status "lost" for us). Partial refunds, open
+ * disputes and disputes we won change nothing. Returns the PaymentIntent.
+ */
+export function paymentTakenBack(event: Stripe.Event): string | null {
+  const obj = event.data.object as unknown as Record<string, unknown>;
+  const taken =
+    (event.type === "charge.refunded" && obj.refunded === true) ||
+    (event.type === "charge.dispute.closed" && obj.status === "lost");
+  return taken ? idOf(obj.payment_intent as IdOrObject) : null;
 }
 
 export type WebhookOutcome = "processed" | "duplicate" | "ignored";
 
 export async function processStripeEvent(event: Stripe.Event, deps: WebhookDeps): Promise<WebhookOutcome> {
   if (!HANDLED_EVENTS.has(event.type)) return "ignored";
+  if (event.livemode !== deps.livemode) return "ignored";
   if (!(await deps.claim(event.id, event.type))) return "duplicate";
   try {
+    if (event.type.startsWith("charge.")) {
+      const paymentIntent = paymentTakenBack(event);
+      const subId = paymentIntent ? await deps.subscriptionForPayment(paymentIntent) : null;
+      if (subId) await deps.endSubscription(subId);
+      return "processed";
+    }
     const subId = subscriptionIdFromEvent(event);
     if (subId) await deps.syncSubscription(subId);
     return "processed";
