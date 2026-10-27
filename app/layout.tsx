@@ -11,6 +11,7 @@ const d = getDictionary(defaultLocale);
 
 // The <title> itself is rendered by KozosApp so it follows the chosen language.
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.berripop.com"),
   description: d.meta.description,
 };
 
