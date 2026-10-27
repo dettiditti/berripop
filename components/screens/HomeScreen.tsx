@@ -12,6 +12,7 @@ import { goalNodes, goalRef } from "@/lib/journey/goal";
 import { deriveWorld } from "@/lib/world";
 import AchievementBadge from "../AchievementBadge";
 import BerripopReaction from "../berripop/BerripopReaction";
+import CheckinCard from "../checkin/CheckinCard";
 import Feed from "../Feed";
 import StreakIndicator from "../StreakIndicator";
 import ThemeGlyph from "../world/ThemeGlyph";
@@ -45,7 +46,7 @@ function Avatar({ name, tone = "purple", done }: { name: string; tone?: string; 
 const TONES = ["purple", "coral", "mint", "sky", "sun"];
 
 /** Today ("Ma"): one recommended step first, the other options in one row, then progress and the circle. */
-export default function HomeScreen({ view, go, startQuest, openQuestion, onInvite, openJourney, assessmentStatus, openAssessment, journeyBuilding }: ScreenProps) {
+export default function HomeScreen({ view, run, notify, go, startQuest, openQuestion, onInvite, openJourney, assessmentStatus, openAssessment, journeyBuilding, writeInJournal }: ScreenProps) {
   const { d, t, num, plural } = useI18n();
   const h = d.dashboard;
   const td = d.today;
@@ -164,6 +165,8 @@ export default function HomeScreen({ view, go, startQuest, openQuestion, onInvit
           <small>{td.choiceOpen}</small>
         </button>
       </nav>
+
+      <CheckinCard checkin={view.snapshot.progress.checkin} run={run} notify={notify} onJournal={writeInJournal} />
 
       <button type="button" className="card home-journey lift" onClick={() => openJourney(own ? "own" : circle ? "shared" : "own")}>
         <span className="eyebrow">{own ? <><Sprout size={13} /> {d.journey.eyebrowGoals}</> : <><Compass size={13} /> {t(d.journey.chapterLabel, { n: chapter })} · {d.journey.chapters[chapter - 1]}</>}</span>

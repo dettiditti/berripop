@@ -1,11 +1,12 @@
 import "server-only";
 import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
 import { getDb } from "../db";
-import { answers, goalJourneys, growthGoals, personalDailyQuests, userAchievements, userActivity, userXpEvents, worldMoments } from "../db/schema";
+import { answers, dailyCheckins, goalJourneys, growthGoals, personalDailyQuests, userAchievements, userActivity, userXpEvents, worldMoments } from "../db/schema";
 import { XP_RULES } from "../content";
 import { circleToday, dateOf } from "../domain/rules";
 import { GROWTH_REASONS, personalBadges, personalFacts, pickPersonalDaily, type GrowthReason } from "../domain/personal";
 import type { GoalJourneyDTO, ProgressDTO } from "../domain/types";
+import { toCheckinDTO } from "../checkin/dto";
 import { goalsKey, type GoalJourneyDay, type GoalJourneyWeek } from "../journey/goal";
 
 /*
@@ -117,7 +118,7 @@ async function ensurePersonalDaily(userId: string, today: string) {
 /** Everything about the member's own progress. Only their own rows are read. */
 export async function loadProgress(userId: string, inCircle: boolean, today = circleToday()): Promise<ProgressDTO> {
   const db = getDb();
-  const [activityRows, xpRows, achRows, answerRows, allRefs, momentRows, dailyRef, goalRow, goals] = await Promise.all([
+  const [activityRows, xpRows, achRows, answerRows, allRefs, momentRows, dailyRef, goalRow, goals, checkinRows] = await Promise.all([
     db.select().from(userActivity).where(eq(userActivity.userId, userId)),
     db.select().from(userXpEvents).where(eq(userXpEvents.userId, userId)).orderBy(asc(userXpEvents.createdAt)),
     db.select().from(userAchievements).where(eq(userAchievements.userId, userId)).orderBy(asc(userAchievements.unlockedAt)),
@@ -127,6 +128,7 @@ export async function loadProgress(userId: string, inCircle: boolean, today = ci
     inCircle ? Promise.resolve(null) : ensurePersonalDaily(userId, today),
     activeGoalJourney(userId),
     activeGoalTitles(userId),
+    db.select().from(dailyCheckins).where(and(eq(dailyCheckins.userId, userId), eq(dailyCheckins.date, today))).limit(1),
   ]);
   const journey: Record<number, string> = {};
   const daily: string[] = [];
@@ -162,6 +164,7 @@ export async function loadProgress(userId: string, inCircle: boolean, today = ci
     achievements: achRows.map(a => ({ id: a.achievementId, unlockedAt: a.unlockedAt.toISOString() })),
     goalJourney,
     canBuildJourney: goals.length > 0,
+    checkin: checkinRows[0] ? toCheckinDTO(checkinRows[0]) : null,
     moments: momentRows.map(m => ({
       id: m.id, date: m.date, createdAt: m.createdAt.toISOString(), words: m.words, ownWords: m.ownWords, promptId: m.promptId, note: m.note,
     })),

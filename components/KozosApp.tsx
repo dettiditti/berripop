@@ -296,6 +296,7 @@ function AppShell({ snapshot, setSnapshot }: { snapshot: Snapshot; setSnapshot: 
     view, run, notify, go, startQuest, openQuestion: setDetail, onInvite: () => setInviteOpen(true),
     journeyMode, openJourney, buildJourney: () => buildJourney(), journeyBuilding,
     assessmentStatus: assessment?.assessment?.status ?? null, openAssessment: () => setAssessing(true),
+    writeInJournal,
   };
   const questQuestion = quest ? view.question(quest.ref) : null;
 

@@ -2,7 +2,7 @@ import "server-only";
 import { and, asc, desc, eq, inArray, ne } from "drizzle-orm";
 import { getDb } from "../db";
 import {
-  aiCalls, answers, circleMembers, circles, customQuestions, funnelEvents, growthGoals, growthSteps, legalRecords,
+  aiCalls, answers, circleMembers, dailyCheckins, circles, customQuestions, funnelEvents, growthGoals, growthSteps, legalRecords,
   pathAssessments, subscriptions, userAchievements, userActivity, userPrefs, users, userXpEvents, worldMoments,
 } from "../db/schema";
 import { deletionBlock, isDeleteConfirmation, type DeletionBlock } from "../account/policy";
@@ -14,7 +14,7 @@ import { invoicesForUser } from "./invoicing";
 /*
  * Account data rights: export everything stored about the member, and delete
  * the account. Deletion removes the user row; foreign keys cascade to all
- * personal content (answers, journal, goals, steps, assessment, progress, inner-world moments, AI usage and
+ * personal content (answers, journal, goals, steps, assessment, progress, inner-world moments, daily check-ins, AI usage and
  * cost logs, circle memberships, the local subscription mirror). Funnel
  * events and circle activity keep no link to the person (set null). Invoice
  * records (`invoices`) are kept for accounting with the link set to null;
@@ -27,7 +27,7 @@ export type DeleteError = "unauthorized" | "confirmation" | DeletionBlock;
 /** Everything we store about the member, for download (their own data only). */
 export async function exportAccount(userId: string) {
   const db = getDb();
-  const [[user], [prefs], [sub], memberships, myAnswers, myQuestions, goals, steps, [assessment], journal, usage, events, activity, xp, badges, moments, legal, invoiceRows] = await Promise.all([
+  const [[user], [prefs], [sub], memberships, myAnswers, myQuestions, goals, steps, [assessment], journal, usage, events, activity, xp, badges, moments, legal, invoiceRows, checkins] = await Promise.all([
     db.select().from(users).where(eq(users.id, userId)).limit(1),
     db.select().from(userPrefs).where(eq(userPrefs.userId, userId)).limit(1),
     db.select().from(subscriptions).where(eq(subscriptions.userId, userId)).limit(1),
@@ -48,6 +48,7 @@ export async function exportAccount(userId: string) {
     db.select({ date: worldMoments.date, words: worldMoments.words, ownWords: worldMoments.ownWords, promptId: worldMoments.promptId, note: worldMoments.note, createdAt: worldMoments.createdAt }).from(worldMoments).where(eq(worldMoments.userId, userId)).orderBy(desc(worldMoments.createdAt)),
     db.select({ kind: legalRecords.kind, version: legalRecords.version, granted: legalRecords.granted, createdAt: legalRecords.createdAt }).from(legalRecords).where(eq(legalRecords.userId, userId)).orderBy(desc(legalRecords.createdAt)),
     invoicesForUser(userId),
+    db.select({ date: dailyCheckins.date, state: dailyCheckins.state, topics: dailyCheckins.topics, note: dailyCheckins.note, need: dailyCheckins.need, aiReply: dailyCheckins.aiReply, updatedAt: dailyCheckins.updatedAt }).from(dailyCheckins).where(eq(dailyCheckins.userId, userId)).orderBy(desc(dailyCheckins.date)),
   ]);
   return {
     exportedAt: new Date().toISOString(),
@@ -64,6 +65,7 @@ export async function exportAccount(userId: string) {
     productEvents: events,
     progress: { activity, xp, badges },
     innerWorldMoments: moments,
+    dailyCheckins: checkins,
     legalRecords: legal,
     invoices: invoiceRows,
   };

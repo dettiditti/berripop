@@ -1,3 +1,4 @@
+import type { CheckinNeed, CheckinState, CheckinTopic } from "../checkin/checkin";
 import type { Entitlements } from "../billing/entitlements";
 import type { GoalJourneyDay, GoalJourneyWeek } from "../journey/goal";
 
@@ -140,6 +141,19 @@ export type ProgressDTO = {
   goalJourney: GoalJourneyDTO | null;
   /** The member has active goals, so a goal journey can be built. */
   canBuildJourney: boolean;
+  /** Today's check-in, if the member did one (never earns XP or counts for streaks). */
+  checkin: CheckinDTO | null;
+};
+
+export type CheckinDTO = {
+  date: string;
+  state: CheckinState | null;
+  topics: CheckinTopic[];
+  note: string;
+  need: CheckinNeed | null;
+  /** The AI follow-up the member asked for ("think it through together"). */
+  aiReply: { heard: string; question: string; idea: string | null } | null;
+  updatedAt: string;
 };
 
 export type GoalJourneyDTO = {

@@ -57,6 +57,13 @@
       "when": 1793096195394,
       "tag": "0007_legal_and_invoicing",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793111132747,
+      "tag": "0008_checkins_and_reflection_modes",
+      "breakpoints": true
     }
   ]
 }

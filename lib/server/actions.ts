@@ -11,6 +11,8 @@ import type { AssessmentResult } from "../assessment/types";
 import * as account from "./account";
 import * as assessment from "./assessment";
 import * as billing from "./billing";
+import * as checkin from "./checkin";
+import type { CheckinInput } from "../checkin/checkin";
 import * as growth from "./growth";
 import * as journal from "./journal";
 import * as legal from "./legal";
@@ -255,6 +257,18 @@ export async function deleteMomentAction(momentId: string): Promise<ActionResult
   const userId = await requireUserId();
   if (!userId) return { ok: false, error: "unauthorized" } as const;
   return personal.deleteMoment(userId, momentId);
+}
+
+export async function saveCheckinAction(input: CheckinInput): Promise<ActionResult> {
+  const userId = await requireUserId();
+  if (!userId) return { ok: false, error: "unauthorized" } as const;
+  return checkin.saveCheckin(userId, input);
+}
+
+export async function deleteCheckinAction(): Promise<ActionResult> {
+  const userId = await requireUserId();
+  if (!userId) return { ok: false, error: "unauthorized" } as const;
+  return checkin.deleteCheckin(userId);
 }
 
 /** Moves moments saved on this device to the member's account (once). */

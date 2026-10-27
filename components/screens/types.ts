@@ -25,4 +25,6 @@ export type ScreenProps = {
   /** The member's assessment status (null: not started), and opening it. */
   assessmentStatus: AssessmentStatus | null;
   openAssessment: () => void;
+  /** Opens a new journal entry starting with this text. */
+  writeInJournal: (starter: string) => void;
 };

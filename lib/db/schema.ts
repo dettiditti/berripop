@@ -383,6 +383,26 @@ export const worldMoments = pgTable("world_moments", {
 }, t => [index("world_moments_user_idx").on(t.userId, t.createdAt), uniqueIndex("world_moments_user_client_idx").on(t.userId, t.clientId)]);
 
 /**
+ * The daily check-in, one per member per day (Europe/Budapest), editable that
+ * day. Kept apart from world_moments: a check-in can be sent to the AI when
+ * the member asks ("think it through together"), moments never are. Never
+ * earns XP or counts towards a streak.
+ */
+export const dailyCheckins = pgTable("daily_checkins", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  date: text("date").notNull(),
+  state: text("state"),
+  topics: jsonb("topics").$type<string[]>().notNull().default([]),
+  note: text("note").notNull().default(""),
+  need: text("need"),
+  /** The AI follow-up the member asked for, if any (cleared when the check-in changes). */
+  aiReply: jsonb("ai_reply").$type<{ heard: string; question: string; idea: string | null } | null>(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [uniqueIndex("daily_checkins_user_date_idx").on(t.userId, t.date)]);
+
+/**
  * The member's own 21-day journey, written by the AI from their goals when
  * they ask (or accept a plan). One active journey per member; rebuilding it
  * archives the old one. Progress is in user_activity (kind "goal").
