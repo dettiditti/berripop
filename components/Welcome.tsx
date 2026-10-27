@@ -426,10 +426,11 @@ export default function Welcome() {
   const { d, locale } = useI18n();
   const l = d.landing;
 
-  // Keep <html lang> in the chosen language.
+  // Keep <html lang> and the tab title in the chosen language.
   useEffect(() => {
     document.documentElement.lang = locale;
-  }, [locale]);
+    document.title = d.meta.title;
+  }, [locale, d]);
 
   return (
     <div className="lp" id="top">

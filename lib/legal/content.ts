@@ -17,7 +17,6 @@ export type LegalDoc = { title: string; intro: string; sections: LegalSection[] 
 export type LegalKind = "privacy" | "terms" | "cookies" | "contact";
 
 type LegalSet = {
-  draftBanner: string;
   back: string;
   updated: string;
   docs: Record<LegalKind, LegalDoc>;
@@ -25,7 +24,6 @@ type LegalSet = {
 };
 
 const hu: LegalSet = {
-  draftBanner: "Tervezet: ez a dokumentum még nem esett át jogi ellenőrzésen. A kiemelt [[…]] részeket a végleges közzététel előtt jogásszal kell egyeztetni.",
   back: "Vissza a Berripophoz",
   updated: "Hatályos: [[a közzététel napja]]",
   nav: { privacy: "Adatkezelési tájékoztató", terms: "Felhasználási feltételek", cookies: "Cookie-tájékoztató", contact: "Kapcsolat" },
@@ -146,7 +144,6 @@ const hu: LegalSet = {
 };
 
 const en: LegalSet = {
-  draftBanner: "Draft: this document has not been legally reviewed. The highlighted [[…]] parts must be agreed with a lawyer before final publication.",
   back: "Back to Berripop",
   updated: "Effective: [[date of publication]]",
   nav: { privacy: "Privacy policy", terms: "Terms of service", cookies: "Cookie policy", contact: "Contact" },

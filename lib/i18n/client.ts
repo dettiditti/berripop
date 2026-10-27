@@ -1,31 +1,36 @@
 "use client";
 
-import { useMemo, useSyncExternalStore } from "react";
+import { createContext, createElement, useContext, useMemo, useSyncExternalStore, type ReactNode } from "react";
 import { defaultLocale, isLocale, LOCALE_COOKIE, type Locale } from "./config";
 import { makeI18n } from "./format";
 
 /**
  * Language preference on this device (localStorage + a cookie for server-rendered
  * screens). A signed-in member's saved profile language takes priority and is
- * applied when their data loads. Falls back to Hungarian.
+ * applied when their data loads. Falls back to the language the server rendered in.
  */
 const KEY = "kozos-locale";
 
 let current: Locale | null = null;
 const listeners = new Set<() => void>();
 
-function read(): Locale {
+function readStored(): Locale | null {
   try {
     const stored = window.localStorage.getItem(KEY);
     if (isLocale(stored)) return stored;
   } catch {
-    // Storage blocked: use the default.
+    // Storage blocked: try the cookie.
   }
-  return defaultLocale;
+  const cookie = document.cookie.match(new RegExp(`(?:^|; )${LOCALE_COOKIE}=([^;]*)`))?.[1];
+  return isLocale(cookie) ? cookie : null;
 }
 
-function getSnapshot(): Locale {
-  if (current === null) current = read();
+function read(): Locale {
+  return readStored() ?? defaultLocale;
+}
+
+function getSnapshot(fallback: Locale): Locale {
+  if (current === null) current = readStored() ?? fallback;
   return current;
 }
 
@@ -54,9 +59,17 @@ export function setLocale(locale: Locale) {
   listeners.forEach(l => l());
 }
 
-/** The server and hydration render use the default; the stored choice applies right after. */
+/** The language the server rendered in (from the language cookie), so hydration matches it. */
+const ServerLocale = createContext<Locale>(defaultLocale);
+
+export function LocaleProvider({ locale, children }: { locale: Locale; children: ReactNode }) {
+  return createElement(ServerLocale.Provider, { value: locale }, children);
+}
+
+/** The server and hydration render use the server's language; a different stored choice applies right after. */
 export function useLocale(): Locale {
-  return useSyncExternalStore(subscribe, getSnapshot, () => defaultLocale);
+  const serverLocale = useContext(ServerLocale);
+  return useSyncExternalStore(subscribe, () => getSnapshot(serverLocale), () => serverLocale);
 }
 
 export function useI18n() {

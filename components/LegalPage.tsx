@@ -1,7 +1,7 @@
 import { Fragment, type ReactNode } from "react";
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { ArrowLeft, TriangleAlert } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { defaultLocale, isLocale, LOCALE_COOKIE } from "@/lib/i18n/config";
 import { legal, type LegalKind } from "@/lib/legal/content";
 import BerripopMascot from "./berripop/BerripopMascot";
@@ -12,7 +12,7 @@ function withPlaceholders(text: string): ReactNode {
     part.startsWith("[[") ? <mark key={i} className="legal-todo">{part.slice(2, -2)}</mark> : <Fragment key={i}>{part}</Fragment>);
 }
 
-/** Public legal page (draft), in the visitor's language. */
+/** Public legal page, in the visitor's language. */
 export default async function LegalPage({ kind }: { kind: LegalKind }) {
   const stored = (await cookies()).get(LOCALE_COOKIE)?.value;
   const L = legal[isLocale(stored) ? stored : defaultLocale];
@@ -24,7 +24,6 @@ export default async function LegalPage({ kind }: { kind: LegalKind }) {
         <Link className="btn btn--text btn--inline" href="/"><ArrowLeft size={16} aria-hidden /> {L.back}</Link>
       </header>
       <main className="legal-main">
-        <p className="legal-draft" role="note"><TriangleAlert size={18} aria-hidden /> <span>{withPlaceholders(L.draftBanner)}</span></p>
         <h1>{doc.title}</h1>
         <p className="legal-intro">{doc.intro}</p>
         <small className="muted">{withPlaceholders(L.updated)}</small>

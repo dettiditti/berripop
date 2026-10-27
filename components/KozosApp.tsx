@@ -51,17 +51,13 @@ export default function KozosApp() {
   const { isLoaded, isSignedIn } = useAuth();
   const { locale, d } = useI18n();
 
-  // Keep <html lang> in the chosen language (the <title> below is hoisted by React).
+  // Keep <html lang> and the tab title in the chosen language.
   useEffect(() => {
     document.documentElement.lang = locale;
-  }, [locale]);
+    document.title = d.meta.title;
+  }, [locale, d]);
 
-  return (
-    <>
-      <title>{d.meta.title}</title>
-      {!isLoaded ? <Splash label={d.common.loading} /> : isSignedIn ? <SignedInApp /> : <Welcome />}
-    </>
-  );
+  return !isLoaded ? <Splash label={d.common.loading} /> : isSignedIn ? <SignedInApp /> : <Welcome />;
 }
 
 function SignedInApp() {

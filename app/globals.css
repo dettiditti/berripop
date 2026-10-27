@@ -1,4 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;600;700;800;900&display=swap");
+/* Fredoka has no Ő ő Ű ű: only those four letters come from the matching Baloo 2. */
+@import url("https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&text=%C5%90%C5%91%C5%B0%C5%B1&display=swap");
 
 /* ============ Tokens ============ */
 :root {
@@ -31,7 +33,7 @@
   --radius: 24px;
   --radius-sm: 16px;
   --shadow: 0 10px 30px rgba(74, 44, 140, 0.08);
-  --font-display: "Fredoka", "Nunito", ui-rounded, system-ui, sans-serif;
+  --font-display: "Fredoka", "Baloo 2", "Nunito", ui-rounded, system-ui, sans-serif;
   --font-body: "Nunito", ui-rounded, system-ui, sans-serif;
   --nav-h: 76px;
   color-scheme: light;
@@ -1583,8 +1585,6 @@ html:has(.lp) { scroll-behavior: smooth; }
 .legal-main p, .legal-main li { color: var(--ink-2); }
 .legal-main ul { margin: 6px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
 .legal-intro { font-size: 17px; }
-.legal-draft { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 16px; background: var(--sun-soft); color: #7a4f00; font-weight: 700; font-size: 14px; }
-.legal-draft svg { flex: none; margin-top: 2px; }
 .legal-todo { background: #fff1b8; color: #6b4500; border-radius: 6px; padding: 0 4px; font-weight: 800; }
 .legal-nav { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--line); }
 .legal-nav a { font-weight: 800; color: var(--purple-dark); text-decoration: none; min-height: 32px; display: inline-flex; align-items: center; }

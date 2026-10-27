@@ -1,27 +1,32 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { auth } from "@clerk/nextjs/server";
 import KozosApp from "@/components/KozosApp";
 import Welcome from "@/components/Welcome";
-import { defaultLocale } from "@/lib/i18n/config";
+import { defaultLocale, isLocale, LOCALE_COOKIE } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 
-const d = getDictionary(defaultLocale);
-
-export const metadata: Metadata = {
-  title: d.meta.title,
-  description: d.meta.description,
-  alternates: { canonical: "/" },
-  openGraph: {
-    type: "website",
-    url: "/",
-    siteName: "Berripop",
+/** Title and description in the visitor's language (crawlers without the cookie get Hungarian). */
+export async function generateMetadata(): Promise<Metadata> {
+  const stored = (await cookies()).get(LOCALE_COOKIE)?.value;
+  const locale = isLocale(stored) ? stored : defaultLocale;
+  const d = getDictionary(locale);
+  return {
     title: d.meta.title,
     description: d.meta.description,
-    locale: "hu_HU",
-    alternateLocale: ["en_GB"],
-  },
-  twitter: { card: "summary_large_image", title: d.meta.title, description: d.meta.description },
-};
+    alternates: { canonical: "/" },
+    openGraph: {
+      type: "website",
+      url: "/",
+      siteName: "Berripop",
+      title: d.meta.title,
+      description: d.meta.description,
+      locale: locale === "hu" ? "hu_HU" : "en_GB",
+      alternateLocale: [locale === "hu" ? "en_GB" : "hu_HU"],
+    },
+    twitter: { card: "summary_large_image", title: d.meta.title, description: d.meta.description },
+  };
+}
 
 /**
  * Signed-out visitors get the landing page rendered on the server (readable

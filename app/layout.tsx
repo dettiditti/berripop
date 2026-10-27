@@ -4,12 +4,13 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { enUS, huHU } from "@clerk/localizations";
 import { Analytics } from "@vercel/analytics/next";
 import { defaultLocale, isLocale, LOCALE_COOKIE, type Locale } from "@/lib/i18n/config";
+import { LocaleProvider } from "@/lib/i18n/client";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import "./globals.css";
 
 const d = getDictionary(defaultLocale);
 
-// The <title> itself is rendered by KozosApp so it follows the chosen language.
+// Pages set their own <title>; KozosApp and Welcome keep it in the chosen language after a switch.
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.berripop.com"),
   description: d.meta.description,
@@ -68,7 +69,7 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  // The language cookie lets Clerk's sign-in screens match the app's language.
+  // The language cookie lets server-rendered screens (and Clerk's sign-in) match the app's language.
   const stored = (await cookies()).get(LOCALE_COOKIE)?.value;
   const locale = isLocale(stored) ? stored : defaultLocale;
   return (
@@ -82,7 +83,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     >
       <html lang={locale} suppressHydrationWarning>
         <body>
-          {children}
+          <LocaleProvider locale={locale}>{children}</LocaleProvider>
           {/* Cookieless, anonymous page views (Vercel Web Analytics). */}
           <Analytics />
         </body>
