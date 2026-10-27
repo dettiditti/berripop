@@ -35,7 +35,7 @@ export const hu: Dictionary = {
     askReflection: "Kérem Berripop gondolatait",
     keepPrivate: "Maradjon csak az enyém",
     reflectRemaining: pl("Ezen a héten még {n} reflexió maradt", "Ezen a héten még {n} reflexió maradt"),
-    reflectDisclosure: "A reflexió megírásához ezt a bejegyzést elküldjük az AI-szolgáltatónknak (OpenAI, a Vercel AI Gateway-en keresztül), amely nem használja modelltanításra. Nem használjuk hirdetésre, senkivel nem osztjuk meg, és csak a reflexiót mentjük el.",
+    reflectDisclosure: "A reflexió megírásához ezt a bejegyzést elküldjük az AI-szolgáltatónknak (OpenAI), amely nem használja modelltanításra. Nem használjuk hirdetésre, senkivel nem osztjuk meg, és csak a reflexiót mentjük el.",
     reflecting: "Berripop figyelmesen olvas…",
     reflection: {
       title: "Berripop gondolatai",
@@ -151,7 +151,6 @@ export const hu: Dictionary = {
     premiumTagline: "Több hely, több AI-segítség, mélyebb elmélyülés.",
     plusName: "Premium Plus",
     plusTagline: "Dupla AI-segítség, több cél és kör a mindennapi fejlődéshez.",
-    plusMonthlyOnly: "Csak havi számlázással érhető el.",
     currentPlan: "A jelenlegi csomagod",
     compare: {
       bothTitle: "Minden csomagban benne van",
@@ -297,7 +296,7 @@ export const hu: Dictionary = {
     button: "Kérek egy továbbgondoló kérdést Berripoptól",
     working: "Berripop gondolkodik…",
     remaining: pl("Ezen a héten még {n} maradt", "Ezen a héten még {n} maradt"),
-    disclosure: "A kérdés javaslatához a piszkozatodat elküldjük az AI-szolgáltatónknak (OpenAI, a Vercel AI Gateway-en keresztül). Nem tároljuk, és a köröddel sem osztjuk meg.",
+    disclosure: "A kérdés javaslatához a piszkozatodat elküldjük az AI-szolgáltatónknak (OpenAI). Nem tároljuk, és a köröddel sem osztjuk meg.",
     result: "Berripop kérdése:",
     use: "Ezt választom",
     unavailable: "Az AI-segítség most nem érhető el. Nyugodtan írj tovább, ahogy eddig.",
@@ -984,7 +983,7 @@ export const hu: Dictionary = {
   assessment: {
     title: "Tervezzük meg a saját utadat",
     intro: "Pár kérdés, hogy Berripop megértse, hol tartasz, és mit szeretnél. Kb. 3–5 perc. A válaszaid privátak, és bármikor folytathatod.",
-    privacy: "Nem kell érzékeny adatot megadnod, és Berripop nem állít fel diagnózist. A visszakérdezésekhez és a tervhez a válaszaidat elküldjük az AI-szolgáltatónknak (OpenAI, a Vercel AI Gateway-en keresztül), amely nem használja őket modelltanításra.",
+    privacy: "Nem kell érzékeny adatot megadnod, és Berripop nem állít fel diagnózist. A visszakérdezésekhez és a tervhez a válaszaidat elküldjük az AI-szolgáltatónknak (OpenAI), amely nem használja őket modelltanításra.",
     start: "Kezdjük",
     later: "Most kihagyom",
     back: "Vissza",

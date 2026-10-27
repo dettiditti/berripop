@@ -10,7 +10,7 @@ export type PlanId = "free" | "premium" | "premium_plus";
 /** The plans a Stripe subscription can grant. */
 export type PaidPlanId = Exclude<PlanId, "free">;
 export type BillingInterval = "month" | "year";
-export type PriceId = "monthly" | "annual" | "plus_monthly";
+export type PriceId = "monthly" | "annual" | "plus_monthly" | "plus_annual";
 export type CurrencyCode = "HUF";
 
 export type PlanLimits = {
@@ -60,6 +60,7 @@ export const PRICES: Record<PriceId, PriceConfig> = {
   monthly: { id: "monthly", plan: "premium", interval: "month", amount: 2990, currency: "HUF", lookupKey: "kozos_premium_monthly_huf" },
   annual: { id: "annual", plan: "premium", interval: "year", amount: 23990, currency: "HUF", lookupKey: "kozos_premium_annual_huf" },
   plus_monthly: { id: "plus_monthly", plan: "premium_plus", interval: "month", amount: 3990, currency: "HUF", lookupKey: "kozos_premium_plus_monthly_huf" },
+  plus_annual: { id: "plus_annual", plan: "premium_plus", interval: "year", amount: 31990, currency: "HUF", lookupKey: "kozos_premium_plus_annual_huf" },
 };
 
 /** One Stripe Product per paid plan, found by metadata (see scripts/stripe-setup.ts). */
@@ -73,7 +74,7 @@ export function stripeAmount(price: PriceConfig): number {
   return price.amount * 100;
 }
 
-/** The price for a plan and interval, or null when the plan isn't sold that way (Premium Plus is monthly only). */
+/** The price for a plan and interval, or null when the plan isn't sold that way. */
 export function priceFor(plan: PaidPlanId, interval: BillingInterval): PriceConfig | null {
   return Object.values(PRICES).find(p => p.plan === plan && p.interval === interval) ?? null;
 }

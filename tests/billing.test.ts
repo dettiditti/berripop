@@ -13,11 +13,13 @@ describe("plan configuration", () => {
     expect(priceFor("premium", "month")).toBe(PRICES.monthly);
     expect(priceFor("premium", "year")).toBe(PRICES.annual);
   });
-  it("sells Premium Plus monthly only, at 3990 HUF", () => {
+  it("sells Premium Plus at 3990 HUF a month or 31990 HUF a year", () => {
     expect(PRICES.plus_monthly).toMatchObject({ plan: "premium_plus", interval: "month", amount: 3990, currency: "HUF" });
+    expect(PRICES.plus_annual).toMatchObject({ plan: "premium_plus", interval: "year", amount: 31990, currency: "HUF" });
     expect(priceFor("premium_plus", "month")).toBe(PRICES.plus_monthly);
-    expect(priceFor("premium_plus", "year")).toBeNull();
+    expect(priceFor("premium_plus", "year")).toBe(PRICES.plus_annual);
     expect(stripeAmount(PRICES.plus_monthly)).toBe(399000);
+    expect(stripeAmount(PRICES.plus_annual)).toBe(3199000);
   });
   it("maps every lookup key to exactly one plan, and unknown prices to none", () => {
     const keys = Object.values(PRICES).map(p => p.lookupKey);
@@ -25,6 +27,7 @@ describe("plan configuration", () => {
     expect(planForLookupKey("kozos_premium_monthly_huf")).toBe("premium");
     expect(planForLookupKey("kozos_premium_annual_huf")).toBe("premium");
     expect(planForLookupKey("kozos_premium_plus_monthly_huf")).toBe("premium_plus");
+    expect(planForLookupKey("kozos_premium_plus_annual_huf")).toBe("premium_plus");
     expect(planForLookupKey("someone_elses_price")).toBeNull();
     expect(planForLookupKey(null)).toBeNull();
     expect(isPaidPlan("free")).toBe(false);

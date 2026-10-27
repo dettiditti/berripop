@@ -173,8 +173,8 @@ export async function createPlanChangeSession(userId: string, target: PaidPlanId
   if (ent.plan === target) return { ok: false, error: "invalid" };
   const [row] = await getDb().select().from(subscriptions).where(eq(subscriptions.userId, userId)).limit(1);
   if (!row?.stripeSubscriptionId) return { ok: false, error: "not_subscribed" };
-  // Premium Plus is sold monthly; switching back to Premium keeps the monthly rhythm.
-  const priceId = await findPriceId(stripe, target, "month");
+  // Switching keeps the member's billing rhythm (monthly or annual).
+  const priceId = await findPriceId(stripe, target, ent.interval ?? "month");
   if (!priceId) return { ok: false, error: "billing_unavailable" };
   try {
     const sub = await stripe.subscriptions.retrieve(row.stripeSubscriptionId);

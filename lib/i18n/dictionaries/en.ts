@@ -38,7 +38,7 @@ export const en = {
     askReflection: "Ask Berripop to reflect",
     keepPrivate: "Keep it just for me",
     reflectRemaining: pl("{n} reflection left this week", "{n} reflections left this week"),
-    reflectDisclosure: "To write a reflection, this entry is sent to our AI provider (OpenAI, via Vercel AI Gateway), which doesn't use it for model training. It isn't used for advertising or shared with anyone, and only the reflection is saved.",
+    reflectDisclosure: "To write a reflection, this entry is sent to our AI provider (OpenAI), which doesn't use it for model training. It isn't used for advertising or shared with anyone, and only the reflection is saved.",
     reflecting: "Berripop is reading carefully…",
     reflection: {
       title: "Berripop's reflection",
@@ -154,7 +154,6 @@ export const en = {
     premiumTagline: "More room, more AI help, deeper reflection.",
     plusName: "Premium Plus",
     plusTagline: "Twice the AI help, more goals and circles, for everyday growth.",
-    plusMonthlyOnly: "Billed monthly only.",
     currentPlan: "Your current plan",
     compare: {
       bothTitle: "Included in every plan",
@@ -300,7 +299,7 @@ export const en = {
     button: "Ask Berripop for a follow-up",
     working: "Berripop is thinking…",
     remaining: pl("{n} left this week", "{n} left this week"),
-    disclosure: "To suggest a question, your draft is sent to our AI provider (OpenAI, via Vercel AI Gateway). It isn't stored and isn't shared with your circle.",
+    disclosure: "To suggest a question, your draft is sent to our AI provider (OpenAI). It isn't stored and isn't shared with your circle.",
     result: "Berripop asks:",
     use: "Use this",
     unavailable: "AI help isn't available right now. You can keep writing as usual.",
@@ -990,7 +989,7 @@ export const en = {
   assessment: {
     title: "Let's plan your own path",
     intro: "A few questions so Berripop understands where you are and what you'd like. About 3–5 minutes. Your answers are private and you can continue any time.",
-    privacy: "You don't need to share anything sensitive, and Berripop never diagnoses. For the follow-up questions and the plan, your answers are sent to our AI provider (OpenAI, via Vercel AI Gateway), which doesn't use them for model training.",
+    privacy: "You don't need to share anything sensitive, and Berripop never diagnoses. For the follow-up questions and the plan, your answers are sent to our AI provider (OpenAI), which doesn't use them for model training.",
     start: "Let's start",
     later: "Skip for now",
     back: "Back",

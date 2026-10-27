@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@clerk/nextjs";
 import { Check, Info, Lock, Minus } from "lucide-react";
-import { isPaidPlan, PLAN_LIMITS, PRICES, type BillingInterval, type PaidPlanId, type PlanId } from "@/lib/billing/plans";
+import { isPaidPlan, PLAN_LIMITS, priceFor, type BillingInterval, type PaidPlanId, type PlanId } from "@/lib/billing/plans";
 import type { AccountDTO } from "@/lib/domain/types";
 import { useI18n } from "@/lib/i18n/client";
 import { changePlanAction, getSnapshotAction, startCheckoutAction, trackAction } from "@/lib/server/actions";
@@ -58,10 +58,10 @@ export default function PricingPage({ from, testMode }: { from?: string; testMod
   const current: PlanId | null = account?.entitlements.plan ?? null;
   const paying = isPaidPlan(current);
   const c = b.compare;
-  const annualSaving = PRICES.monthly.amount * 12 - PRICES.annual.amount;
   const names: Record<PlanId, string> = { free: b.freeName, premium: b.premiumName, premium_plus: b.plusName };
-  // Premium Plus is sold monthly only, whatever the toggle says.
-  const priceOf = (plan: PaidPlanId) => (plan === "premium_plus" ? PRICES.plus_monthly : interval === "year" ? PRICES.annual : PRICES.monthly);
+  const priceOf = (plan: PaidPlanId) => priceFor(plan, interval) ?? priceFor(plan, "month")!;
+  /** What a year costs less than twelve monthly payments. */
+  const annualSaving = (plan: PaidPlanId) => priceFor(plan, "month")!.amount * 12 - priceOf(plan).amount;
   const priceText = (plan: PaidPlanId) => {
     const p = priceOf(plan);
     return t(p.interval === "year" ? b.perYear : b.perMonth, { price: money(p.amount, p.currency) });
@@ -126,11 +126,9 @@ export default function PricingPage({ from, testMode }: { from?: string; testMod
         <p className="muted">{plan === "premium" ? b.premiumTagline : b.plusTagline}</p>
         <p className="plan-price">{priceText(plan)}</p>
         <p className="plan-note">
-          {plan === "premium_plus"
-            ? <>{interval === "year" && <>{b.plusMonthlyOnly} </>}{b.billedMonthly}</>
-            : interval === "year"
-              ? <>{t(b.annualEquivalent, { price: money(Math.round(price.amount / 12), price.currency) })} <strong className="plan-save">{t(b.annualSave, { amount: money(annualSaving, price.currency) })}</strong></>
-              : b.billedMonthly}
+          {price.interval === "year"
+            ? <>{t(b.annualEquivalent, { price: money(Math.round(price.amount / 12), price.currency) })} <strong className="plan-save">{t(b.annualSave, { amount: money(annualSaving(plan), price.currency) })}</strong></>
+            : b.billedMonthly}
         </p>
         <PlanRows rows={rows(plan)} highlight />
         {!paying && (
