@@ -32,3 +32,18 @@ export async function withBearer(req: Request, handler: (userId: string) => Prom
     return apiError(500, "internal");
   }
 }
+
+/** Far above any /api/v1 request body (a full check-in is well under 1 KB). */
+const MAX_BODY = 8_192;
+
+/** The JSON object in the request body, or null for anything else (too large, not JSON, not an object). */
+export async function readJsonObject(req: Request): Promise<Record<string, unknown> | null> {
+  const text = await req.text().catch(() => null);
+  if (text === null || text.length > MAX_BODY) return null;
+  try {
+    const v: unknown = JSON.parse(text);
+    return v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
+}

@@ -25,20 +25,33 @@ export async function todayCheckin(userId: string, today = circleToday()): Promi
   return row ?? null;
 }
 
-/** Saves (or replaces) today's check-in. A changed check-in drops an earlier AI follow-up. */
-export async function saveCheckin(userId: string, input: CheckinInput): Promise<ActionResult> {
+/**
+ * Writes (or replaces) the member's check-in for the day. A changed check-in
+ * drops an earlier AI follow-up. False when nothing valid was given.
+ */
+export async function writeCheckin(userId: string, input: CheckinInput, date = circleToday()): Promise<boolean> {
   const clean = cleanCheckin(input ?? {});
-  if (!clean) return fail("invalid");
-  const date = circleToday();
+  if (!clean) return false;
   const now = new Date();
   await getDb().insert(dailyCheckins).values({ userId, date, ...clean })
     .onConflictDoUpdate({ target: [dailyCheckins.userId, dailyCheckins.date], set: { ...clean, aiReply: null, updatedAt: now } });
+  return true;
+}
+
+/** Removes the member's check-in for the day. */
+export async function removeCheckin(userId: string, date = circleToday()): Promise<void> {
+  await getDb().delete(dailyCheckins).where(and(eq(dailyCheckins.userId, userId), eq(dailyCheckins.date, date)));
+}
+
+/** Saves (or replaces) today's check-in. */
+export async function saveCheckin(userId: string, input: CheckinInput): Promise<ActionResult> {
+  if (!(await writeCheckin(userId, input))) return fail("invalid");
   return { ok: true, snapshot: await loadSnapshot(userId) };
 }
 
 /** Removes today's check-in. */
 export async function deleteCheckin(userId: string): Promise<ActionResult> {
-  await getDb().delete(dailyCheckins).where(and(eq(dailyCheckins.userId, userId), eq(dailyCheckins.date, circleToday())));
+  await removeCheckin(userId);
   return { ok: true, snapshot: await loadSnapshot(userId) };
 }
 
