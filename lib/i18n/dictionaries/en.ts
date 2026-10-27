@@ -200,7 +200,7 @@ export const en = {
     termsRequired: "Please accept the Terms of Use in the app before subscribing.",
     checkoutError: "We couldn't open the checkout. Please try again.",
     redirecting: "Opening secure checkout…",
-    terms: "Premium and Premium Plus renew automatically until you cancel. You can cancel any time in the billing portal: your plan stays active until the end of the period you've paid for, and your answers and goals are never deleted.",
+    terms: "Premium and Premium Plus renew automatically until you cancel. You can cancel any time in the billing portal: your plan stays active until the end of the period you've paid for, and your answers and goals stay with you on the free plan. You can withdraw within 14 days of your first subscription without giving a reason, and we refund the full amount.",
     privacyNote: "No paid plan ever unlocks other people's private answers.",
     noDiagnosis: "Berripop supports reflection. It doesn't diagnose anything or replace professional help.",
     back: "Back to the app",

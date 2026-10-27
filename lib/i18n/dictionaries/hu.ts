@@ -197,7 +197,7 @@ export const hu: Dictionary = {
     termsRequired: "Az előfizetés előtt fogadd el a Felhasználási feltételeket az alkalmazásban.",
     checkoutError: "Nem sikerült megnyitni a fizetést. Próbáld újra, kérlek.",
     redirecting: "A biztonságos fizetési oldal megnyitása…",
-    terms: "A Premium és a Premium Plus automatikusan megújul, amíg le nem mondod. Bármikor lemondhatod a számlázási portálon: a csomagod a kifizetett időszak végéig aktív marad, a válaszaidat és céljaidat pedig sosem töröljük.",
+    terms: "A Premium és a Premium Plus automatikusan megújul, amíg le nem mondod. Bármikor lemondhatod a számlázási portálon: a csomagod a kifizetett időszak végéig aktív marad, a válaszaid és céljaid pedig megmaradnak az ingyenes csomagban is. Az első előfizetéstől számított 14 napon belül indoklás nélkül elállhatsz, és a teljes díjat visszatérítjük.",
     privacyNote: "Egyik fizetős csomag sem teszi láthatóvá mások privát válaszait.",
     noDiagnosis: "A Berripop az elmélyülést segíti. Nem állít fel diagnózist, és nem helyettesíti a szakmai segítséget.",
     back: "Vissza az alkalmazásba",

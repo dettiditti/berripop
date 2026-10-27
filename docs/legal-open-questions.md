@@ -103,3 +103,9 @@ kérdéseket nem lehetett a projektből eldönteni; a szöveget ezek lezárása 
 - **Jogász 3. (panasz):** panaszkezelési szakasz került a feltételekbe (e-mail, posta), határidő és békéltető testület nélkül.
 - **Jogász 5. (elfogadás):** az alkalmazás az első használat előtt és verzióváltáskor kéri a feltételek elfogadását, verzióval és időponttal rögzítve.
 - **Könyvelő 1–3.:** a Számlázz.hu-integráció el van halasztva. Minden fizetésről kézi számlázási teendő keletkezik; a számlát kézzel kell kiállítani. A Stripe-bizonylatokat nem tekintjük számlának. A kézi folyamatot és az adókezelést a könyvelőnek kell megerősítenie. Részletek: `docs/production-readiness.md`.
+
+## Frissítés (2026. október 27., szakértő nélkül hozott döntések)
+
+Könyvelő és jogász nincs. A nyitott kérdések többségét a tulajdonos válaszai (AAM, Számlázz.hu, 14 napos teljes
+visszatérítés, bevétel bőven a határ alatt) és a hatályos jogszabályszöveg alapján lezártuk; a döntéseket, forrásaikat
+és a megmaradt kockázatokat a `docs/production-readiness.md` 5–6. pontja tartalmazza. Ez nem szakértői jóváhagyás.

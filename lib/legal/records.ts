@@ -9,8 +9,8 @@
  * and recorded, never "accepted".
  */
 export const LEGAL_VERSIONS = {
-  terms: "2026-10-27",
-  privacy: "2026-10-27",
+  terms: "2026-10-27.2",
+  privacy: "2026-10-27.2",
   cookies: "2026-10-27",
   aiConsent: "2026-10-27",
   checkoutDisclosure: "2026-10-27",

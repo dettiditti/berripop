@@ -1,10 +1,13 @@
 # Éles indulás – végső terv és blokkolók
 
-Állapot: 2026. október 27. Commitolva lokálisan (`main`), **nincs pusholva, nincs telepítve**. A 0007-es migráció
-**nem futott le**. Élő fizetés, valódi számla, éles adatmódosítás nem történt.
+Állapot: 2026. október 27. A 0007-es migráció élesben lefutott (a tulajdonos futtatta, ellenőrizve: 8 migráció, mindkét
+tábla létezik). A jogi oldalak, az ÁSZF- és AI-hozzájárulási folyamat korábbi változata élesben van; az újabb commitok
+(kontextuális hozzájárulás, a 6. pont döntései) helyben vannak, **nincsenek pusholva**. Élő fizetés, valódi számla nem történt.
 
-**A fizetős indulás NEM áll készen**, amíg a 6. pontban felsorolt adózási, számlázási és fogyasztóvédelmi kérdések
-nincsenek lezárva. Jogászi vagy könyvelői jóváhagyás egyik szövegre vagy folyamatra sem történt.
+**Szakértő nélkül hozott döntések.** Könyvelő és jogász nincs; a 6. pont döntéseit a tulajdonos válaszai és a hatályos
+jogszabályszöveg (njt.hu, 2026. szeptember–októberi állapot) alapján hoztuk. Ez **nem jogi vagy adótanácsadói
+jóváhagyás**; a forrásokat és a bizonytalan pontokat a 6. pont jelöli. Ha később lesz könyvelő vagy jogász, a 6. pontot
+érdemes vele átnézetni.
 
 ## 0. Elfogadott üzleti döntések
 
@@ -25,8 +28,8 @@ nincsenek lezárva. Jogászi vagy könyvelői jóváhagyás egyik szövegre vagy
 | Webhook | `lib/server/billing.ts` `handleWebhook`, `lib/billing/webhook.ts` | Aláírás-ellenőrzés (`STRIPE_WEBHOOK_SECRET`), élő/teszt mód szűrés, `stripe_events` claim → duplikáció kiszűrve; hiba esetén release, hogy a Stripe újrapróbálása feldolgozódjon. Változatlan. |
 | Kézi számlázási teendő | `lib/server/invoicing.ts`, `invoices` tábla | `invoice.paid` (összeg > 0) → `kind=invoice`, `status=manual`. `charge.refunded` (teljes → `storno`, részleges → `correction`) és elvesztett `charge.dispute.closed` (`correction`) → `status=manual`. Duplikáció ellen kétszeres védelem: az esemény-claim és az egyedi `operation_key` (`invoice:<in_…>`, `reversal:<evt_…>`) `ON CONFLICT DO NOTHING`-gal. Csak azonosítók, összeg (Stripe-egység: Ft × 100), pénznem, állapot – vevőadat és számlatartalom nincs. |
 | Teljes visszatérítés, elvesztett vita | `endSubscription` | Az előfizetést azonnal megszünteti (korábbi viselkedés, változatlan). |
-| AI-hozzájárulás | `lib/server/ai.ts`, `components/AiConsentCard.tsx` | Szerveroldali kapu minden AI-hívás előtt. **Meglévő tagoknál is**: az AI-funkciók a hozzájárulásig szünetelnek. |
-| ÁSZF-kapu | `components/TermsGate.tsx` | Új és meglévő tagoknak az első betöltéskor; verzióváltáskor újra. |
+| AI-hozzájárulás | `lib/server/ai.ts`, `components/AiConsent.tsx`, `components/AiConsentCard.tsx` | Szerveroldali kapu minden AI-hívás előtt. Az első AI-kéréskor helyben kéri a hozzájárulást, utána a művelet egyszer folytatódik; a Beállításokban visszavonható. |
+| ÁSZF-elfogadás | `components/TermsGate.tsx` | Új tagnak az onboarding első lépése, meglévő tagnak rövid párbeszédablak, az Árak oldalon a fizetés előtt; verzióváltáskor újra. |
 | Napi cron | `app/api/cron/daily/route.ts`, `vercel.json` | Csak megőrzési szabályok; beállítás nélkül nem töröl semmit. |
 
 ## 2. Helyi ellenőrzések
@@ -79,50 +82,76 @@ Nem szükséges és nincs használatban: `INVOICING_MODE`, `SZAMLAZZ_*`.
 4. Visszaállítás, ha kell (amíg nincs bennük éles adat): `DROP TABLE invoices; DROP TABLE legal_records;` – és a `drizzle.__drizzle_migrations` utolsó sorának törlése; vagy visszaállás a mentési ágra.
 5. Ha a kód a migráció előtt kerülne élesbe, a bejelentkezett tagok betöltési hibát kapnak (az ÁSZF-állapot a `legal_records` táblát olvassa), és a webhook a teendő rögzítésénél hibára futna (a Stripe újrapróbálja).
 
-## 5. Ideiglenes kézi számlázási folyamat
+## 5. Kézi számlázás a Számlázz.hu-ban
 
-**Egyeztetés (fizetés → teendő):**
-1. Naponta: `npm run invoices -- list manual` (csak azonosítót, típust, összeget, állapotot ír ki). Éles adatbázison `ALLOW_PRODUCTION_DB=1` kell elé.
-2. Minden teendőt vess össze a Stripe Dashboarddal a `stripeInvoiceId` alapján: fizetve, összeg, pénznem, dátum. A Stripe-egység: 299000 = 2 990 Ft.
-3. Ellenőrizd a vevő számlázási címét (a kód fizetés után nem szűri ki a nem magyar címet). Ha nem magyar: könyvelői döntés, és szükség esetén visszatérítés.
+Alap: a vevő a teljes díjat a szolgáltatás előtt kártyával fizeti, és nem kér külön számlát, ezért nyugtát kellene adni
+(Áfa tv. 165. § (1) b), 166. § (1)); **nyugta helyett számla is kiállítható** (166. § (2)), így pénztárgép nem kell.
+Ezért minden fizetésről számla készül.
 
-**Számla kiállítása:**
-4. A számlát a kiválasztott számlázóprogramban kell kiállítani, a Stripe-ban látható névvel, címmel, e-mail-címmel, a könyvelő által jóváhagyott adókezeléssel és teljesítési dátummal.
-5. Rögzítés: `npm run invoices -- mark-issued <teendő id> <számlaszám> [AAM]`.
+**Naponta (minden munkanapon):**
+1. `ALLOW_PRODUCTION_DB=1 npm run invoices -- list manual` – a nyitott teendők (azonosító, típus, összeg, állapot).
+2. Minden teendőt vess össze a Stripe Dashboarddal a `stripeInvoiceId` alapján: fizetve, összeg, dátum, vevő neve,
+   számlázási címe, e-mail-címe. Stripe-egység: 299000 = 2 990 Ft. Nem magyar számlázási cím → visszatérítés a Stripe-ban
+   (EU-értékesítés nincs bekapcsolva).
+3. Számla a Számlázz.hu-ban:
+   - vevő: a Stripe-ban látható név, cím, e-mail; magánszemély, adószám nélkül;
+   - tétel: pl. „Berripop Premium előfizetés, havi (2026.10.27–2026.11.26)”, mennyiség 1, egységár = a kifizetett összeg;
+   - áfakulcs: **AAM** (a számlán így megjelenik az alanyi adómentességre utaló jelölés – Áfa tv. 169. § m));
+   - fizetési mód: bankkártya, fizetve; **teljesítés dátuma = a számla kelte** (időszakos szolgáltatás előre fizetve:
+     Áfa tv. 58. § (1a) a)); kelte: a kiállítás napja;
+   - kiküldés e-mailben a vevőnek a Számlázz.hu-ból.
+4. Határidő: a díj már a teljesítés előtt megérkezett, ezért a számlát **haladéktalanul** kell kiállítani
+   (Áfa tv. 163. § (2) b)). Gyakorlatban: legkésőbb a fizetést követő munkanapon.
+5. Rögzítés: `ALLOW_PRODUCTION_DB=1 npm run invoices -- mark-issued <teendő id> <számlaszám> AAM`.
 
-**Visszatérítés, javítás:**
-6. Teljes visszatérítés → `kind=storno`; részleges visszatérítés vagy elvesztett vita → `kind=correction`. A bizonylatot (sztornó / helyesbítő számla) kézzel kell kiállítani, majd ugyanígy rögzíteni. A megjegyzés (`note`) jelzi, ha az eredeti teendőt nem találta (pl. az esemény a fizetés előtt érkezett).
-7. Visszatérítést kezdeményezni csak a Stripe Dashboardon lehet; az alkalmazás nem indít visszatérítést.
+**Elállás és visszatérítés (14 nap, teljes díj):**
+6. Az elállási nyilatkozat beérkezése után legkésőbb 14 napon belül: Stripe Dashboard → a fizetés → teljes
+   visszatérítés (ugyanarra a kártyára). A webhook az előfizetést azonnal megszünteti, és `storno` teendőt hoz létre.
+7. Számlázz.hu: az eredeti számla **sztornózása**; rögzítés `mark-issued <storno teendő id> <sztornószámla száma> AAM`.
+8. Részleges visszatérítés (pl. méltányosságból) → `correction` teendő → helyesbítő számla. Elvesztett kártyás vita →
+   `correction` teendő → helyesbítő vagy sztornó számla az elvesztett összegre.
 
-**Megőrzés:**
-8. A számlák és a kapcsolódó bizonylatok a számlázóprogramban, a fizetési adatok a Stripe-nál maradnak. Az `invoices` tábla sorai fióktörléskor is megmaradnak (a fiók-hivatkozás nullázódik), a megőrzési cron soha nem törli őket. A pontos megőrzési időt a könyvelő határozza meg; a jogi szöveg „a számviteli jogszabályokban előírt ideig” fogalmaz.
+**Megőrzés:** a számlák a Számlázz.hu-ban maradnak; legalább az adó elévüléséig kell őrizni őket (Áfa tv. 179. §), a
+tájékoztató 8 évet ígér, ami ezt lefedi. Panaszok és válaszok: 3 év (Fgytv. 17/A. § (7)) – a Gmail-fiókban, címkézve.
 
-**Adatkezelési tájékoztató:** számlázóprogram még nincs kiválasztva, ezért a tájékoztató egyet sem nevez meg. Ha kiválasztottad (és adatfeldolgozó), fel kell venni az „Adatfeldolgozók” közé (`lib/legal/content.ts`, mindkét nyelven), és frissíteni kell a verziót (`LEGAL_VERSIONS.privacy`).
+**AAM-határ:** 2026-ban 20 millió Ft (2027: 22 millió, 2028: 24 millió) belföldi adóköteles bevétel, az összes
+tevékenységgel együtt (AquilaHire is). Évente érdemes ránézni a Számlázz.hu összesítőjére.
 
-## 6. Nyitott jogi és könyvelési döntések
+**Stripe-nyugták:** a Stripe fizetési visszaigazolása és a Customer Portal számlalistája nem magyar számla. Az ÁSZF ezt
+kimondja. Javasolt (Dashboard, a tulajdonos döntése): Settings → Customer emails → a „Successful payments” nyugta
+maradhat fizetési visszaigazolásként; ha zavaró, kikapcsolható, mert a számlát a Számlázz.hu küldi.
 
-### Könyvelő
-1. A kézi számlázás rendje: a számlakiállítás határideje a fizetéshez képest, a teljesítési dátum havi és éves (előre fizetett) előfizetésnél.
-2. Az AAM alkalmazása erre a szolgáltatásra, a számlán kötelező AAM-szöveg, és az alanyi adómentesség értékhatárának figyelése.
-3. Sztornó és helyesbítő számla rendje teljes, részleges és éves előfizetés visszatérítésénél, illetve elvesztett vitánál.
-4. A számlázóprogram kiválasztása és a számlaadatok (NAV) kezelése a programban.
-5. A Stripe nyugtáinak sorsa (maradhatnak-e, hogyan ne keltsék a számla látszatát).
-6. Bizonylatmegőrzés ideje és helye.
-7. EU-értékesítés feltételei (később): adókezelés és bizonylatok.
+## 6. Jogi és könyvelési döntések (szakértő nélkül, forrásokkal)
 
-### Jogász
-1. **AI-hozzájárulás:** megfelelő-e a hozzájárulás mint jogalap (GDPR 6. cikk (1) a) és 9. cikk (2) a)), a Beállításokban lévő szöveg és a verziókezelés; kell-e a hozzájárulás bizonyítékát a fióktörlés után is megőrizni (most a fiókkal együtt törlődik).
-2. **ÁSZF-elfogadás:** elegendő-e a be nem pipált jelölőnégyzet + verzió + időpont az első használatkor és a fizetés előtt; mi a teendő módosításkor (értesítés, határidő).
-3. **Panaszkezelés:** a feltételekben most csak e-mail és postai cím szerepel; hiányzik a válaszadás rendje, határideje és a jegyzőkönyv-szabályok.
-4. **Elállási jog:** digitális szolgáltatásnál a 14 napos elállási jog alóli kivétel csak kifejezett beleegyezéssel és tudomásulvétellel érvényes. **Ilyen nyilatkozat nincs bekapcsolva**, tehát a fogyasztók elállási joga jelenleg fennáll, és erről a feltételekben tájékoztatni kell; a visszatérítést a Stripe Dashboardon kell tudni intézni. A szöveget és a folyamatot a jogász határozza meg.
-5. **Békéltető testület:** az illetékes testület neve, címe és elérhetősége hiányzik a feltételekből; a jogász erősítse meg, melyik az illetékes, és milyen adatokat kell feltüntetni.
-6. **Irányadó jog fogyasztóknál**, felelősségkorlátozás, tiltott tartalmak, felfüggesztés (lásd `docs/legal-open-questions.md`).
+| Kérdés | Döntés | Forrás / megjegyzés |
+| --- | --- | --- |
+| Áfa | AAM, áfa nélkül; az ár a végösszeg. Vercelben `INVOICE_VAT_KEY_HU=AAM` → az Árak oldalon AAM-megjegyzés. | Tulajdonos: AAM; adószám áfakódja 1. NAV: 2026-os határ 20 M Ft. |
+| Számla vagy nyugta | Minden fizetésről számla a Számlázz.hu-ban. | Áfa tv. 159. §, 165–166. § |
+| Számla határideje | Haladéktalanul (gyakorlatban következő munkanap). | Áfa tv. 163. § (2) b) |
+| Teljesítési dátum | A számla kelte (előre fizetett időszak). | Áfa tv. 58. § (1a) a) |
+| AAM a számlán | Számlázz.hu AAM áfakulcs. | Áfa tv. 169. § m), 187. § (2) c) |
+| Sztornó / helyesbítés | Teljes visszatérítés → sztornó; részleges / vita → helyesbítő számla. | Kézi, 5. pont |
+| Megőrzés | Számla 8 év; panasz 3 év. | Áfa tv. 179. §; Fgytv. 17/A. § (7) |
+| Elállás | 14 nap az első előfizetéstől, **teljes** visszatérítés 14 napon belül, ugyanarra a fizetési módra; nyilatkozatminta az ÁSZF-ben; az Árak oldal is említi. | 45/2014. Korm. r. 20. § (2) b), 22–23. §, 2. melléklet; 1. § (4): a fogyasztó javára el lehet térni |
+| Panaszkezelés | Írásbeli panaszra 30 napon belül írásban, indokolt válasz; elutasításkor a testület megnevezése; 3 év megőrzés. | Fgytv. 17/A. § (6)–(8) |
+| Békéltető testület | Budapesti Békéltető Testület adatai az ÁSZF-ben (székhely szerinti is), a többi testület: bekeltetes.hu. Általános alávetési nyilatkozat nincs. | Fgytv. 17/A. § (1a), 20. §; 45/2014. 11. § (1) w); adatok: bekeltet.bkik.hu/elerhetosegek. A bekeltetes.hu listáját nem tudtuk gépi úton ellenőrizni (JavaScriptből töltődik) – egyszer nézd meg böngészőben. |
+| Irányadó jog | Magyar jog, a fogyasztó lakóhelye szerinti kötelező szabályok érintetlenek. | Róma I. rendelet 6. cikk |
+| ÁSZF-elfogadás | Be nem pipált jelölőnégyzet + verzió + időpont; lényeges módosításról előzetes értesítés, új elfogadás. | Kódban kész |
+| AI-hozzájárulás | Kifejezett, külön hozzájárulás az első AI-kéréskor (GDPR 9. cikk (2) a)); fióktörléskor a nyilvántartás is törlődik (adattakarékosság; törlés után nincs feldolgozás, amit igazolni kellene). | Kódban kész |
+| Számlázóprogram | Számlázz.hu (KBOSS.hu Kft.) adatfeldolgozóként a tájékoztatóban. | Cégadatok: Számlázz.hu ÁSZF/adatvédelmi tájékoztató |
+
+**Ami még nyitott vagy kockázatos:**
+- A Számlázz.hu adatfeldolgozói szerződése (DPA): a Számlázz.hu ÁSZF-je általában tartalmazza; a fiókban érdemes
+  ellenőrizni/elfogadni.
+- Hogy az automatikus megújulás nem indít új elállási határidőt: elterjedt értelmezés, a rendelet kifejezetten nem mondja ki.
+- DPIA (adatvédelmi hatásvizsgálat) a napló érzékeny adatai miatt: kis méretnél nem biztosan kötelező, de egy rövid
+  belső feljegyzés ajánlott.
+- EU-értékesítés: kikapcsolva marad.
 
 ## 7. Biztonságos következő lépés
 
-1. Jogász és könyvelő átnézi a 6. pontot és a jogi oldalakat (`/terms`, `/privacy`, `/cookies`, `/contact`).
-2. A számlázóprogram kiválasztása → az adatfeldolgozói lista frissítése.
-3. Stripe teszt módban: webhook-események ellenőrzése a Dashboardon.
-4. Mentés → csak olvasó ellenőrzés → migráció (4. pont), jóváhagyással.
-5. Push és deploy jóváhagyással, majd teszt módú vásárlás saját fiókkal: teendő keletkezik-e, duplikált esemény újraküldésénél nem keletkezik-e második.
-6. Élő kulcsokra váltás csak a 6. pont lezárása után.
+1. Vercel env: `INVOICE_VAT_KEY_HU=AAM` (Production), utána redeploy – csak jóváhagyással.
+2. Push és deploy jóváhagyással (a feltételek és a tájékoztató új verziója miatt mindenki újra elfogadja a feltételeket).
+3. Teszt módú vásárlás saját fiókkal → megjelenik a `manual` teendő; teljes visszatérítés → `storno` teendő. Teszt
+   vásárlásról **ne** állíts ki valódi számlát.
+4. Élő Stripe-kulcsokra váltás (`stripe:setup` élő kulcsokkal, a „Közös Premium” termék átnevezése) – jóváhagyással.
