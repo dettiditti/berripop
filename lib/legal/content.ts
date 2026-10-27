@@ -4,7 +4,8 @@ import type { Locale } from "../i18n/config";
  * DRAFT legal texts (Hungarian and English), written from what the app
  * actually does (audited 2026-10-25): Clerk sign-in, Neon database (us-east-1),
  * Vercel hosting and AI Gateway, OpenAI gpt-5-mini via the Gateway, Stripe
- * payments, first-party product events, no analytics or advertising cookies.
+ * payments, first-party product events, cookieless Vercel Web Analytics, no
+ * analytics or advertising cookies.
  *
  * Operator details come from the owner (same sole proprietorship as her earlier
  * product). NOT legally reviewed. Every `[[...]]` is a decision a lawyer
@@ -52,15 +53,15 @@ const hu: LegalSet = {
           "A rendszer biztonsága, a hibák javítása és a termék fejlesztését segítő, tartalom nélküli mérés. Jogalap: jogos érdek (GDPR 6. cikk (1) f) pont). [[érdekmérlegelési teszt elkészítése]]",
         ] },
         { heading: "AI-feldolgozás", body: [
-          "Ha AI-funkciót kérsz (napló-reflexió, továbbgondoló kérdés, összefoglaló, kezdeti felmérés), az ehhez szükséges szöveget a Vercel AI Gateway-en keresztül az OpenAI-nak (gpt-5-mini modell) küldjük. A Vercel modellkatalógusa szerint a szolgáltató nem használja ezeket az adatokat modelltanításra. Kérés nélkül semmilyen tartalmad nem kerül AI-hoz.",
+          "Ha AI-funkciót kérsz (napló-reflexió, továbbgondoló kérdés, összefoglaló, kezdeti felmérés), az ehhez szükséges szöveget az OpenAI-nak (gpt-5-mini modell) küldjük. A szolgáltató nem használja ezeket az adatokat modelltanításra. Kérés nélkül semmilyen tartalmad nem kerül AI-hoz.",
           "A Berripop az elmélyülést segíti, nem állít fel diagnózist, és nem helyettesíti a szakmai segítséget.",
         ] },
         { heading: "Adatfeldolgozók", list: [
-          "Vercel Inc.: tárhely és az AI Gateway.",
+          "Vercel Inc.: tárhely, az AI-kérések továbbítása és a süti nélküli látogatottság-mérés.",
           "Neon: adatbázis. Az adatok jelenleg az USA keleti régiójában (us-east-1) tárolódnak.",
           "Clerk: azonosítás és bejelentkezés.",
           "Stripe: fizetés és számlázás.",
-          "OpenAI: AI-válaszok, a Vercel AI Gateway-en keresztül.",
+          "OpenAI: AI-válaszok.",
           "Google: Google-bejelentkezés (ha ezt választod), valamint a betűtípusok betöltése a Google Fonts szolgáltatásból.",
           "A belépéshez szükséges e-maileket (például megerősítő kódokat) a Clerk küldi.",
           "Az adatfeldolgozók az adatokat a GDPR szerinti adatfeldolgozói feltételeik alapján, az adatkezelő utasításai szerint kezelik. [[az adatfeldolgozói szerződések (DPA) elfogadásának ellenőrzése szolgáltatónként]]",
@@ -97,7 +98,7 @@ const hu: LegalSet = {
         { heading: "A tartalmaid", body: ["Az általad létrehozott tartalom a tiéd. A köri válaszaidat csak akkor látják a kör tagjai, ha megosztod őket. Ne ossz meg olyat, ami mások jogait sérti. [[tiltott tartalmak és felhasználás részletezése]]"] },
         { heading: "Csomagok és előfizetés", list: [
           "Ingyenes csomag: a funkciók egy része, heti AI-keretekkel.",
-          "Premium: 2 990 Ft/hó vagy 23 990 Ft/év. Premium Plus: 3 990 Ft/hó. Mindkettő automatikusan megújul, amíg le nem mondod.",
+          "Premium: 2 990 Ft/hó vagy 23 990 Ft/év. Premium Plus: 3 990 Ft/hó vagy 31 990 Ft/év. Mindkettő automatikusan megújul, amíg le nem mondod.",
           "Csomagváltás (Premium és Premium Plus között): a számlázási portálon, ahol terhelés előtt látod az időarányos különbözetet.",
           "A fizetős csomagok heti AI-keretekkel működnek (méltányos használat és költségvédelem); egyik csomag sem korlátlan.",
           "Lemondás: bármikor a számlázási portálon (Beállítások → Előfizetésem). A csomagod a kifizetett időszak végéig aktív marad.",
@@ -124,6 +125,7 @@ const hu: LegalSet = {
           "berripop-first-steps-hidden: elrejtetted-e az „Első lépések” kártyát.",
           "kozos-prototype-v1: régebben itt tároltuk a Belső világ pillanatait. Bejelentkezés után egyszer áthelyezzük őket a fiókodba, majd töröljük innen.",
         ] },
+        { heading: "Látogatottság mérése", body: ["Az oldalmegtekintéseket a Vercel Web Analytics méri, süti és böngészőben tárolt azonosító nélkül, összesítve. Nem követ más oldalakon, és nem azonosít téged."] },
         { heading: "Külső tartalom", body: ["A betűtípusokat a Google Fonts szolgáltatásból töltjük be, ezért a böngésződ kapcsolódik a Google szervereihez. [[saját tárhelyre költöztetés megfontolása]]"] },
         { heading: "Hozzájárulás", body: ["Mivel csak a működéshez szükséges sütiket használjuk, nem jelenítünk meg süti-hozzájárulási ablakot. [[jogi ellenőrzés]]"] },
       ],
@@ -172,15 +174,15 @@ const en: LegalSet = {
           "System security, fixing errors and content-free measurement to improve the product. Legal basis: legitimate interest (GDPR Art. 6(1)(f)). [[prepare a legitimate interest assessment]]",
         ] },
         { heading: "AI processing", body: [
-          "When you ask for an AI feature (journal reflection, follow-up question, summary, initial assessment), the text it needs is sent via Vercel AI Gateway to OpenAI (gpt-5-mini model). According to Vercel's model catalogue, the provider doesn't use this data for model training. None of your content goes to an AI unless you ask.",
+          "When you ask for an AI feature (journal reflection, follow-up question, summary, initial assessment), the text it needs is sent to OpenAI (gpt-5-mini model). The provider doesn't use this data for model training. None of your content goes to an AI unless you ask.",
           "Berripop supports reflection; it doesn't diagnose and doesn't replace professional help.",
         ] },
         { heading: "Processors", list: [
-          "Vercel Inc.: hosting and the AI Gateway.",
+          "Vercel Inc.: hosting, forwarding AI requests and cookieless visitor statistics.",
           "Neon: database. Data is currently stored in the US East region (us-east-1).",
           "Clerk: authentication and sign-in.",
           "Stripe: payments and billing.",
-          "OpenAI: AI responses, via Vercel AI Gateway.",
+          "OpenAI: AI responses.",
           "Google: Google sign-in (if you choose it), and loading fonts from Google Fonts.",
           "Emails needed for signing in (e.g. verification codes) are sent by Clerk.",
           "Processors handle the data under their GDPR data processing terms, on the controller's instructions. [[check acceptance of the data processing agreements (DPA) per provider]]",
@@ -217,7 +219,7 @@ const en: LegalSet = {
         { heading: "Your content", body: ["Content you create is yours. Circle members only see your circle answers if you share them. Don't share anything that infringes others' rights. [[details of prohibited content and use]]"] },
         { heading: "Plans and subscription", list: [
           "Free plan: part of the features, with weekly AI allowances.",
-          "Premium: HUF 2,990 per month or HUF 23,990 per year. Premium Plus: HUF 3,990 per month. Both renew automatically until you cancel.",
+          "Premium: HUF 2,990 per month or HUF 23,990 per year. Premium Plus: HUF 3,990 per month or HUF 31,990 per year. Both renew automatically until you cancel.",
           "Switching plans (between Premium and Premium Plus): in the billing portal, where you see the prorated difference before anything is charged.",
           "Paid plans have weekly AI allowances (fair use and cost protection); no plan is unlimited.",
           "Cancellation: any time in the billing portal (Settings → My subscription). Your plan stays active until the end of the paid period.",
@@ -244,6 +246,7 @@ const en: LegalSet = {
           "berripop-first-steps-hidden: whether you've hidden the \"First steps\" card.",
           "kozos-prototype-v1: where My Inner World moments used to be kept. After you sign in they are moved to your account once, then removed from here.",
         ] },
+        { heading: "Visitor statistics", body: ["Page views are counted with Vercel Web Analytics, in aggregate, without cookies or an identifier stored in your browser. It doesn't follow you to other sites or identify you."] },
         { heading: "External content", body: ["Fonts are loaded from Google Fonts, so your browser connects to Google's servers. [[consider self-hosting the fonts]]"] },
         { heading: "Consent", body: ["Because we only use cookies needed for the app to work, we don't show a cookie consent banner. [[legal review]]"] },
       ],

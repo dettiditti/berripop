@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
 import { ClerkProvider } from "@clerk/nextjs";
 import { enUS, huHU } from "@clerk/localizations";
+import { Analytics } from "@vercel/analytics/next";
 import { defaultLocale, isLocale, LOCALE_COOKIE, type Locale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import "./globals.css";
@@ -79,7 +80,11 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       signUpFallbackRedirectUrl="/"
     >
       <html lang={locale} suppressHydrationWarning>
-        <body>{children}</body>
+        <body>
+          {children}
+          {/* Cookieless, anonymous page views (Vercel Web Analytics). */}
+          <Analytics />
+        </body>
       </html>
     </ClerkProvider>
   );
