@@ -18,6 +18,8 @@ import { Confirm } from "../Modals";
 import type { AccountDTO } from "@/lib/domain/types";
 import InsightsSection from "./InsightsSection";
 import JournalEditor from "./JournalEditor";
+import { SafetyCard, SafetyLink } from "../safety/SafetyCard";
+import { crisisSignal } from "@/lib/safety/crisis";
 
 /** How Berripop should help with this entry: listen, think it through together, or a practical idea (per request). */
 export function SupportModePicker({ value, onChange }: { value: SupportMode; onChange: (m: SupportMode) => void }) {
@@ -144,6 +146,8 @@ export default function JournalScreen({ account, today, notify, starter, onJourn
   // Per-request opt-in for sending saved insights to the AI; always starts off.
   const [useInsights, setUseInsights] = useState(false);
   const [mode, setMode] = useState<SupportMode>("reflect");
+  // Entries the AI flagged as a possible crisis in this session (never stored).
+  const [aiSafety, setAiSafety] = useState<string[]>([]);
   const goals = account.goals.filter(g => g.status === "active");
 
   const load = useCallback(async () => {
@@ -200,7 +204,10 @@ export default function JournalScreen({ account, today, notify, starter, onJourn
     setUseInsights(false);
     setReflecting(null);
     if (res === undefined) notify(d.auth.error);
-    else if (res) apply(res);
+    else if (res) {
+      apply(res);
+      if (res.ok && res.data?.safety) setAiSafety(v => [...v, entryId]);
+    }
   }
 
   async function runWeekly() {
@@ -250,6 +257,7 @@ export default function JournalScreen({ account, today, notify, starter, onJourn
           <span className="eyebrow"><Lock size={13} /> {j.eyebrow} · {j.privateBadge}</span>
           <h1>{j.title}</h1>
           <p>{j.intro}</p>
+          <SafetyLink />
         </div>
       </header>
 
@@ -268,6 +276,7 @@ export default function JournalScreen({ account, today, notify, starter, onJourn
             <button className="icon-btn" onClick={() => setOpenEntry(null)} aria-label={j.close}><X size={18} /></button>
           </div>
           <p className="journal-body-text">{open.body}</p>
+          {(crisisSignal(open.body) || aiSafety.includes(open.id)) && <SafetyCard />}
           <div className="row-gap">
             <button className="btn btn--ghost btn--sm" onClick={() => setEditing(open)}><PenLine size={14} /> {j.edit}</button>
             {open.status === "saved" && state.aiConfigured && !state.usage.reached && (

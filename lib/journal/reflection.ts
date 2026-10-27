@@ -24,6 +24,8 @@ export type ParsedReflection = {
   nextStep: string | null;
   /** Other possible readings of the situation, always phrased as possibilities (0–3). */
   alternatives: string[];
+  /** The model's own signal that the entry may be about a crisis (shows the safety card). */
+  safety: boolean;
   suggestion: ReflectionSuggestion | null;
 };
 
@@ -71,7 +73,7 @@ export function parseReflection(raw: string, goalIds: string[]): ParsedReflectio
     if (kind && text) suggestion = { kind, text, goalId };
   }
   const alternatives = (Array.isArray(obj.alternatives) ? obj.alternatives : []).map(x => clip(x, 250)).filter((x): x is string => !!x).slice(0, 3);
-  return { noticed, strength: clip(obj.strength, 400), explore, nextStep: clip(obj.nextStep, 300), alternatives, suggestion };
+  return { noticed, strength: clip(obj.strength, 400), explore, nextStep: clip(obj.nextStep, 300), alternatives, safety: obj.safety === true, suggestion };
 }
 
 export function parseWeekly(raw: string): ParsedWeekly | null {

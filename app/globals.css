@@ -793,6 +793,20 @@ button.avatar:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ton
 .support-mode { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .reflection-list { margin: 0; padding-left: 18px; list-style: disc; display: flex; flex-direction: column; gap: 4px; }
 
+/* Crisis safety card */
+.safety-card { display: flex; flex-direction: column; gap: 10px; border-color: var(--coral, #ff8a7a); }
+.safety-card p { margin: 0; }
+.safety-head { display: flex; align-items: center; gap: 10px; color: var(--coral-dark); }
+.safety-head h2 { margin: 0; font-size: 18px; color: var(--ink); flex: 1; }
+.safety-lines { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.safety-lines li { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 16px; background: var(--coral-soft); }
+.safety-lines li > span { display: flex; flex-direction: column; min-width: 0; }
+.safety-lines small { color: var(--muted); font-size: 13px; }
+.safety-call { justify-content: center; border: 2px solid var(--line); }
+.safety-link { align-self: flex-start; padding-left: 0; }
+.safety-sheet { padding: 0; }
+.safety-sheet .safety-card { margin: 0; box-shadow: none; }
+
 /* Daily check-in (Today) */
 .checkin-card { display: flex; flex-direction: column; gap: 10px; }
 .checkin-card h2 { margin: 0; font-size: 20px; }

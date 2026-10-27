@@ -82,6 +82,21 @@ describe("support mode", () => {
     expect(seen!.prompt).not.toMatch(/Insights they approved/);
   });
 
+  it("raises the safety card from the AI flag or the keyword check, without storing it", async () => {
+    let r = await reflectOnEntry("u", "e1", "en", false, "listen");
+    expect(r.ok && r.data?.safety).toBe(false);
+    setAiGeneratorForTesting(async () => ({ text: JSON.stringify({ ...reply, safety: true }) }));
+    r = await reflectOnEntry("u", "e1", "en", false, "listen");
+    expect(r.ok && r.data?.safety).toBe(true);
+    setAiGeneratorForTesting(async () => ({ text: JSON.stringify(reply) }));
+    const body = entry.body;
+    entry.body = "I don't want to live like this anymore, I want to die.";
+    r = await reflectOnEntry("u", "e1", "en", false, "listen");
+    entry.body = body;
+    expect(r.ok && r.data?.safety).toBe(true);
+    expect(inserted.every(v => !("safety" in v))).toBe(true);
+  });
+
   it("recognises only the three modes", () => {
     expect(["listen", "reflect", "practical"].every(isSupportMode)).toBe(true);
     expect(isSupportMode("therapy")).toBe(false);

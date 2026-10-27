@@ -6,6 +6,8 @@ import { CHECKIN_NEEDS, CHECKIN_STATES, CHECKIN_TOPICS, MAX_NOTE, MAX_TOPICS, cl
 import type { CheckinDTO } from "@/lib/domain/types";
 import { useI18n } from "@/lib/i18n/client";
 import { deleteCheckinAction, saveCheckinAction } from "@/lib/server/actions";
+import { crisisSignal } from "@/lib/safety/crisis";
+import { SafetyCard, SafetyLink } from "../safety/SafetyCard";
 import type { Run } from "../screens/types";
 
 type Draft = { state: CheckinState | null; topics: CheckinTopic[]; note: string; need: CheckinNeed | null };
@@ -66,6 +68,7 @@ export default function CheckinCard({ checkin, run, notify, onJournal }: {
         <span className="eyebrow"><HeartHandshake size={14} /> {c.eyebrow}</span>
         <h2 id="checkin-title">{c.title}</h2>
         <p className="muted">{c.intro}</p>
+        <SafetyLink />
         <button type="button" className="btn btn--primary btn--block" onClick={() => setPhase(1)}>{c.start} <ArrowRight size={18} /></button>
       </section>
     );
@@ -81,6 +84,7 @@ export default function CheckinCard({ checkin, run, notify, onJournal }: {
         <span className="eyebrow"><HeartHandshake size={14} /> {c.doneTitle}</span>
         {summary && <h2 id="checkin-title" className="checkin-summary">{summary}</h2>}
         {shown.note && <p className="checkin-note">{shown.note}</p>}
+        {crisisSignal(shown.note) && <SafetyCard />}
         <div className="checkin-response" aria-live="polite">
           <strong>{c.responseTitle}</strong>
           <p>{c.responses.state[keys.state]}</p>
@@ -92,6 +96,7 @@ export default function CheckinCard({ checkin, run, notify, onJournal }: {
           <button type="button" className="btn btn--text btn--sm" disabled={busy} onClick={remove}><Trash2 size={14} /> {c.remove}</button>
         </div>
         <small className="muted checkin-privacy">{c.privacy}</small>
+        <SafetyLink />
       </section>
     );
   }

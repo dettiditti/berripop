@@ -324,7 +324,7 @@ export async function deleteJournalEntryAction(entryId: string): Promise<Journal
 }
 
 /** `useInsights` is the owner's per-request opt-in; saved insights are never sent otherwise. */
-export async function reflectOnEntryAction(entryId: string, useInsights = false, mode: string = "reflect"): Promise<JournalResult<string>> {
+export async function reflectOnEntryAction(entryId: string, useInsights = false, mode: string = "reflect"): Promise<JournalResult<{ reflectionId: string; safety: boolean }>> {
   const userId = await requireUserId();
   if (!userId) return noUser;
   return journal.reflectOnEntry(userId, entryId, await locale(), useInsights === true, mode);

@@ -1,4 +1,5 @@
 import "server-only";
+import { crisisSignal } from "../safety/crisis";
 import { and, desc, eq, gte, inArray } from "drizzle-orm";
 import { getDb } from "../db";
 import { growthGoals, growthInsights, journalEntries, journalReflections } from "../db/schema";
@@ -116,7 +117,7 @@ async function runAi<T>(userId: string, feature: string, instructions: string, p
  * when the owner ticks the opt-in for this request (Premium). Other entries are
  * never included. `mode` is the support the owner asked for (default: reflect).
  */
-export async function reflectOnEntry(userId: string, entryId: string, localeInput: string, useInsights = false, modeInput: unknown = "reflect"): Promise<JournalResult<string>> {
+export async function reflectOnEntry(userId: string, entryId: string, localeInput: string, useInsights = false, modeInput: unknown = "reflect"): Promise<JournalResult<{ reflectionId: string; safety: boolean }>> {
   const mode: SupportMode = isSupportMode(modeInput) ? modeInput : "reflect";
   const entry = await ownEntry(userId, entryId);
   if (!entry) return fail("not_found");
@@ -153,7 +154,8 @@ export async function reflectOnEntry(userId: string, entryId: string, localeInpu
     suggestionGoalId: parsed.suggestion?.goalId ?? null,
   }).returning({ id: journalReflections.id });
   if (firstReflection) await track(userId, "first_reflection_received");
-  return ok(userId, row.id);
+  // The safety card shows when either the model or the keyword check raises it; neither is stored.
+  return ok(userId, { reflectionId: row.id, safety: parsed.safety || crisisSignal(entry.body) });
 }
 
 export async function reflectionFeedback(userId: string, reflectionId: string, feedback: "helpful" | "not_helpful", correction?: string): Promise<JournalResult> {
