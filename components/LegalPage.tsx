@@ -1,16 +1,10 @@
-import { Fragment, type ReactNode } from "react";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { ArrowLeft } from "lucide-react";
 import { defaultLocale, isLocale, LOCALE_COOKIE } from "@/lib/i18n/config";
 import { legal, type LegalKind } from "@/lib/legal/content";
 import BerripopMascot from "./berripop/BerripopMascot";
-
-/** Highlights `[[…]]` placeholders so missing operator data is impossible to overlook. */
-function withPlaceholders(text: string): ReactNode {
-  return text.split(/(\[\[[^\]]+\]\])/g).map((part, i) =>
-    part.startsWith("[[") ? <mark key={i} className="legal-todo">{part.slice(2, -2)}</mark> : <Fragment key={i}>{part}</Fragment>);
-}
+import LegalLanguageToggle from "./LegalLanguageToggle";
 
 /** Public legal page, in the visitor's language. */
 export default async function LegalPage({ kind }: { kind: LegalKind }) {
@@ -21,17 +15,20 @@ export default async function LegalPage({ kind }: { kind: LegalKind }) {
     <div className="legal">
       <header className="legal-top">
         <Link className="legal-brand" href="/"><BerripopMascot size={32} motion="none" /> berripop</Link>
-        <Link className="btn btn--text btn--inline" href="/"><ArrowLeft size={16} aria-hidden /> {L.back}</Link>
+        <div className="legal-top-actions">
+          <LegalLanguageToggle />
+          <Link className="btn btn--text btn--inline" href="/"><ArrowLeft size={16} aria-hidden /> {L.back}</Link>
+        </div>
       </header>
       <main className="legal-main">
         <h1>{doc.title}</h1>
         <p className="legal-intro">{doc.intro}</p>
-        <small className="muted">{withPlaceholders(L.updated)}</small>
+        <small className="muted">{L.updated}</small>
         {doc.sections.map(s => (
           <section key={s.heading}>
             <h2>{s.heading}</h2>
-            {s.body?.map(p => <p key={p}>{withPlaceholders(p)}</p>)}
-            {s.list && <ul>{s.list.map(item => <li key={item}>{withPlaceholders(item)}</li>)}</ul>}
+            {s.body?.map(p => <p key={p}>{p}</p>)}
+            {s.list && <ul>{s.list.map(item => <li key={item}>{item}</li>)}</ul>}
           </section>
         ))}
         <nav className="legal-nav" aria-label={L.docs.privacy.title}>
