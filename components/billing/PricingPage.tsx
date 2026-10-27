@@ -91,7 +91,7 @@ export default function PricingPage({ from, testMode, sales }: { from?: string; 
         window.location.href = r.url;
         return;
       }
-      setError(r.error === "billing_unavailable" || r.error === "sales_unavailable" ? b.unavailable : r.error === "already_premium" ? b.alreadyPremium : b.checkoutError);
+      setError(r.error === "terms_required" ? b.termsRequired : r.error === "billing_unavailable" || r.error === "sales_unavailable" ? b.unavailable : r.error === "already_premium" ? b.alreadyPremium : b.checkoutError);
     } catch {
       setError(b.checkoutError);
     }

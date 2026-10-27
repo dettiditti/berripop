@@ -194,6 +194,7 @@ export const hu: Dictionary = {
     testMode: "Tesztmód: a fizetés a Stripe tesztkörnyezetében történik. Valódi pénzt nem terhelünk.",
     unavailable: "A fizetés még nincs beállítva. Próbáld újra később.",
     alreadyPremium: "Már van előfizetésed. Csomagot a számlázási portálon válthatsz.",
+    termsRequired: "Az előfizetés előtt fogadd el a Felhasználási feltételeket az alkalmazásban.",
     checkoutError: "Nem sikerült megnyitni a fizetést. Próbáld újra, kérlek.",
     redirecting: "A biztonságos fizetési oldal megnyitása…",
     terms: "A Premium és a Premium Plus automatikusan megújul, amíg le nem mondod. Bármikor lemondhatod a számlázási portálon: a csomagod a kifizetett időszak végéig aktív marad, a válaszaidat és céljaidat pedig sosem töröljük.",

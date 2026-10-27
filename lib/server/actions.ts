@@ -73,6 +73,8 @@ export async function startCheckoutAction(interval: BillingInterval, plan: PaidP
   const userId = await requireUserId();
   if (!userId) return { ok: false as const, error: "unauthorized" as const };
   if ((interval !== "month" && interval !== "year") || !isPaidPlan(plan)) return { ok: false as const, error: "invalid" as const };
+  // No payment before the current Terms are accepted (the pricing page sits outside the in-app gate).
+  if ((await legal.getLegalStatus(userId)).terms !== "granted") return { ok: false as const, error: "terms_required" as const };
   const user = await currentUser();
   return billing.createCheckoutSession(userId, plan, interval, await origin(), { email: user?.primaryEmailAddress?.emailAddress, locale: await locale() });
 }
