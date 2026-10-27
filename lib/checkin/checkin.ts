@@ -61,3 +61,28 @@ export function parseCheckinReply(raw: string): CheckinReply | null {
   if (!heard || !question) return null;
   return { heard, question, idea: text(obj.idea, 300), safety: obj.safety === true };
 }
+
+export type CheckinWeek = { days: number; topics: [CheckinTopic, number][]; needs: [CheckinNeed, number][] };
+
+/** Counts only: which topics came up and what help was asked for. No notes, no feelings, no dates. */
+export function summarizeCheckins(rows: { topics: unknown; need: unknown }[]): CheckinWeek {
+  const topics = new Map<CheckinTopic, number>();
+  const needs = new Map<CheckinNeed, number>();
+  for (const r of rows) {
+    for (const t of Array.isArray(r.topics) ? r.topics : []) {
+      const k = oneOf(CHECKIN_TOPICS, t);
+      if (k) topics.set(k, (topics.get(k) ?? 0) + 1);
+    }
+    const n = oneOf(CHECKIN_NEEDS, r.need);
+    if (n) needs.set(n, (needs.get(n) ?? 0) + 1);
+  }
+  const sorted = <K,>(m: Map<K, number>) => [...m.entries()].sort((a, b) => b[1] - a[1]);
+  return { days: rows.length, topics: sorted(topics), needs: sorted(needs) };
+}
+
+/** The weekly journal's view of the check-ins: one line of counts, or nothing. */
+export function checkinWeekLine(w: CheckinWeek): string {
+  if (!w.days) return "";
+  const list = (xs: [string, number][]) => (xs.length ? xs.map(([k, n]) => `${k} ×${n}`).join(", ") : "none");
+  return `Daily check-ins this week (counts only, not their words): ${w.days} days; topics: ${list(w.topics)}; help asked for: ${list(w.needs)}.`;
+}

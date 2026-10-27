@@ -2,7 +2,8 @@ import "server-only";
 import { crisisSignal } from "../safety/crisis";
 import { and, desc, eq, gte, inArray } from "drizzle-orm";
 import { getDb } from "../db";
-import { growthGoals, growthInsights, journalEntries, journalReflections } from "../db/schema";
+import { dailyCheckins, growthGoals, growthInsights, journalEntries, journalReflections } from "../db/schema";
+import { checkinWeekLine, summarizeCheckins } from "../checkin/checkin";
 import { grantGrowthXp } from "./progress";
 import { circleToday } from "../domain/rules";
 import { dictionaries } from "../i18n/dictionaries";
@@ -222,8 +223,12 @@ export async function weeklyJournal(userId: string, localeInput: string, useInsi
   const insights = useInsights === true
     ? await db.select({ kind: growthInsights.kind, text: growthInsights.text }).from(growthInsights).where(eq(growthInsights.userId, userId)).orderBy(desc(growthInsights.updatedAt)).limit(10)
     : [];
+  // Check-ins reach the weekly journal only as counts of topics and of the help asked for.
+  const checkins = await db.select({ topics: dailyCheckins.topics, need: dailyCheckins.need }).from(dailyCheckins)
+    .where(and(eq(dailyCheckins.userId, userId), gte(dailyCheckins.date, circleToday(since))));
   const prompt = [
     insights.length ? `Saved insights:\n${insights.map(i => `- (${i.kind}) ${i.text}`).join("\n")}` : "",
+    checkinWeekLine(summarizeCheckins(checkins)),
     entries.map(e => `[${e.date}]\n${e.body.slice(0, 3000)}`).join("\n\n"),
   ].filter(Boolean).join("\n\n");
   const out = await runAi(userId, "journal_weekly", dictionaries[locale].journal.ai.weeklyInstructions, prompt, 1300, parseWeekly);
