@@ -38,3 +38,26 @@ export function cleanCheckin(input: CheckinInput): CleanCheckin | null {
 export function responseKeys(c: Pick<CleanCheckin, "state" | "need">): { state: CheckinState | "none"; need: CheckinNeed | "none" } {
   return { state: c.state ?? "none", need: c.need ?? "none" };
 }
+
+/** The AI follow-up ("think it through together"): what it heard, one question, maybe one idea. */
+export type CheckinReply = { heard: string; question: string; idea: string | null; safety: boolean };
+
+const text = (v: unknown, max: number) => (typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null);
+
+/** Parses the model's JSON; anything without a heard line and a question is rejected rather than shown. */
+export function parseCheckinReply(raw: string): CheckinReply | null {
+  const body = (raw.match(/```(?:json)?\s*([\s\S]*?)```/)?.[1] ?? raw).trim();
+  const start = body.indexOf("{");
+  const end = body.lastIndexOf("}");
+  if (start < 0 || end <= start) return null;
+  let obj: Record<string, unknown>;
+  try {
+    obj = JSON.parse(body.slice(start, end + 1));
+  } catch {
+    return null;
+  }
+  const heard = text(obj.heard, 400);
+  const question = text(obj.question, 300);
+  if (!heard || !question) return null;
+  return { heard, question, idea: text(obj.idea, 300), safety: obj.safety === true };
+}

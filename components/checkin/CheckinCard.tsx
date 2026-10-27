@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, ArrowRight, HeartHandshake, NotebookPen, Pencil, Trash2, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, HeartHandshake, NotebookPen, Pencil, Sparkles, Trash2, X } from "lucide-react";
 import { CHECKIN_NEEDS, CHECKIN_STATES, CHECKIN_TOPICS, MAX_NOTE, MAX_TOPICS, cleanCheckin, responseKeys, type CheckinNeed, type CheckinState, type CheckinTopic } from "@/lib/checkin/checkin";
 import type { CheckinDTO } from "@/lib/domain/types";
 import { useI18n } from "@/lib/i18n/client";
-import { deleteCheckinAction, saveCheckinAction } from "@/lib/server/actions";
+import { deleteCheckinAction, saveCheckinAction, thinkTogetherAction } from "@/lib/server/actions";
+import { useAiConsent } from "../AiConsent";
 import { crisisSignal } from "@/lib/safety/crisis";
 import { SafetyCard, SafetyLink } from "../safety/SafetyCard";
 import type { Run } from "../screens/types";
@@ -18,6 +19,7 @@ const draftOf = (c: CheckinDTO | null): Draft => ({ state: c?.state ?? null, top
 /**
  * The daily check-in on Today: three skippable steps (how you are, what's on
  * your mind, what would help), then a prepared answer. No AI, no XP, no streak.
+ * "Think it through together" is a separate AI request the member starts.
  */
 export default function CheckinCard({ checkin, run, notify, onJournal }: {
   checkin: CheckinDTO | null;
@@ -31,6 +33,10 @@ export default function CheckinCard({ checkin, run, notify, onJournal }: {
   const [phase, setPhase] = useState<Phase>(checkin ? "done" : "intro");
   const [draft, setDraft] = useState<Draft>(() => draftOf(checkin));
   const [busy, setBusy] = useState(false);
+  const [thinking, setThinking] = useState(false);
+  // The AI flagged today's check-in as a possible crisis (this session only, never stored).
+  const [aiSafety, setAiSafety] = useState(false);
+  const withAiConsent = useAiConsent();
   const set = (patch: Partial<Draft>) => setDraft(v => ({ ...v, ...patch }));
 
   const toggleTopic = (id: CheckinTopic) =>
@@ -59,6 +65,16 @@ export default function CheckinCard({ checkin, run, notify, onJournal }: {
     }
   }
 
+  async function together() {
+    setThinking(true);
+    const res = await withAiConsent(() => thinkTogetherAction()).catch(() => undefined);
+    setThinking(false);
+    if (res === undefined) return notify(d.auth.error);
+    if (!res) return;
+    const r = await run(Promise.resolve(res));
+    if (r?.data?.safety) setAiSafety(true);
+  }
+
   const close = () => { setDraft(draftOf(checkin)); setPhase(checkin ? "done" : "intro"); };
   const forward = (from: 1 | 2 | 3, next: Draft = draft) => (from === 3 ? void finish(next) : setPhase((from + 1) as 2 | 3));
 
@@ -84,12 +100,25 @@ export default function CheckinCard({ checkin, run, notify, onJournal }: {
         <span className="eyebrow"><HeartHandshake size={14} /> {c.doneTitle}</span>
         {summary && <h2 id="checkin-title" className="checkin-summary">{summary}</h2>}
         {shown.note && <p className="checkin-note">{shown.note}</p>}
-        {crisisSignal(shown.note) && <SafetyCard />}
+        {(crisisSignal(shown.note) || aiSafety) && <SafetyCard />}
         <div className="checkin-response" aria-live="polite">
           <strong>{c.responseTitle}</strong>
           <p>{c.responses.state[keys.state]}</p>
           <p>{c.responses.need[keys.need]}</p>
         </div>
+        {checkin?.aiReply ? (
+          <div className="checkin-response checkin-ai" aria-live="polite">
+            <strong><Sparkles size={14} /> {c.togetherTitle}</strong>
+            <p><small className="eyebrow">{c.togetherHeard}</small><br />{checkin.aiReply.heard}</p>
+            <p><small className="eyebrow">{c.togetherQuestion}</small><br />{checkin.aiReply.question}</p>
+            {checkin.aiReply.idea && <p><small className="eyebrow">{c.togetherIdea}</small><br />{checkin.aiReply.idea}</p>}
+          </div>
+        ) : checkin && (
+          <div className="checkin-together">
+            <button type="button" className="btn btn--ghost btn--block" disabled={thinking || busy} onClick={together}><Sparkles size={16} /> {thinking ? c.togetherBusy : c.together}</button>
+            <small className="muted">{c.togetherDisclosure}</small>
+          </div>
+        )}
         <button type="button" className="btn btn--primary btn--block" onClick={() => onJournal(starter)}><NotebookPen size={16} /> {c.toJournal}</button>
         <div className="checkin-actions">
           <button type="button" className="btn btn--ghost btn--sm" disabled={busy} onClick={() => { setDraft(draftOf(checkin)); setPhase(1); }}><Pencil size={14} /> {c.edit}</button>

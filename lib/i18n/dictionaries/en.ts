@@ -1274,6 +1274,17 @@ export const en = {
     toJournal: "Continue in my journal",
     journalStarter: "Today's check-in: {summary}",
     doneTitle: "Today's check-in",
+    together: "Think it through together",
+    togetherBusy: "Berri is thinking…",
+    togetherDisclosure: "This is an AI request: it gets today's check-in and your goal titles, never your journal. It counts towards your weekly journal AI allowance.",
+    togetherTitle: "Thought through together",
+    togetherHeard: "What I heard",
+    togetherQuestion: "One question",
+    togetherIdea: "One small idea",
+    ai: {
+      instructions:
+        "You are Berripop, a warm, attentive companion in a personal growth app. Reply in English, briefly. The person shared today's check-in (and possibly their goal titles). Reply ONLY with JSON: {\"heard\": string, \"question\": string, \"idea\": string or null, \"safety\": boolean}. heard: 1-2 sentences about what they actually shared; phrase anything you infer as \"maybe…\". question: exactly one open, optional question. idea: one small, realistic idea, only if they asked for a practical idea or it clearly fits; otherwise null. If they asked to be listened to, don't give advice. Never diagnose or claim an attachment style, trauma, disorder or personality trait. Avoid generic motivational phrases. If it mentions self-harm, suicidal thoughts or immediate danger, don't analyse: keep heard short and caring, let question ask whether someone is with them right now, set idea to null and safety to true. Otherwise safety is false. Never give phone numbers yourself: the app shows verified ones.",
+    },
     privacy: "Your check-in is private. It only reaches the AI if you ask, with the \u201cThink it through together\u201d button.",
   },
   today: {
@@ -1495,7 +1506,7 @@ export const en = {
     title: "Can Berripop help? 💜",
     body: "This feature uses artificial intelligence. Before we send anything, we ask for your permission.",
     points: [
-      "We only send text when you ask for an AI feature: the journal entry, answer, assessment answers or goals you want help with.",
+      "We only send text when you ask for an AI feature: the journal entry, answer, assessment answers, goals or today's check-in you want help with.",
       "Vercel AI Gateway forwards that text to an OpenAI language model so Berripop can write a reflection, question, summary or plan from it.",
       "Your journal and answers may contain especially sensitive information about your wellbeing or health.",
       "It's voluntary: the journal, goals and circles work without it. You can withdraw it in Settings at any time.",

@@ -41,7 +41,7 @@ const hu: LegalSet = {
         { heading: "Milyen adatokat kezelünk", list: [
           "Fiókadatok: az e-mail-címed, és ha megadod, a neved. Google-bejelentkezésnél a Google által átadott név, e-mail-cím és profilkép. Ezeket a bejelentkezést kezelő Clerk tárolja; a saját adatbázisunkban a fiókazonosítód és a megjelenített neved szerepel.",
           "Profil és beállítások: megjelenített név, a választott nyelv.",
-          "Az általad létrehozott tartalom: fejlődési célok és lépések, a céljaidból összeállított 21 napos utak, a kezdeti felmérés válaszai és a személyes terv, naplóbejegyzések, AI-reflexiók és az azokra adott visszajelzéseid, mentett gondolatok, a saját utad és a köri válaszaid, a Belső világ pillanatai (választott szavak és jegyzet), reakciók és saját kérdések.",
+          "Az általad létrehozott tartalom: fejlődési célok és lépések, a céljaidból összeállított 21 napos utak, a kezdeti felmérés válaszai és a személyes terv, naplóbejegyzések, AI-reflexiók és az azokra adott visszajelzéseid, mentett gondolatok, a saját utad és a köri válaszaid, a Belső világ pillanatai (választott szavak és jegyzet), a napi check-inek (hogy vagy, mi jár a fejedben, rövid jegyzet, milyen segítséget kértél, és ha kérted, az AI válasza), reakciók és saját kérdések.",
           "Haladás: teljesített utazásnapok és napi kérdések dátuma, XP, jelvények. Ezek nem tartalmaznak szöveget, csak azt, hogy mit és mikor teljesítettél.",
           "Körök: tagság és szerep, valamint a kör tevékenységnaplója (például ki csatlakozott vagy ki válaszolt), válaszszöveg nélkül. A köri válaszaidat a kör tagjai csak akkor látják, ha megosztod őket.",
           "Előfizetés: csomag, állapot, számlázási időszak vége és a Stripe-ügyfélazonosító. A bankkártya-adatokat kizárólag a Stripe kezeli, mi nem látjuk őket.",
@@ -58,9 +58,9 @@ const hu: LegalSet = {
           "A rendszer biztonsága, a hibák javítása és a termék fejlesztését segítő, tartalom nélküli mérés. Jogalap: jogos érdek (GDPR 6. cikk (1) f) pont). Ez ellen bármikor tiltakozhatsz.",
         ] },
         { heading: "AI-feldolgozás", body: [
-          "Ha AI-funkciót kérsz (napló-reflexió, heti naplóösszefoglaló, továbbgondoló kérdés, heti összefoglaló a válaszaidról, a kezdeti felmérés, a céljaidhoz tartozó 21 napos út összeállítása), az ehhez szükséges szöveget a Vercel továbbítja az OpenAI nyelvi modelljéhez. Kérés nélkül semmilyen tartalmad nem kerül AI-hoz.",
+          "Ha AI-funkciót kérsz (napló-reflexió, heti naplóösszefoglaló, továbbgondoló kérdés, heti összefoglaló a válaszaidról, a kezdeti felmérés, a céljaidhoz tartozó 21 napos út összeállítása, a napi check-in átgondolása), az ehhez szükséges szöveget a Vercel továbbítja az OpenAI nyelvi modelljéhez. Kérés nélkül semmilyen tartalmad nem kerül AI-hoz.",
           "Az AI-funkciókat csak akkor használhatod, ha külön hozzájárulsz az AI-feldolgozáshoz: ezt az első AI-kérésednél kérdezzük meg, mielőtt bármit elküldenénk, és a Beállításokban is megadhatod. A hozzájárulás önkéntes, nélküle a többi funkció elérhető. Visszavonás után nem küldünk több tartalmat AI-hoz; a visszavonás nem érinti a korábbi feldolgozás jogszerűségét, és a már elkészült reflexiók addig maradnak meg, amíg nem törlöd őket.",
-          "Az AI által készített reflexiókat, terveket és utakat a fiókodban tároljuk. A napló-reflexiók a hozzájuk tartozó bejegyzéssel együtt, a többi a fiókod törlésével törlődik.",
+          "A „Gondoljuk át együtt” kérésnél csak a mai check-ined és a céljaid címe kerül az AI-hoz, a naplóbejegyzéseid és a Belső világ pillanatai nem. Az AI által készített reflexiókat, terveket és utakat a fiókodban tároljuk. A napló-reflexiók a hozzájuk tartozó bejegyzéssel együtt, a többi a fiókod törlésével törlődik.",
           "A Berripop az elmélyülést segíti, nem állít fel diagnózist, és nem helyettesíti a szakmai segítséget.",
         ] },
         { heading: "Adatfeldolgozók", list: [
@@ -193,7 +193,7 @@ const en: LegalSet = {
         { heading: "What data we process", list: [
           "Account data: your email address and, if you provide it, your name. With Google sign-in, the name, email address and profile picture Google shares. These are stored by Clerk, which handles sign-in; our own database holds your account ID and display name.",
           "Profile and settings: display name, chosen language.",
-          "Content you create: growth goals and steps, the 21-day journeys built from your goals, your initial assessment answers and personal plan, journal entries, AI reflections and your feedback on them, saved thoughts, answers on your own path and in circles, My Inner World moments (chosen words and a note), reactions and your own questions.",
+          "Content you create: growth goals and steps, the 21-day journeys built from your goals, your initial assessment answers and personal plan, journal entries, AI reflections and your feedback on them, saved thoughts, answers on your own path and in circles, My Inner World moments (chosen words and a note), daily check-ins (how you are, what's on your mind, a short note, the help you asked for and, if you asked, the AI's reply), reactions and your own questions.",
           "Progress: dates of completed journey days and daily questions, XP and badges. These contain no text, only what you completed and when.",
           "Circles: membership and role, and the circle's activity log (for example who joined or who answered), without answer text. Circle members only see your circle answers if you share them.",
           "Subscription: plan, status, end of the billing period and your Stripe customer ID. Card details are handled only by Stripe; we never see them.",
@@ -210,9 +210,9 @@ const en: LegalSet = {
           "System security, fixing errors and content-free measurement to improve the product. Legal basis: legitimate interest (GDPR Art. 6(1)(f)). You can object to this at any time.",
         ] },
         { heading: "AI processing", body: [
-          "When you ask for an AI feature (journal reflection, weekly journal summary, follow-up question, weekly summary of your answers, the initial assessment, building a 21-day journey for your goals), Vercel forwards the text it needs to an OpenAI language model. None of your content goes to an AI unless you ask.",
+          "When you ask for an AI feature (journal reflection, weekly journal summary, follow-up question, weekly summary of your answers, the initial assessment, building a 21-day journey for your goals, thinking through today's check-in), Vercel forwards the text it needs to an OpenAI language model. None of your content goes to an AI unless you ask.",
           "You can use AI features only after giving separate consent to AI processing: we ask the first time you use an AI feature, before anything is sent, and you can also give it in Settings. Consent is optional; everything else works without it. After you withdraw it, we send no more content to AI; withdrawal doesn't affect the lawfulness of earlier processing, and reflections already written stay until you delete them.",
-          "The reflections, plans and journeys the AI creates are stored in your account. Journal reflections are deleted with their entry, the rest when you delete your account.",
+          "For “Think it through together” only today's check-in and your goal titles go to the AI, never your journal entries or Inner World moments. The reflections, plans and journeys the AI creates are stored in your account. Journal reflections are deleted with their entry, the rest when you delete your account.",
           "Berripop supports reflection; it doesn't diagnose and doesn't replace professional help.",
         ] },
         { heading: "Processors", list: [

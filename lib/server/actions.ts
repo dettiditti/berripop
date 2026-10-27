@@ -265,6 +265,13 @@ export async function saveCheckinAction(input: CheckinInput): Promise<ActionResu
   return checkin.saveCheckin(userId, input);
 }
 
+/** "Think it through together" on today's check-in (an AI request the member starts). */
+export async function thinkTogetherAction(): Promise<ActionResult<{ safety: boolean }>> {
+  const userId = await requireUserId();
+  if (!userId) return { ok: false, error: "unauthorized" } as const;
+  return checkin.thinkTogether(userId, await locale());
+}
+
 export async function deleteCheckinAction(): Promise<ActionResult> {
   const userId = await requireUserId();
   if (!userId) return { ok: false, error: "unauthorized" } as const;

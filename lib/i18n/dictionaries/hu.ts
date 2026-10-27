@@ -1268,6 +1268,17 @@ export const hu: Dictionary = {
     toJournal: "Folytatom a naplóban",
     journalStarter: "Mai check-in: {summary}",
     doneTitle: "A mai check-ined",
+    together: "Gondoljuk át együtt",
+    togetherBusy: "Berri gondolkodik…",
+    togetherDisclosure: "Ez egy AI-kérés: a mai check-ined és a céljaid címe jut el hozzá, a naplód nem. A heti napló-AI keretedből megy.",
+    togetherTitle: "Átgondoltuk együtt",
+    togetherHeard: "Amit hallottam",
+    togetherQuestion: "Egy kérdés",
+    togetherIdea: "Egy apró ötlet",
+    ai: {
+      instructions:
+        "Te Berripop vagy, egy meleg, figyelmes társ egy önfejlesztő alkalmazásban. Magyarul válaszolj, tegeződve, röviden. A személy a mai check-injét osztotta meg (és esetleg a céljai címét). KIZÁRÓLAG JSON-nal válaszolj: {\"heard\": string, \"question\": string, \"idea\": string vagy null, \"safety\": boolean}. heard: 1-2 mondat arról, amit ténylegesen megosztott; ami feltevés, azt \"lehet, hogy…\" formában írd. question: pontosan egy nyitott, nem kötelező kérdés. idea: egy apró, reális ötlet, de csak ha gyakorlati ötletet kért, vagy nagyon illik; különben null. Ha meghallgatást kért, ne adj tanácsot. Soha ne diagnosztizálj, ne állíts kötődési stílust, traumát, zavart vagy személyiségvonást. Kerüld az általános motiváló szólamokat. Ha önártalomról, öngyilkossági gondolatról vagy közvetlen veszélyről van szó, ne elemezz: heard legyen rövid és együttérző, question kérdezze meg, van-e most mellette valaki, idea legyen null, safety legyen true. Egyébként safety false. Telefonszámot soha ne írj: az alkalmazás ellenőrzött számokat mutat.",
+    },
     privacy: "A check-in privát. Csak akkor jut el az AI-hoz, ha te kéred a „Gondoljuk át együtt” gombbal.",
   },
   today: {
@@ -1489,7 +1500,7 @@ export const hu: Dictionary = {
     title: "Segíthet Berripop? 💜",
     body: "Ehhez a funkcióhoz mesterséges intelligenciát használunk. Mielőtt bármit elküldenénk, az engedélyedet kérjük.",
     points: [
-      "Csak akkor küldünk szöveget, amikor AI-funkciót kérsz: azt a naplóbejegyzést, választ, felmérés-választ vagy célt, amelyhez segítséget kérsz.",
+      "Csak akkor küldünk szöveget, amikor AI-funkciót kérsz: azt a naplóbejegyzést, választ, felmérés-választ, célt vagy mai check-int, amelyhez segítséget kérsz.",
       "A szöveget a Vercel AI Gateway továbbítja az OpenAI nyelvi modelljéhez, hogy Berripop reflexiót, kérdést, összefoglalót vagy tervet írjon belőle.",
       "A naplód és a válaszaid a lelkiállapotodra vagy az egészségedre vonatkozó, különösen érzékeny adatot is tartalmazhatnak.",
       "Önkéntes: nélküle is használhatod a naplót, a célokat és a köröket. A Beállításokban bármikor visszavonhatod.",
