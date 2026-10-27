@@ -83,7 +83,7 @@ export type AiFailureReason = "limit" | "error" | "timeout" | "aborted" | "parse
 
 export type AiOutcome<T> =
   | { ok: true; value: T }
-  | { ok: false; error: "limit_ai" | "ai_unavailable"; reason: AiFailureReason };
+  | { ok: false; error: "limit_ai" | "ai_unavailable" | "ai_consent_required"; reason: AiFailureReason };
 
 export const DEFAULT_TIMEOUT_MS = 30_000;
 export const DEFAULT_MAX_RETRIES = 1;

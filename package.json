@@ -19,7 +19,8 @@
     "verify:assessment": "dotenv -e .env.local -- tsx --conditions=react-server scripts/verify-assessment.ts",
     "verify:account": "dotenv -e .env.local -- tsx --conditions=react-server scripts/verify-account.ts",
     "verify:progress": "dotenv -e .env.local -- tsx --conditions=react-server scripts/verify-progress.ts",
-    "verify:goal-journey": "dotenv -e .env.local -- tsx --conditions=react-server scripts/verify-goal-journey.ts"
+    "verify:goal-journey": "dotenv -e .env.local -- tsx --conditions=react-server scripts/verify-goal-journey.ts",
+    "invoices": "dotenv -e .env.local -- tsx --conditions=react-server scripts/invoices.ts"
   },
   "dependencies": {
     "@clerk/localizations": "^4.24.1",

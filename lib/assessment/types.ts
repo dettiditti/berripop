@@ -24,6 +24,6 @@ export type PathStepDTO = {
 
 export type AssessmentState = { assessment: AssessmentDTO | null; steps: PathStepDTO[] };
 
-export type AssessmentError = "unauthorized" | "invalid" | "not_found" | "busy" | "limit_assessment" | "limit_ai" | "ai_unavailable" | "limit_goals";
+export type AssessmentError = "unauthorized" | "invalid" | "not_found" | "busy" | "limit_assessment" | "limit_ai" | "ai_unavailable" | "ai_consent_required" | "limit_goals";
 
 export type AssessmentResult = { ok: true; state: AssessmentState } | { ok: false; error: AssessmentError };

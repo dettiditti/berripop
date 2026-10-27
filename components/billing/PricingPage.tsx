@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@clerk/nextjs";
 import { Check, Info, Lock, Minus } from "lucide-react";
 import { isPaidPlan, PLAN_LIMITS, priceFor, type BillingInterval, type PaidPlanId, type PlanId } from "@/lib/billing/plans";
+import type { PublicSalesInfo } from "@/lib/billing/sales";
 import type { AccountDTO } from "@/lib/domain/types";
 import { useI18n } from "@/lib/i18n/client";
 import { changePlanAction, getSnapshotAction, startCheckoutAction, trackAction } from "@/lib/server/actions";
@@ -37,7 +38,7 @@ function PlanRows({ rows, highlight = false }: { rows: Row[]; highlight?: boolea
  * New subscriptions go through Stripe Checkout; a member who already pays
  * switches plans in the Stripe Customer Portal.
  */
-export default function PricingPage({ from, testMode }: { from?: string; testMode: boolean }) {
+export default function PricingPage({ from, testMode, sales }: { from?: string; testMode: boolean; sales: PublicSalesInfo }) {
   const { d, t, num, money } = useI18n();
   const b = d.billing;
   const { isLoaded, isSignedIn } = useAuth();
@@ -90,7 +91,7 @@ export default function PricingPage({ from, testMode }: { from?: string; testMod
         window.location.href = r.url;
         return;
       }
-      setError(r.error === "billing_unavailable" ? b.unavailable : r.error === "already_premium" ? b.alreadyPremium : b.checkoutError);
+      setError(r.error === "billing_unavailable" || r.error === "sales_unavailable" ? b.unavailable : r.error === "already_premium" ? b.alreadyPremium : b.checkoutError);
     } catch {
       setError(b.checkoutError);
     }
@@ -136,6 +137,9 @@ export default function PricingPage({ from, testMode }: { from?: string; testMod
             <strong><Info size={15} /> {b.checkoutTitle}</strong>
             <p>{t(price.interval === "year" ? b.checkoutYear : b.checkoutMonth, { price: money(price.amount, price.currency) })}</p>
             <p>{b.cancelAnytime}</p>
+            {sales.taxNote === "aam" && <p>{b.taxNoteAam}</p>}
+            {sales.countries.length === 1 && sales.countries[0] === "HU" && <p>{b.countryHuOnly}</p>}
+            <p>{b.invoiceNote}</p>
           </div>
         )}
         {paying && !isCurrent && <p className="plan-note">{b.switchNote}</p>}
@@ -148,7 +152,7 @@ export default function PricingPage({ from, testMode }: { from?: string; testMod
             {busy === plan ? b.redirecting : t(b.switchTo, { plan: names[plan] })}
           </button>
         ) : (
-          <button className={`btn ${plan === "premium" ? "btn--primary" : "btn--ghost"} btn--lg btn--block plan-cta`} disabled={busy !== null || !account} onClick={() => subscribe(plan)}>
+          <button className={`btn ${plan === "premium" ? "btn--primary" : "btn--ghost"} btn--lg btn--block plan-cta`} disabled={busy !== null || !account || !sales.available} onClick={() => subscribe(plan)}>
             {busy === plan ? b.redirecting : `${plan === "premium" ? b.subscribe : b.subscribePlus} · ${priceText(plan)}`}
           </button>
         )}
@@ -194,6 +198,7 @@ export default function PricingPage({ from, testMode }: { from?: string; testMod
         <ul>{c.both.map(x => <li key={x}><Check size={16} strokeWidth={3} /> {x}</li>)}</ul>
       </section>
 
+      {!sales.available && <p className="field-hint">{b.salesPaused}</p>}
       {error && <p className="field-hint" role="alert">{error}</p>}
       {testMode && <p className="prototype-note"><Info size={14} /> {b.testMode}</p>}
 
@@ -205,6 +210,7 @@ export default function PricingPage({ from, testMode }: { from?: string; testMod
         <p className="auth-legal pricing-legal">
           <Link href="/terms">{d.account.legal.terms}</Link>
           <Link href="/privacy">{d.account.legal.privacy}</Link>
+          <Link href="/contact">{d.account.legal.contact}</Link>
         </p>
       </section>
       <Link className="btn btn--text" href="/">{b.back}</Link>

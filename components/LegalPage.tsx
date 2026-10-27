@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { ArrowLeft } from "lucide-react";
 import { defaultLocale, isLocale, LOCALE_COOKIE } from "@/lib/i18n/config";
 import { legal, type LegalKind } from "@/lib/legal/content";
+import { LEGAL_VERSIONS } from "@/lib/legal/records";
 import BerripopMascot from "./berripop/BerripopMascot";
 import LegalLanguageToggle from "./LegalLanguageToggle";
 
@@ -11,6 +12,7 @@ export default async function LegalPage({ kind }: { kind: LegalKind }) {
   const stored = (await cookies()).get(LOCALE_COOKIE)?.value;
   const L = legal[isLocale(stored) ? stored : defaultLocale];
   const doc = L.docs[kind];
+  const version = kind === "contact" ? null : LEGAL_VERSIONS[kind];
   return (
     <div className="legal">
       <header className="legal-top">
@@ -23,7 +25,7 @@ export default async function LegalPage({ kind }: { kind: LegalKind }) {
       <main className="legal-main">
         <h1>{doc.title}</h1>
         <p className="legal-intro">{doc.intro}</p>
-        <small className="muted">{L.updated}</small>
+        <small className="muted">{L.updated}{version && <> · {L.version.replace("{v}", version)}</>}</small>
         {doc.sections.map(s => (
           <section key={s.heading}>
             <h2>{s.heading}</h2>

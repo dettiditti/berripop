@@ -79,7 +79,7 @@ export { aiConfigured };
 
 const languageName = (locale: Locale) => (locale === "hu" ? "Hungarian" : "English");
 
-type AiError = "limit_ai" | "ai_unavailable";
+type AiError = "limit_ai" | "ai_unavailable" | "ai_consent_required";
 
 /** One metered AI call on the "assist" allowance; see lib/server/ai.ts. An empty response counts as unusable. */
 async function metered(userId: string, feature: string, instructions: string, prompt: string, maxOutputTokens: number): Promise<{ ok: true; text: string } | { ok: false; error: AiError }> {

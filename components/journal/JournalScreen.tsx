@@ -158,7 +158,7 @@ export default function JournalScreen({ account, today, notify, starter, onJourn
   const canUseInsights = !!state?.insightContext && state.insights.length > 0;
 
   const errorText = (e: JournalError) =>
-    e === "limit_ai" ? t(j.limitReached, { date: state ? date(state.usage.resets) : "" }) : e === "ai_unavailable" ? j.aiUnavailable : e === "invalid" ? j.tooShort : d.auth.error;
+    e === "limit_ai" ? t(j.limitReached, { date: state ? date(state.usage.resets) : "" }) : e === "ai_unavailable" ? j.aiUnavailable : e === "ai_consent_required" ? d.aiAssist.consentRequired : e === "invalid" ? j.tooShort : d.auth.error;
 
   const apply = (res: JournalResult<unknown>) => {
     if (res.ok) setState(res.state);

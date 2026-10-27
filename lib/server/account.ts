@@ -2,22 +2,24 @@ import "server-only";
 import { and, asc, desc, eq, inArray, ne } from "drizzle-orm";
 import { getDb } from "../db";
 import {
-  aiCalls, answers, circleMembers, circles, customQuestions, funnelEvents, growthGoals, growthSteps,
+  aiCalls, answers, circleMembers, circles, customQuestions, funnelEvents, growthGoals, growthSteps, legalRecords,
   pathAssessments, subscriptions, userAchievements, userActivity, userPrefs, users, userXpEvents, worldMoments,
 } from "../db/schema";
 import { deletionBlock, isDeleteConfirmation, type DeletionBlock } from "../account/policy";
 import { exportJournal } from "./journal";
 import { stopRenewal } from "./billing";
 import { getUserEntitlements } from "./entitlements";
+import { invoicesForUser } from "./invoicing";
 
 /*
  * Account data rights: export everything stored about the member, and delete
  * the account. Deletion removes the user row; foreign keys cascade to all
  * personal content (answers, journal, goals, steps, assessment, progress, inner-world moments, AI usage and
  * cost logs, circle memberships, the local subscription mirror). Funnel
- * events and circle activity keep no link to the person (set null). Stripe
- * keeps its own customer, invoice and payment records, as required for
- * accounting; nothing financial is stored only here.
+ * events and circle activity keep no link to the person (set null). Invoice
+ * records (`invoices`) are kept for accounting with the link set to null;
+ * Stripe and the invoicing software keep their own payment and invoice records.
+ * Terms and AI consent records (`legal_records`) are deleted with the account.
  */
 
 export type DeleteError = "unauthorized" | "confirmation" | DeletionBlock;
@@ -25,7 +27,7 @@ export type DeleteError = "unauthorized" | "confirmation" | DeletionBlock;
 /** Everything we store about the member, for download (their own data only). */
 export async function exportAccount(userId: string) {
   const db = getDb();
-  const [[user], [prefs], [sub], memberships, myAnswers, myQuestions, goals, steps, [assessment], journal, usage, events, activity, xp, badges, moments] = await Promise.all([
+  const [[user], [prefs], [sub], memberships, myAnswers, myQuestions, goals, steps, [assessment], journal, usage, events, activity, xp, badges, moments, legal, invoiceRows] = await Promise.all([
     db.select().from(users).where(eq(users.id, userId)).limit(1),
     db.select().from(userPrefs).where(eq(userPrefs.userId, userId)).limit(1),
     db.select().from(subscriptions).where(eq(subscriptions.userId, userId)).limit(1),
@@ -44,6 +46,8 @@ export async function exportAccount(userId: string) {
     db.select({ reason: userXpEvents.reason, amount: userXpEvents.amount, date: userXpEvents.date }).from(userXpEvents).where(eq(userXpEvents.userId, userId)).orderBy(asc(userXpEvents.createdAt)),
     db.select({ badge: userAchievements.achievementId, unlockedAt: userAchievements.unlockedAt }).from(userAchievements).where(eq(userAchievements.userId, userId)),
     db.select({ date: worldMoments.date, words: worldMoments.words, ownWords: worldMoments.ownWords, promptId: worldMoments.promptId, note: worldMoments.note, createdAt: worldMoments.createdAt }).from(worldMoments).where(eq(worldMoments.userId, userId)).orderBy(desc(worldMoments.createdAt)),
+    db.select({ kind: legalRecords.kind, version: legalRecords.version, granted: legalRecords.granted, createdAt: legalRecords.createdAt }).from(legalRecords).where(eq(legalRecords.userId, userId)).orderBy(desc(legalRecords.createdAt)),
+    invoicesForUser(userId),
   ]);
   return {
     exportedAt: new Date().toISOString(),
@@ -60,6 +64,8 @@ export async function exportAccount(userId: string) {
     productEvents: events,
     progress: { activity, xp, badges },
     innerWorldMoments: moments,
+    legalRecords: legal,
+    invoices: invoiceRows,
   };
 }
 

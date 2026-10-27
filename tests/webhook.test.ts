@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { planForLookupKey } from "../lib/billing/plans";
 import { shouldApplySubscription } from "../lib/billing/entitlements";
 import { snapshotFromStripe } from "../lib/billing/subscription";
-import { processStripeEvent, subscriptionIdFromEvent, type WebhookDeps } from "../lib/billing/webhook";
+import { processStripeEvent, subscriptionIdFromEvent, type ReversalEvent, type WebhookDeps } from "../lib/billing/webhook";
 
 const ev = (type: string, object: Record<string, unknown>, id = "evt_1", livemode = false) => ({ id, type, livemode, data: { object } }) as unknown as Stripe.Event;
 
@@ -153,5 +153,52 @@ describe("subscription ordering and mapping", () => {
     expect(planForLookupKey(snapshotFromStripe(withPrice("kozos_premium_plus_monthly_huf")).lookupKey)).toBe("premium_plus");
     expect(planForLookupKey(snapshotFromStripe(withPrice("kozos_premium_monthly_huf")).lookupKey)).toBe("premium");
     expect(planForLookupKey(snapshotFromStripe(withPrice("other")).lookupKey)).toBeNull();
+  });
+});
+
+describe("invoice jobs from webhook events", () => {
+  function invDeps() {
+    const d = deps();
+    const queued: string[] = [];
+    const reversals: ReversalEvent[] = [];
+    d.enqueueInvoice = async inv => { queued.push(inv.id as string); };
+    d.enqueueReversal = async r => { reversals.push(r); };
+    return Object.assign(d, { queued, reversals });
+  }
+  const paid = (id: string, amount: number, evt: string) => ev("invoice.paid", { id, amount_paid: amount, parent: { subscription_details: { subscription: "sub_1" } } }, evt);
+
+  it("queues one invoice per paid Stripe invoice, renewals included, and ignores redeliveries", async () => {
+    const d = invDeps();
+    await processStripeEvent(paid("in_1", 299000, "evt_a"), d);
+    await processStripeEvent(paid("in_1", 299000, "evt_a"), d);
+    await processStripeEvent(paid("in_2", 299000, "evt_b"), d);
+    expect(d.queued).toEqual(["in_1", "in_2"]);
+  });
+  it("queues nothing for zero amounts or failed payments", async () => {
+    const d = invDeps();
+    await processStripeEvent(paid("in_0", 0, "evt_c"), d);
+    await processStripeEvent(ev("invoice.payment_failed", { id: "in_3", amount_paid: 0, subscription: "sub_1" }, "evt_d"), d);
+    expect(d.queued).toEqual([]);
+    expect(d.synced).toEqual(["sub_1", "sub_1"]);
+  });
+  it("leaves the subscription active on period-end cancellation (sync only, no invoice action)", async () => {
+    const d = invDeps();
+    await processStripeEvent(ev("customer.subscription.updated", { id: "sub_1", cancel_at_period_end: true }, "evt_e"), d);
+    expect(d.ended).toEqual([]);
+    expect(d.queued).toEqual([]);
+    expect(d.reversals).toEqual([]);
+  });
+  it("hands full and partial refunds and lost disputes to the invoice side", async () => {
+    const d = invDeps();
+    await processStripeEvent(ev("charge.refunded", { id: "ch_1", refunded: true, amount_refunded: 299000, currency: "huf", payment_intent: "pi_sub" }, "evt_f"), d);
+    await processStripeEvent(ev("charge.refunded", { id: "ch_2", refunded: false, amount_refunded: 100000, currency: "huf", payment_intent: "pi_x" }, "evt_g"), d);
+    await processStripeEvent(ev("charge.dispute.closed", { id: "dp_1", status: "lost", amount: 299000, currency: "huf", payment_intent: "pi_y" }, "evt_h"), d);
+    await processStripeEvent(ev("charge.dispute.closed", { id: "dp_2", status: "won", amount: 299000, currency: "huf", payment_intent: "pi_z" }, "evt_i"), d);
+    expect(d.reversals.map(r => [r.reversalId, r.plan])).toEqual([
+      ["ch_1", { type: "refund", full: true }],
+      ["ch_2", { type: "refund", full: false }],
+      ["dp_1", { type: "dispute_lost" }],
+    ]);
+    expect(d.ended).toEqual(["sub_paid"]);
   });
 });

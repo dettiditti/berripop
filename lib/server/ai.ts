@@ -6,6 +6,7 @@ import { DEFAULT_AI_MODEL } from "../billing/plans";
 import { CURRENT_PRICE_LIST } from "../ai/prices";
 import { reasoningFor, runAiCall, type AiOutcome, type AiRequest, type GenerateFn } from "../ai/run";
 import { consumeAiAllowance, refundAiAllowance, type AiBucket } from "./entitlements";
+import { aiAllowedFor } from "./legal";
 
 /*
  * The single server-side entry point for AI calls. Credentials stay on the
@@ -56,6 +57,8 @@ export const defaultAiModel = () => process.env.AI_GATEWAY_MODEL || DEFAULT_AI_M
  */
 export async function runMeteredAi<T>(userId: string, bucket: AiBucket, req: Omit<AiRequest<T>, "model"> & { model?: string }): Promise<AiOutcome<T>> {
   if (!aiConfigured()) return { ok: false, error: "ai_unavailable", reason: "error" };
+  // Nothing reaches the AI provider without the member's current consent (when required).
+  if (!(await aiAllowedFor(userId))) return { ok: false, error: "ai_consent_required", reason: "error" };
   const now = new Date();
   return runAiCall({ ...req, model: req.model ?? defaultAiModel() }, {
     generate: testGenerator ?? gatewayGenerate,

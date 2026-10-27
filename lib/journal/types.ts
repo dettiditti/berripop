@@ -45,7 +45,7 @@ export type JournalState = {
   aiConfigured: boolean;
 };
 
-export type JournalError = "unauthorized" | "not_found" | "invalid" | "limit_ai" | "ai_unavailable" | "premium_required";
+export type JournalError = "unauthorized" | "not_found" | "invalid" | "limit_ai" | "ai_unavailable" | "ai_consent_required" | "premium_required";
 
 export type JournalResult<T = undefined> = { ok: true; state: JournalState; data?: T } | { ok: false; error: JournalError };
 

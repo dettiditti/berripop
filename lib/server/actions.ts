@@ -13,6 +13,7 @@ import * as assessment from "./assessment";
 import * as billing from "./billing";
 import * as growth from "./growth";
 import * as journal from "./journal";
+import * as legal from "./legal";
 import type { JournalResult } from "../journal/types";
 import * as goalJourney from "./goalJourney";
 import * as personal from "./personal";
@@ -409,6 +410,27 @@ export async function setPathStepDoneAction(stepId: string, done: boolean): Prom
   const userId = await requireUserId();
   if (!userId) return noUser;
   return assessment.setStepDone(userId, stepId, done === true);
+}
+
+/* ---------- Terms acceptance and AI consent ---------- */
+
+export async function getLegalStatusAction(): Promise<legal.LegalStatus | null> {
+  const userId = await requireUserId();
+  if (!userId) return null;
+  return legal.getLegalStatus(userId);
+}
+
+/** The client sends the Terms version it showed; a stale one is refused. */
+export async function acceptTermsAction(version: string) {
+  const userId = await requireUserId();
+  if (!userId) return { ok: false as const, error: "unauthorized" as const };
+  return legal.acceptTerms(userId, String(version));
+}
+
+export async function setAiConsentAction(granted: boolean, version: string) {
+  const userId = await requireUserId();
+  if (!userId) return { ok: false as const, error: "unauthorized" as const };
+  return legal.setAiConsent(userId, granted === true, String(version));
 }
 
 /* ---------- Account: export and deletion ---------- */

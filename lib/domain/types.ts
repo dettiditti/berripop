@@ -210,4 +210,5 @@ export type ActionError =
   | "premium_required"
   | "already_premium"
   | "billing_unavailable"
-  | "ai_unavailable";
+  | "ai_unavailable"
+  | "ai_consent_required";

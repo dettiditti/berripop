@@ -69,6 +69,7 @@ function AiFollowUp({ ai, draft, onUse }: { ai: NonNullable<Props["ai"]>; draft:
       ) : null}
       {!reached && <small className="muted">{plural(a.remaining, usage.remaining)} · {a.disclosure}</small>}
       {error === "ai_unavailable" && <small className="field-hint">{a.unavailable}</small>}
+      {error === "ai_consent_required" && <small className="field-hint">{a.consentRequired}</small>}
       {reached && (
         <>
           <small className="muted">{t(d.billing.prompts.ai.body, { date: date(usage.resets), n: PLAN_LIMITS.premium.aiPerPeriod })}</small>

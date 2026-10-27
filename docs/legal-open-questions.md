@@ -95,3 +95,11 @@ kérdéseket nem lehetett a projektből eldönteni; a szöveget ezek lezárása 
 - Stripe: árak és csomagok a `lib/billing/plans.ts` szerint; lemondás az időszak végén, csomagváltás időarányos különbözettel (`scripts/stripe-setup.ts`).
 - Sütik és localStorage: `kozos-locale` süti (1 év), Clerk-sütik; localStorage-kulcsok a Cookie-tájékoztató szerint. Vercel Web Analytics süti nélkül.
 - A `tests/legal.test.ts` ellenőrzi, hogy nincs helyőrző, a két nyelv szerkezete egyezik, és az árak és az ingyenes keretek egyeznek a kóddal.
+
+## Frissítés (2026. október 27., még nem élesített kód)
+
+- **Jogász 1. (AI jogalap):** a kód mostantól külön, visszavonható AI-hozzájárulást kér (`AI_CONSENT_MODE`, alapból kötelező), a tájékoztató ezt jelöli jogalapnak. A szöveg jogászi jóváhagyásra vár.
+- **Jogász 2. (elállás):** továbbra is nyitott; a lemondó nyilatkozat nincs bekapcsolva, a szöveg csak annyit mond, hogy a fizetős funkciók azonnal elérhetők.
+- **Jogász 3. (panasz):** panaszkezelési szakasz került a feltételekbe (e-mail, posta), határidő és békéltető testület nélkül.
+- **Jogász 5. (elfogadás):** az alkalmazás az első használat előtt és verzióváltáskor kéri a feltételek elfogadását, verzióval és időponttal rögzítve.
+- **Könyvelő 1–3.:** a Számlázz.hu-integráció el van halasztva. Minden fizetésről kézi számlázási teendő keletkezik; a számlát kézzel kell kiállítani. A Stripe-bizonylatokat nem tekintjük számlának. A kézi folyamatot és az adókezelést a könyvelőnek kell megerősítenie. Részletek: `docs/production-readiness.md`.

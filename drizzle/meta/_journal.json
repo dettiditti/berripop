@@ -50,6 +50,13 @@
       "when": 1793021437395,
       "tag": "0006_goal_journeys",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793096195394,
+      "tag": "0007_legal_and_invoicing",
+      "breakpoints": true
     }
   ]
 }

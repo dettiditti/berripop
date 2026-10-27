@@ -23,6 +23,7 @@ export default function WeeklySummaryCard({ account, circleId, notify }: { accou
     if (r.error === "invalid") notify(a.summaryEmpty);
     else if (r.error === "limit_ai") notify(t(d.billing.prompts.ai.title));
     else if (r.error === "premium_required") notify(d.billing.prompts.summary.title);
+    else if (r.error === "ai_consent_required") notify(d.aiAssist.consentRequired);
     else notify(a.unavailable);
   }
 

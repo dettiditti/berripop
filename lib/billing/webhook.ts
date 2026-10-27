@@ -17,6 +17,21 @@ export type WebhookDeps = {
   subscriptionForPayment: (paymentIntentId: string) => Promise<string | null>;
   /** Cancels the subscription at Stripe right away, then stores it. */
   endSubscription: (subscriptionId: string) => Promise<void>;
+  /** Queues the invoice for a paid Stripe invoice (lib/server/invoicing.ts). */
+  enqueueInvoice?: (invoice: Record<string, unknown>, subscriptionId: string | null) => Promise<void>;
+  /** Queues a storno or correction for a refund or lost dispute. */
+  enqueueReversal?: (reversal: ReversalEvent) => Promise<void>;
+};
+
+export type ReversalEvent = {
+  eventId: string;
+  paymentIntentId: string | null;
+  /** Charge id (refunds) or dispute id. */
+  reversalId: string;
+  /** Minor units: the amount refunded so far, or the disputed amount. */
+  amount: number;
+  currency: string;
+  plan: { type: "refund"; full: boolean } | { type: "dispute_lost" };
 };
 
 export const HANDLED_EVENTS = new Set([
@@ -66,6 +81,15 @@ export function paymentTakenBack(event: Stripe.Event): string | null {
   return taken ? idOf(obj.payment_intent as IdOrObject) : null;
 }
 
+/** Any refund (full or partial) and any dispute we lost; the invoice side decides what to issue. */
+export function reversalFromEvent(event: Stripe.Event): ReversalEvent | null {
+  const obj = event.data.object as unknown as Record<string, unknown>;
+  const base = { eventId: event.id, paymentIntentId: idOf(obj.payment_intent as IdOrObject), reversalId: obj.id as string, currency: String(obj.currency ?? "").toLowerCase() };
+  if (event.type === "charge.refunded") return { ...base, amount: Number(obj.amount_refunded ?? 0), plan: { type: "refund", full: obj.refunded === true } };
+  if (event.type === "charge.dispute.closed" && obj.status === "lost") return { ...base, amount: Number(obj.amount ?? 0), plan: { type: "dispute_lost" } };
+  return null;
+}
+
 export type WebhookOutcome = "processed" | "duplicate" | "ignored";
 
 export async function processStripeEvent(event: Stripe.Event, deps: WebhookDeps): Promise<WebhookOutcome> {
@@ -77,10 +101,16 @@ export async function processStripeEvent(event: Stripe.Event, deps: WebhookDeps)
       const paymentIntent = paymentTakenBack(event);
       const subId = paymentIntent ? await deps.subscriptionForPayment(paymentIntent) : null;
       if (subId) await deps.endSubscription(subId);
+      const reversal = reversalFromEvent(event);
+      if (reversal && deps.enqueueReversal) await deps.enqueueReversal(reversal);
       return "processed";
     }
     const subId = subscriptionIdFromEvent(event);
     if (subId) await deps.syncSubscription(subId);
+    if (event.type === "invoice.paid" && deps.enqueueInvoice) {
+      const invoice = event.data.object as unknown as Record<string, unknown>;
+      if (Number(invoice.amount_paid ?? 0) > 0) await deps.enqueueInvoice(invoice, subId);
+    }
     return "processed";
   } catch (err) {
     await deps.release(event.id);

@@ -41,7 +41,7 @@ export default function AssessmentFlow({ state, account, onState, onFinished }: 
   const autoAsked = useRef(false);
 
   const errorText = (e: AssessmentError) =>
-    e === "ai_unavailable" ? a.errors.ai : e === "limit_ai" ? a.errors.limitAi : e === "limit_assessment" ? a.errors.limitAssessment
+    e === "ai_unavailable" ? a.errors.ai : e === "ai_consent_required" ? d.aiAssist.consentRequired : e === "limit_ai" ? a.errors.limitAi : e === "limit_assessment" ? a.errors.limitAssessment
       : e === "limit_goals" ? a.errors.limitGoals : e === "busy" ? a.errors.busy : a.errors.generic;
 
   async function call(kind: NonNullable<typeof busy>, p: Promise<AssessmentResult>): Promise<AssessmentState | null> {

@@ -60,7 +60,7 @@ export default function UpgradePrompt({ kind, vars = {}, force = false }: { kind
         window.location.href = r.url;
         return;
       }
-      setError(r.error === "already_premium" ? d.billing.alreadyPremium : r.error === "billing_unavailable" ? d.billing.unavailable : d.billing.checkoutError);
+      setError(r.error === "already_premium" ? d.billing.alreadyPremium : r.error === "billing_unavailable" || r.error === "sales_unavailable" ? d.billing.unavailable : d.billing.checkoutError);
     } catch {
       setError(d.billing.checkoutError);
     }

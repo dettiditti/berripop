@@ -26,6 +26,7 @@ export function useRun(setSnapshot: (s: Snapshot) => void, notify: (m: string) =
           premium_required: d.billing.prompts.summary.title,
           billing_unavailable: d.billing.unavailable,
           ai_unavailable: d.aiAssist.unavailable,
+          ai_consent_required: d.aiAssist.consentRequired,
         };
         notify(messages[e] ?? d.auth.error);
       } catch {

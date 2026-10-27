@@ -5,18 +5,22 @@ import { getDb } from "../db";
 import { stripeEvents, subscriptions, users } from "../db/schema";
 import { entitlementsFrom, shouldApplySubscription, type Entitlements } from "../billing/entitlements";
 import { isPaidPlan, planForLookupKey, priceFor, type BillingInterval, type PaidPlanId } from "../billing/plans";
+import { salesConfig, salesProblems } from "../billing/sales";
+import { LEGAL_VERSIONS } from "../legal/records";
 import { getStripe, isTestMode } from "../billing/stripe";
 import { snapshotFromStripe, type SubscriptionSnapshot } from "../billing/subscription";
 import { processStripeEvent, subscriptionIdFromInvoice } from "../billing/webhook";
 import { track } from "./analytics";
 import { getUserEntitlements } from "./entitlements";
+import { enqueueInvoice, enqueueReversal } from "./invoicing";
+import { recordCheckoutDisclosure } from "./legal";
 
 /*
  * Billing service. Subscription state is only ever written from data read
  * from Stripe's API on the server, never from a client value or a success URL.
  */
 
-export type BillingError = "billing_unavailable" | "already_premium" | "no_customer" | "not_found" | "invalid" | "not_subscribed" | "plan_change_unavailable";
+export type BillingError = "billing_unavailable" | "sales_unavailable" | "already_premium" | "no_customer" | "not_found" | "invalid" | "not_subscribed" | "plan_change_unavailable";
 
 async function ensureCustomer(stripe: Stripe, userId: string, email?: string | null): Promise<string> {
   const db = getDb();
@@ -50,6 +54,8 @@ export async function createCheckoutSession(
 ): Promise<{ ok: true; url: string } | { ok: false; error: BillingError }> {
   const stripe = getStripe();
   if (!stripe) return { ok: false, error: "billing_unavailable" };
+  // No sale outside the enabled billing countries (lib/billing/sales.ts); invoicing is manual and does not block checkout.
+  if (salesProblems(salesConfig(process.env)).length) return { ok: false, error: "sales_unavailable" };
   const ent = await getUserEntitlements(userId);
   if (!priceFor(plan, interval)) return { ok: false, error: "invalid" };
   if (isPaidPlan(ent.plan)) return { ok: false, error: "already_premium" };
@@ -61,11 +67,16 @@ export async function createCheckoutSession(
     customer,
     client_reference_id: userId,
     line_items: [{ price: priceId, quantity: 1 }],
-    subscription_data: { metadata: { userId } },
+    // The invoice needs the buyer's name and address; Stripe keeps them on the customer for renewals.
+    billing_address_collection: "required",
+    customer_update: { address: "auto", name: "auto" },
+    metadata: { userId, disclosureVersion: LEGAL_VERSIONS.checkoutDisclosure },
+    subscription_data: { metadata: { userId, disclosureVersion: LEGAL_VERSIONS.checkoutDisclosure } },
     locale: opts.locale ?? "hu",
     success_url: `${origin}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/billing/canceled`,
   });
+  await recordCheckoutDisclosure(userId, session.id);
   await track(userId, "checkout_started", { plan, interval });
   if (!session.url) return { ok: false, error: "billing_unavailable" };
   return { ok: true, url: session.url };
@@ -216,6 +227,13 @@ export async function stopRenewal(userId: string): Promise<void> {
   }
 }
 
+/** The Stripe invoice a PaymentIntent paid, if any. */
+async function invoiceForPayment(stripe: Stripe, paymentIntent: string): Promise<Stripe.Invoice | null> {
+  const list = await stripe.invoicePayments.list({ payment: { type: "payment_intent", payment_intent: paymentIntent }, limit: 1, expand: ["data.invoice"] });
+  const invoice = list.data[0]?.invoice;
+  return invoice && typeof invoice !== "string" ? (invoice as Stripe.Invoice) : null;
+}
+
 /** Verifies the signature, then processes the event idempotently. */
 export async function handleWebhook(rawBody: string, signature: string | null): Promise<{ status: number; body: string }> {
   const stripe = getStripe();
@@ -236,9 +254,13 @@ export async function handleWebhook(rawBody: string, signature: string | null): 
       syncSubscription: syncSubscriptionFromStripe,
       livemode: !isTestMode(),
       subscriptionForPayment: async paymentIntent => {
-        const list = await stripe.invoicePayments.list({ payment: { type: "payment_intent", payment_intent: paymentIntent }, limit: 1, expand: ["data.invoice"] });
-        const invoice = list.data[0]?.invoice;
-        return invoice && typeof invoice !== "string" ? subscriptionIdFromInvoice(invoice as unknown as Record<string, unknown>) : null;
+        const invoice = await invoiceForPayment(stripe, paymentIntent);
+        return invoice ? subscriptionIdFromInvoice(invoice as unknown as Record<string, unknown>) : null;
+      },
+      enqueueInvoice,
+      enqueueReversal: async reversal => {
+        const invoice = reversal.paymentIntentId ? await invoiceForPayment(stripe, reversal.paymentIntentId) : null;
+        await enqueueReversal(reversal, invoice?.id ?? null);
       },
       endSubscription: async subscriptionId => {
         const sub = await stripe.subscriptions.retrieve(subscriptionId);

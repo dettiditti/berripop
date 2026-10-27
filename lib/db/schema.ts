@@ -394,3 +394,74 @@ export const goalJourneys = pgTable("goal_journeys", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   archivedAt: timestamp("archived_at", { withTimezone: true }),
 }, t => [uniqueIndex("goal_journeys_active_idx").on(t.userId).where(sql`${t.archivedAt} is null`)]);
+
+/* ---------- Legal records ---------- */
+
+/**
+ * Append-only log of what a member accepted, consented to or was shown, per
+ * document type and version. The current state is the latest row per kind;
+ * a withdrawal is a row with `granted` false. Kinds: "terms" (mandatory
+ * Terms of Service acceptance), "ai_processing" (optional consent to AI
+ * processing), "checkout_disclosure" (the pre-payment notice shown when a
+ * checkout starts; `context` holds the Checkout Session id).
+ */
+export const legalRecords = pgTable("legal_records", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  kind: text("kind").notNull(),
+  version: text("version").notNull(),
+  granted: boolean("granted").notNull(),
+  context: text("context"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [index("legal_records_user_kind_idx").on(t.userId, t.kind, t.createdAt)]);
+
+/* ---------- Hungarian invoicing ---------- */
+
+/**
+ * One row per invoicing operation (issue, reverse, or a correction needing an
+ * operator), keyed by a unique `operation_key` derived from Stripe ids, so a
+ * repeated webhook never creates a second invoice. Doubles as the durable job:
+ * `status` moves pending → processing → issued, or to failed / needs_review.
+ * Financial records outlive the account (`user_id` set null on deletion).
+ * Buyer details are read from Stripe when the invoice is issued, not stored
+ * here; card data never is.
+ */
+export const invoices = pgTable("invoices", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  operationKey: text("operation_key").notNull(),
+  /** "invoice" | "storno" | "correction" */
+  kind: text("kind").notNull(),
+  userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeInvoiceId: text("stripe_invoice_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  stripePaymentIntentId: text("stripe_payment_intent_id"),
+  /** Refund or dispute id for storno and correction rows. */
+  stripeReversalId: text("stripe_reversal_id"),
+  /** Minor units, as Stripe reports them (HUF × 100). */
+  amount: integer("amount").notNull(),
+  currency: text("currency").notNull(),
+  /** The approved VAT key used (e.g. "AAM"), recorded when issued. */
+  vatKey: text("vat_key"),
+  /** For storno and correction rows: the invoice row they correct. */
+  originalInvoiceId: uuid("original_invoice_id"),
+  status: text("status").notNull().default("pending"),
+  attempts: integer("attempts").notNull().default(0),
+  /** Sanitised reason (error code and short text, never buyer data). */
+  lastError: text("last_error"),
+  nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }).notNull().defaultNow(),
+  lockedUntil: timestamp("locked_until", { withTimezone: true }),
+  /** Stable external id for this operation (reserved for a later invoicing integration). */
+  providerExternalId: text("provider_external_id").notNull(),
+  /** Number of the invoice (or storno / correction) the operator issued by hand. */
+  providerInvoiceNumber: text("provider_invoice_number"),
+  issuedAt: timestamp("issued_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [
+  uniqueIndex("invoices_operation_key_idx").on(t.operationKey),
+  uniqueIndex("invoices_external_id_idx").on(t.providerExternalId),
+  index("invoices_status_idx").on(t.status, t.nextAttemptAt),
+  index("invoices_stripe_invoice_idx").on(t.stripeInvoiceId),
+  index("invoices_user_idx").on(t.userId),
+]);

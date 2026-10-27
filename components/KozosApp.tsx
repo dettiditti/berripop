@@ -11,7 +11,7 @@ import { isLocale } from "@/lib/i18n/config";
 import type { AssessmentState } from "@/lib/assessment/types";
 import type { JournalState } from "@/lib/journal/types";
 import {
-  aiFollowUpAction, appOpenedAction, buildGoalJourneyAction, getAssessmentAction, getJournalAction, getSnapshotAction, importMomentsAction, saveAnswerAction,
+  aiFollowUpAction, appOpenedAction, buildGoalJourneyAction, getAssessmentAction, getJournalAction, getLegalStatusAction, getSnapshotAction, importMomentsAction, saveAnswerAction,
   savePersonalAnswerAction, shareAnswerAction,
 } from "@/lib/server/actions";
 import { clearDeviceMoments, readDeviceMoments } from "@/lib/store";
@@ -24,6 +24,7 @@ import { InviteModal, QuestionComposer, Toast } from "./Modals";
 import Onboarding from "./Onboarding";
 import QuestFlow, { type Draft } from "./QuestFlow";
 import QuestionDetail from "./QuestionDetail";
+import TermsGate from "./TermsGate";
 import Welcome from "./Welcome";
 import CircleScreen from "./screens/CircleScreen";
 import ExploreScreen from "./screens/ExploreScreen";
@@ -64,14 +65,17 @@ function SignedInApp() {
   const { d, locale } = useI18n();
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [failed, setFailed] = useState(false);
+  const [terms, setTerms] = useState<{ state: string; version: string } | null>(null);
   const localeApplied = useRef(false);
 
   const load = useCallback(async () => {
     setFailed(false);
     try {
-      const r = await getSnapshotAction();
-      if (r.ok) setSnapshot(r.snapshot);
-      else setFailed(true);
+      const [r, legal] = await Promise.all([getSnapshotAction(), getLegalStatusAction()]);
+      if (r.ok && legal) {
+        setSnapshot(r.snapshot);
+        setTerms({ state: legal.terms, version: legal.termsVersion });
+      } else setFailed(true);
     } catch {
       setFailed(true);
     }
@@ -99,7 +103,10 @@ function SignedInApp() {
       </div>
     );
   }
-  if (!snapshot) return <Splash label={d.auth.loadingData} />;
+  if (!snapshot || !terms) return <Splash label={d.auth.loadingData} />;
+  if (terms.state !== "granted") {
+    return <TermsGate version={terms.version} updated={terms.state === "outdated"} onAccepted={() => setTerms({ ...terms, state: "granted" })} />;
+  }
   if (!snapshot.circle && !snapshot.me.personalPath) return <Onboarding onSnapshot={setSnapshot} />;
   return <AppShell snapshot={snapshot} setSnapshot={setSnapshot} />;
 }
