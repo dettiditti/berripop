@@ -1,4 +1,4 @@
-import type { InsightKind, ParsedWeekly } from "./reflection";
+import type { InsightKind, ParsedWeekly, SupportMode } from "./reflection";
 
 /** Journal data is loaded separately from circle data and only ever for its owner. */
 
@@ -18,6 +18,8 @@ export type JournalReflectionDTO = {
   strength: string | null;
   explore: string;
   nextStep: string | null;
+  alternatives: string[];
+  mode: SupportMode | null;
   suggestion: { kind: InsightKind; text: string; goalId: string | null } | null;
   feedback: "helpful" | "not_helpful" | null;
   correction: string | null;

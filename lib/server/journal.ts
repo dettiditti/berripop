@@ -6,7 +6,7 @@ import { grantGrowthXp } from "./progress";
 import { circleToday } from "../domain/rules";
 import { dictionaries } from "../i18n/dictionaries";
 import { isLocale, type Locale } from "../i18n/config";
-import { INSIGHT_KINDS, parseReflection, parseWeekly, type InsightKind } from "../journal/reflection";
+import { INSIGHT_KINDS, isSupportMode, parseReflection, parseWeekly, type InsightKind, type SupportMode } from "../journal/reflection";
 import type { JournalError, JournalReflectionDTO, JournalResult, JournalState, WeeklyJournalDTO } from "../journal/types";
 import { track } from "./analytics";
 import { aiConfigured, runMeteredAi } from "./ai";
@@ -52,6 +52,8 @@ function toReflectionDTO(r: typeof journalReflections.$inferSelect): JournalRefl
     strength: r.strength,
     explore: r.explore,
     nextStep: r.nextStep,
+    alternatives: Array.isArray(r.alternatives) ? r.alternatives : [],
+    mode: isSupportMode(r.mode) ? r.mode : null,
     suggestion: kind && r.suggestionText ? { kind, text: r.suggestionText, goalId: r.suggestionGoalId } : null,
     feedback: r.feedback,
     correction: r.correction,
@@ -112,9 +114,10 @@ async function runAi<T>(userId: string, feature: string, instructions: string, p
  * Reflects on one saved entry, only when the owner asks. Context is minimal:
  * this entry and the owner's active goal titles. Saved insights are added only
  * when the owner ticks the opt-in for this request (Premium). Other entries are
- * never included.
+ * never included. `mode` is the support the owner asked for (default: reflect).
  */
-export async function reflectOnEntry(userId: string, entryId: string, localeInput: string, useInsights = false): Promise<JournalResult<string>> {
+export async function reflectOnEntry(userId: string, entryId: string, localeInput: string, useInsights = false, modeInput: unknown = "reflect"): Promise<JournalResult<string>> {
+  const mode: SupportMode = isSupportMode(modeInput) ? modeInput : "reflect";
   const entry = await ownEntry(userId, entryId);
   if (!entry) return fail("not_found");
   if (entry.status !== "saved" || entry.body.trim().length < 3) return fail("invalid");
@@ -131,7 +134,8 @@ export async function reflectOnEntry(userId: string, entryId: string, localeInpu
     `Journal entry:\n${entry.body}`,
   ].filter(Boolean).join("\n\n");
 
-  const out = await runAi(userId, "journal_reflection", dictionaries[locale].journal.ai.reflectInstructions, prompt, 1000, text => parseReflection(text, goals.map(g => g.id)));
+  const ai = dictionaries[locale].journal.ai;
+  const out = await runAi(userId, "journal_reflection", `${ai.reflectInstructions} ${ai.modes[mode]}`, prompt, 1000, text => parseReflection(text, goals.map(g => g.id)));
   if (!out.ok) return fail(out.error);
   const parsed = out.value;
   const firstReflection = (await db.select({ id: journalReflections.id }).from(journalReflections).where(eq(journalReflections.userId, userId)).limit(1)).length === 0;
@@ -142,6 +146,8 @@ export async function reflectOnEntry(userId: string, entryId: string, localeInpu
     strength: parsed.strength,
     explore: parsed.explore,
     nextStep: parsed.nextStep,
+    alternatives: parsed.alternatives,
+    mode,
     suggestionKind: parsed.suggestion?.kind ?? null,
     suggestionText: parsed.suggestion?.text ?? null,
     suggestionGoalId: parsed.suggestion?.goalId ?? null,

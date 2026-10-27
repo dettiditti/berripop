@@ -255,6 +255,10 @@ export const journalReflections = pgTable("journal_reflections", {
   strength: text("strength"),
   explore: text("explore").notNull(),
   nextStep: text("next_step"),
+  /** Other possible readings, phrased as possibilities. */
+  alternatives: jsonb("alternatives").$type<string[]>().notNull().default([]),
+  /** The support mode the person chose for this reflection (listen | reflect | practical). */
+  mode: text("mode"),
   /** Optional suggested link to a growth goal; nothing is saved from it without confirmation. */
   suggestionKind: text("suggestion_kind"),
   suggestionText: text("suggestion_text"),

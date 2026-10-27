@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Download, Lock, PenLine, Sparkles, ThumbsDown, ThumbsUp, Trash2, X } from "lucide-react";
 import { PLAN_LIMITS } from "@/lib/billing/plans";
+import { SUPPORT_MODES, type SupportMode } from "@/lib/journal/reflection";
 import type { JournalEntryDTO, JournalError, JournalReflectionDTO, JournalResult, JournalState, WeeklyJournalDTO } from "@/lib/journal/types";
 import { useI18n } from "@/lib/i18n/client";
 import { useAiConsent } from "../AiConsent";
@@ -17,6 +18,24 @@ import { Confirm } from "../Modals";
 import type { AccountDTO } from "@/lib/domain/types";
 import InsightsSection from "./InsightsSection";
 import JournalEditor from "./JournalEditor";
+
+/** How Berripop should help with this entry: listen, think it through together, or a practical idea (per request). */
+export function SupportModePicker({ value, onChange }: { value: SupportMode; onChange: (m: SupportMode) => void }) {
+  const { d } = useI18n();
+  const m = d.journal.supportMode;
+  return (
+    <fieldset className="support-mode">
+      <legend className="field-label">{m.label}</legend>
+      <div className="chip-row" role="radiogroup">
+        {SUPPORT_MODES.map(id => (
+          <button key={id} type="button" role="radio" aria-checked={value === id} className={`chip ${value === id ? "is-active" : ""}`} onClick={() => onChange(id)}>
+            {m.options[id]}
+          </button>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
 
 /** Opt-in checkbox shown next to AI requests when the plan allows insight context and there are insights. */
 export function UseInsightsToggle({ id, checked, onChange }: { id: string; checked: boolean; onChange: (v: boolean) => void }) {
@@ -55,6 +74,9 @@ function ReflectionCard({ r, goals, onResult, notify }: { r: JournalReflectionDT
       <div className="reflection-part"><span>{j.reflection.noticed}</span><p>{r.noticed}</p></div>
       {r.strength && <div className="reflection-part"><span>{j.reflection.strength}</span><p>{r.strength}</p></div>}
       <div className="reflection-part"><span>{j.reflection.explore}</span><p>{r.explore}</p></div>
+      {r.alternatives.length > 0 && (
+        <div className="reflection-part"><span>{j.reflection.alternatives}</span><ul className="reflection-list">{r.alternatives.map(a => <li key={a}>{a}</li>)}</ul></div>
+      )}
       {r.nextStep && <div className="reflection-part"><span>{j.reflection.nextStep}</span><p>{r.nextStep}</p></div>}
 
       {r.suggestion && !dismissed && (
@@ -121,6 +143,7 @@ export default function JournalScreen({ account, today, notify, starter, onJourn
   const [hiddenProposals, setHiddenProposals] = useState<string[]>([]);
   // Per-request opt-in for sending saved insights to the AI; always starts off.
   const [useInsights, setUseInsights] = useState(false);
+  const [mode, setMode] = useState<SupportMode>("reflect");
   const goals = account.goals.filter(g => g.status === "active");
 
   const load = useCallback(async () => {
@@ -173,7 +196,7 @@ export default function JournalScreen({ account, today, notify, starter, onJourn
     setStarterBody(undefined);
     setOpenEntry(entryId);
     setReflecting(entryId);
-    const res = await withAiConsent(() => reflectOnEntryAction(entryId, withInsights && canUseInsights)).catch(() => undefined);
+    const res = await withAiConsent(() => reflectOnEntryAction(entryId, withInsights && canUseInsights, mode)).catch(() => undefined);
     setUseInsights(false);
     setReflecting(null);
     if (res === undefined) notify(d.auth.error);
@@ -252,6 +275,7 @@ export default function JournalScreen({ account, today, notify, starter, onJourn
             )}
             <Confirm label={j.delete} icon={<Trash2 size={13} />} question={j.deleteConfirm} yes={j.deleteYes} onConfirm={async () => { if (apply(await deleteJournalEntryAction(open.id))) { setOpenEntry(null); notify(j.deleted); } }} />
           </div>
+          {open.status === "saved" && state.aiConfigured && !state.usage.reached && <SupportModePicker value={mode} onChange={setMode} />}
           {open.status === "saved" && state.aiConfigured && !state.usage.reached && canUseInsights && (
             <UseInsightsToggle id={`use-insights-${open.id}`} checked={useInsights} onChange={setUseInsights} />
           )}
@@ -344,7 +368,7 @@ export default function JournalScreen({ account, today, notify, starter, onJourn
           onState={setState}
           onClose={() => { setEditing(null); setStarterBody(undefined); }}
           onReflect={entryId => reflect(entryId)}
-          insightToggle={canUseInsights ? <UseInsightsToggle id="use-insights-editor" checked={useInsights} onChange={setUseInsights} /> : null}
+          insightToggle={<><SupportModePicker value={mode} onChange={setMode} />{canUseInsights && <UseInsightsToggle id="use-insights-editor" checked={useInsights} onChange={setUseInsights} />}</>}
         />
       )}
     </div>

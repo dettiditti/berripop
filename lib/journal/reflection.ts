@@ -7,6 +7,14 @@
 export type InsightKind = "theme" | "question" | "exercise" | "quest";
 export const INSIGHT_KINDS: InsightKind[] = ["theme", "question", "exercise", "quest"];
 
+/**
+ * How the person wants to be helped with this entry, chosen per request:
+ * listen (be heard), reflect (think it through together), practical (one small idea).
+ */
+export type SupportMode = "listen" | "reflect" | "practical";
+export const SUPPORT_MODES: SupportMode[] = ["listen", "reflect", "practical"];
+export const isSupportMode = (v: unknown): v is SupportMode => SUPPORT_MODES.includes(v as SupportMode);
+
 export type ReflectionSuggestion = { kind: InsightKind; text: string; goalId: string | null };
 
 export type ParsedReflection = {
@@ -14,6 +22,8 @@ export type ParsedReflection = {
   strength: string | null;
   explore: string;
   nextStep: string | null;
+  /** Other possible readings of the situation, always phrased as possibilities (0–3). */
+  alternatives: string[];
   suggestion: ReflectionSuggestion | null;
 };
 
@@ -60,7 +70,8 @@ export function parseReflection(raw: string, goalIds: string[]): ParsedReflectio
     const goalId = typeof s.goalId === "string" && goalIds.includes(s.goalId) ? s.goalId : null;
     if (kind && text) suggestion = { kind, text, goalId };
   }
-  return { noticed, strength: clip(obj.strength, 400), explore, nextStep: clip(obj.nextStep, 300), suggestion };
+  const alternatives = (Array.isArray(obj.alternatives) ? obj.alternatives : []).map(x => clip(x, 250)).filter((x): x is string => !!x).slice(0, 3);
+  return { noticed, strength: clip(obj.strength, 400), explore, nextStep: clip(obj.nextStep, 300), alternatives, suggestion };
 }
 
 export function parseWeekly(raw: string): ParsedWeekly | null {
