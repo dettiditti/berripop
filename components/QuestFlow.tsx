@@ -30,7 +30,7 @@ type Props = {
   onClose: () => void;
   onSave: (d: Draft, share: boolean) => Promise<void>;
   /** AI follow-up suggestions (metered on the server). */
-  ai?: { account: AccountDTO; ask: (draft: string) => Promise<{ question: string } | { error: string }> };
+  ai?: { account: AccountDTO; ask: (draft: string) => Promise<{ question: string } | { error: string } | null> };
 };
 
 /** Optional "Ask Berripop" follow-up. Never required; reaching the allowance never blocks writing. */
@@ -49,6 +49,7 @@ function AiFollowUp({ ai, draft, onUse }: { ai: NonNullable<Props["ai"]>; draft:
     setError(null);
     const r = await ai.ask(draft);
     setBusy(false);
+    if (!r) return; // consent declined: nothing was sent
     if ("question" in r) setSuggestion(r.question);
     else setError(r.error);
   }

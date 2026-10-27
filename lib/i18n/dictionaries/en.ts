@@ -304,7 +304,7 @@ export const en = {
     button: "Ask Berripop for a follow-up",
     working: "Berripop is thinking…",
     remaining: pl("{n} left this week", "{n} left this week"),
-    consentRequired: "AI features need your consent to AI processing first. You can give it in Settings, under “AI features”.",
+    consentRequired: "AI help needs your consent. Ask for the feature again to give it there, or do it in Settings, under “AI features”.",
     disclosure: "To suggest a question, your draft is sent to our AI provider (OpenAI). It isn't stored and isn't shared with your circle.",
     result: "Berripop asks:",
     use: "Use this",
@@ -1394,9 +1394,21 @@ export const en = {
   },
 
   legalGate: {
-    title: "Before you continue",
-    intro: "To use Berripop, please accept the Terms of Use.",
-    updated: "We've updated the Terms of Use. Please accept the new version to continue.",
+    onboarding: {
+      title: "Before we set off 💜",
+      body: "A few shared rules so we can grow together safely and happily. Read the Terms, and accept them if they look good to you.",
+      accept: "Sounds good, let's start!",
+    },
+    update: {
+      title: "A quick update to our shared rules 💜",
+      body: "We've updated Berripop's Terms of Use. Read them and accept them so we can keep going together!",
+      accept: "Got it, let's continue!",
+    },
+    checkout: {
+      title: "One more quick step 💜",
+      body: "Please accept Berripop's Terms of Use before subscribing. We'll take you straight on to payment afterwards.",
+      accept: "Accept and continue to payment",
+    },
     checkboxBefore: "I have read and accept the ",
     termsLink: "Terms of Use",
     checkboxAfter: ".",
@@ -1404,9 +1416,22 @@ export const en = {
     privacyLink: "Privacy Policy",
     privacyAfter: ".",
     version: "Terms version: {v}",
-    accept: "Accept and continue",
     error: "Couldn't save. Please try again.",
     outdated: "The text was updated meanwhile. Please reload the page.",
+  },
+
+  aiConsentDialog: {
+    title: "Can Berripop help? 💜",
+    body: "This feature uses artificial intelligence. Before we send anything, we ask for your permission.",
+    points: [
+      "We only send text when you ask for an AI feature: the journal entry, answer, assessment answers or goals you want help with.",
+      "Vercel AI Gateway forwards that text to an OpenAI language model so Berripop can write a reflection, question, summary or plan from it.",
+      "Your journal and answers may contain especially sensitive information about your wellbeing or health.",
+      "It's voluntary: the journal, goals and circles work without it. You can withdraw it in Settings at any time.",
+    ],
+    checkbox: "I consent to my texts described above being sent to an AI provider for the AI features I ask for.",
+    accept: "Allow and continue",
+    later: "Not now",
   },
 
   privacy: {

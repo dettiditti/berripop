@@ -7,9 +7,14 @@ import { useI18n } from "@/lib/i18n/client";
 import { startPersonalPathAction } from "@/lib/server/actions";
 import BerripopMascot from "./berripop/BerripopMascot";
 import CircleSetup from "./CircleSetup";
+import TermsGate from "./TermsGate";
 
-/** First run after sign-in: start your own path (primary) or grow together in a circle. */
-export default function Onboarding({ onSnapshot }: { onSnapshot: (s: Snapshot) => void }) {
+/**
+ * First run after sign-in: start your own path (primary) or grow together in a
+ * circle. A member who has not accepted the current Terms accepts them first,
+ * as the opening step.
+ */
+export default function Onboarding({ onSnapshot, terms }: { onSnapshot: (s: Snapshot) => void; terms: { version: string; onAccepted: () => void } | null }) {
   const { d } = useI18n();
   const o = d.onboarding;
   const [busy, setBusy] = useState(false);
@@ -36,7 +41,7 @@ export default function Onboarding({ onSnapshot }: { onSnapshot: (s: Snapshot) =
         <p>{o.body}</p>
       </header>
 
-      <div className="onboarding-options">
+      {terms ? <TermsGate version={terms.version} context="onboarding" onAccepted={terms.onAccepted} /> : <div className="onboarding-options">
         <section className="card onboarding-option onboarding-option--primary" aria-labelledby="ob-personal">
           <span className="tag tag--purple">{o.personalBadge}</span>
           <span className="onboarding-icon" aria-hidden><Sprout size={26} /></span>
@@ -55,7 +60,7 @@ export default function Onboarding({ onSnapshot }: { onSnapshot: (s: Snapshot) =
           <p>{o.sharedBody}</p>
           <CircleSetup onSnapshot={onSnapshot} />
         </section>
-      </div>
+      </div>}
     </main>
   );
 }

@@ -8,6 +8,7 @@ import { assessmentOpen } from "@/lib/domain/next";
 import { buildView } from "@/lib/domain/view";
 import { setLocale, useI18n } from "@/lib/i18n/client";
 import { isLocale } from "@/lib/i18n/config";
+import { termsPrompt, type LegalStatus } from "@/lib/legal/records";
 import type { AssessmentState } from "@/lib/assessment/types";
 import type { JournalState } from "@/lib/journal/types";
 import {
@@ -16,6 +17,7 @@ import {
 } from "@/lib/server/actions";
 import { clearDeviceMoments, readDeviceMoments } from "@/lib/store";
 import AccountMenu from "./AccountMenu";
+import { AiConsentProvider, useAiConsent } from "./AiConsent";
 import AssessmentFlow from "./assessment/AssessmentFlow";
 import BottomNavigation, { TABS, type Tab } from "./BottomNavigation";
 import BerripopCelebration, { type NextStep } from "./berripop/BerripopCelebration";
@@ -65,16 +67,16 @@ function SignedInApp() {
   const { d, locale } = useI18n();
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [failed, setFailed] = useState(false);
-  const [terms, setTerms] = useState<{ state: string; version: string } | null>(null);
+  const [legal, setLegal] = useState<LegalStatus | null>(null);
   const localeApplied = useRef(false);
 
   const load = useCallback(async () => {
     setFailed(false);
     try {
-      const [r, legal] = await Promise.all([getSnapshotAction(), getLegalStatusAction()]);
-      if (r.ok && legal) {
+      const [r, status] = await Promise.all([getSnapshotAction(), getLegalStatusAction()]);
+      if (r.ok && status) {
         setSnapshot(r.snapshot);
-        setTerms({ state: legal.terms, version: legal.termsVersion });
+        setLegal(status);
       } else setFailed(true);
     } catch {
       setFailed(true);
@@ -103,12 +105,17 @@ function SignedInApp() {
       </div>
     );
   }
-  if (!snapshot || !terms) return <Splash label={d.auth.loadingData} />;
-  if (terms.state !== "granted") {
-    return <TermsGate version={terms.version} updated={terms.state === "outdated"} onAccepted={() => setTerms({ ...terms, state: "granted" })} />;
-  }
-  if (!snapshot.circle && !snapshot.me.personalPath) return <Onboarding onSnapshot={setSnapshot} />;
-  return <AppShell snapshot={snapshot} setSnapshot={setSnapshot} />;
+  if (!snapshot || !legal) return <Splash label={d.auth.loadingData} />;
+  const newMember = !snapshot.circle && !snapshot.me.personalPath;
+  const prompt = termsPrompt(legal.terms, newMember);
+  const accepted = () => setLegal({ ...legal, terms: "granted" });
+  if (newMember) return <Onboarding onSnapshot={setSnapshot} terms={prompt === "onboarding" ? { version: legal.termsVersion, onAccepted: accepted } : null} />;
+  return (
+    <AiConsentProvider initial={legal}>
+      <AppShell snapshot={snapshot} setSnapshot={setSnapshot} />
+      {prompt === "dialog" && <TermsGate version={legal.termsVersion} context="update" onAccepted={accepted} />}
+    </AiConsentProvider>
+  );
 }
 
 type ActiveQuest = { ref: QuestionRef; context: AnswerContext };
@@ -150,6 +157,7 @@ function AppShell({ snapshot, setSnapshot }: { snapshot: Snapshot; setSnapshot: 
     window.setTimeout(() => setToast(cur => (cur?.id === id ? null : cur)), 2600);
   }, []);
   const run = useRun(setSnapshot, notify);
+  const withAiConsent = useAiConsent();
 
   const refresh = useCallback(async () => {
     const r = await getSnapshotAction().catch(() => null);
@@ -209,7 +217,10 @@ function AppShell({ snapshot, setSnapshot }: { snapshot: Snapshot; setSnapshot: 
       if (quiet) {
         const r = await buildGoalJourneyAction().catch(() => null);
         if (r?.ok) setSnapshot(r.snapshot);
-      } else if (await run(buildGoalJourneyAction())) {
+      } else {
+        const r = await withAiConsent(() => buildGoalJourneyAction()).catch(() => undefined);
+        if (r === undefined) return notify(d.auth.error);
+        if (!r || !(await run(Promise.resolve(r)))) return;
         setJourneyMode("own");
         notify(d.journey.built);
       }
@@ -336,7 +347,8 @@ function AppShell({ snapshot, setSnapshot }: { snapshot: Snapshot; setSnapshot: 
           ai={{
             account: snapshot.account,
             ask: async text => {
-              const r = await aiFollowUpAction({ circleId: circle?.id ?? null, questionRef: quest.ref, answerText: text });
+              const r = await withAiConsent(() => aiFollowUpAction({ circleId: circle?.id ?? null, questionRef: quest.ref, answerText: text }));
+              if (!r) return null;
               if (r.ok) {
                 setSnapshot(r.snapshot);
                 return { question: r.question };

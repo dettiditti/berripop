@@ -4,12 +4,14 @@ import { useState } from "react";
 import { Sparkles } from "lucide-react";
 import type { AccountDTO } from "@/lib/domain/types";
 import { useI18n } from "@/lib/i18n/client";
+import { useAiConsent } from "../AiConsent";
 import { weeklySummaryAction } from "@/lib/server/actions";
 import UpgradePrompt from "./UpgradePrompt";
 
 /** Premium weekly summary of the member's own answers. Free members see a dismissible suggestion. */
 export default function WeeklySummaryCard({ account, circleId, notify }: { account: AccountDTO; circleId: string | null; notify: (m: string) => void }) {
   const { d, t, date } = useI18n();
+  const withAiConsent = useAiConsent();
   const a = d.aiAssist;
   const [summary, setSummary] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -17,8 +19,10 @@ export default function WeeklySummaryCard({ account, circleId, notify }: { accou
 
   async function create() {
     setBusy(true);
-    const r = await weeklySummaryAction(circleId);
+    const r = await withAiConsent(() => weeklySummaryAction(circleId)).catch(() => undefined);
     setBusy(false);
+    if (r === undefined) return notify(a.unavailable);
+    if (!r) return; // consent declined: nothing was sent
     if (r.ok) return setSummary(r.summary);
     if (r.error === "invalid") notify(a.summaryEmpty);
     else if (r.error === "limit_ai") notify(t(d.billing.prompts.ai.title));

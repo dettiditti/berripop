@@ -301,7 +301,7 @@ export const hu: Dictionary = {
     button: "Kérek egy továbbgondoló kérdést Berripoptól",
     working: "Berripop gondolkodik…",
     remaining: pl("Ezen a héten még {n} maradt", "Ezen a héten még {n} maradt"),
-    consentRequired: "Az AI-funkciókhoz előbb hozzá kell járulnod az AI-feldolgozáshoz. A Beállításokban, az „AI-funkciók” résznél teheted meg.",
+    consentRequired: "Az AI-segítséghez a hozzájárulásod kell. Kérd újra a funkciót, és ott megadhatod, vagy a Beállításokban, az „AI-funkciók” résznél.",
     disclosure: "A kérdés javaslatához a piszkozatodat elküldjük az AI-szolgáltatónknak (OpenAI). Nem tároljuk, és a köröddel sem osztjuk meg.",
     result: "Berripop kérdése:",
     use: "Ezt választom",
@@ -1388,19 +1388,44 @@ export const hu: Dictionary = {
   },
 
   legalGate: {
-    title: "Mielőtt folytatod",
-    intro: "A Berripop használatához el kell fogadnod a Felhasználási feltételeket.",
-    updated: "Frissítettük a Felhasználási feltételeket. A folytatáshoz fogadd el az új változatot.",
+    onboarding: {
+      title: "Mielőtt elindulunk 💜",
+      body: "Pár közös szabály, hogy biztonságban és jó hangulatban haladhassunk együtt. Olvasd át a feltételeket, és ha rendben vannak, fogadd el.",
+      accept: "Rendben, kezdjük!",
+    },
+    update: {
+      title: "Egy gyors közös szabályfrissítés 💜",
+      body: "Frissítettük a Berripop használati feltételeit. Olvasd át őket, és fogadd el, hogy folytathassuk a közös utat!",
+      accept: "Rendben, folytassuk!",
+    },
+    checkout: {
+      title: "Még egy gyors lépés 💜",
+      body: "Az előfizetés előtt fogadd el a Berripop használati feltételeit. Utána rögtön továbbviszünk a fizetéshez.",
+      accept: "Elfogadom, tovább a fizetéshez",
+    },
     checkboxBefore: "Elolvastam és elfogadom a ",
     termsLink: "Felhasználási feltételeket",
     checkboxAfter: ".",
     privacyBefore: "Az adataid kezeléséről az ",
-    privacyLink: "Adatkezelési tájékoztató",
-    privacyAfter: " szól.",
+    privacyLink: "Adatkezelési tájékoztatóban",
+    privacyAfter: " olvashatsz.",
     version: "Feltételek verziója: {v}",
-    accept: "Elfogadom és folytatom",
     error: "Nem sikerült menteni. Próbáld újra.",
     outdated: "Közben frissült a szöveg. Töltsd be újra az oldalt.",
+  },
+
+  aiConsentDialog: {
+    title: "Segíthet Berripop? 💜",
+    body: "Ehhez a funkcióhoz mesterséges intelligenciát használunk. Mielőtt bármit elküldenénk, az engedélyedet kérjük.",
+    points: [
+      "Csak akkor küldünk szöveget, amikor AI-funkciót kérsz: azt a naplóbejegyzést, választ, felmérés-választ vagy célt, amelyhez segítséget kérsz.",
+      "A szöveget a Vercel AI Gateway továbbítja az OpenAI nyelvi modelljéhez, hogy Berripop reflexiót, kérdést, összefoglalót vagy tervet írjon belőle.",
+      "A naplód és a válaszaid a lelkiállapotodra vagy az egészségedre vonatkozó, különösen érzékeny adatot is tartalmazhatnak.",
+      "Önkéntes: nélküle is használhatod a naplót, a célokat és a köröket. A Beállításokban bármikor visszavonhatod.",
+    ],
+    checkbox: "Hozzájárulok, hogy a kért AI-funkciókhoz a fent leírt szövegeimet AI-szolgáltatónak továbbítsátok.",
+    accept: "Engedélyezem és folytatom",
+    later: "Most nem",
   },
 
   privacy: {

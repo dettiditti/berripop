@@ -10,6 +10,7 @@ import type { AssessmentError, AssessmentResult, AssessmentState } from "@/lib/a
 import { PLAN_LIMITS } from "@/lib/billing/plans";
 import type { AccountDTO } from "@/lib/domain/types";
 import { useI18n } from "@/lib/i18n/client";
+import { useAiConsent } from "../AiConsent";
 import {
   acceptPathPlanAction, answerAssessmentFollowupAction, generatePathPlanAction, requestAssessmentFollowupAction,
   saveAssessmentAnswersAction, skipAssessmentAction, startAssessmentAction,
@@ -31,6 +32,7 @@ type Props = {
  */
 export default function AssessmentFlow({ state, account, onState, onFinished }: Props) {
   const { d, t } = useI18n();
+  const withAiConsent = useAiConsent();
   const a = d.assessment;
   const saved = state.assessment;
   const [step, setStep] = useState<number>(saved ? saved.step : -1);
@@ -44,11 +46,13 @@ export default function AssessmentFlow({ state, account, onState, onFinished }: 
     e === "ai_unavailable" ? a.errors.ai : e === "ai_consent_required" ? d.aiAssist.consentRequired : e === "limit_ai" ? a.errors.limitAi : e === "limit_assessment" ? a.errors.limitAssessment
       : e === "limit_goals" ? a.errors.limitGoals : e === "busy" ? a.errors.busy : a.errors.generic;
 
-  async function call(kind: NonNullable<typeof busy>, p: Promise<AssessmentResult>): Promise<AssessmentState | null> {
+  /** `p` resolves to null when the member declined AI consent (nothing was sent). */
+  async function call(kind: NonNullable<typeof busy>, p: Promise<AssessmentResult | null>): Promise<AssessmentState | null> {
     setBusy(kind);
     setError(null);
     try {
       const r = await p;
+      if (!r) return null;
       if (r.ok) {
         onState(r.state);
         return r.state;
@@ -73,7 +77,7 @@ export default function AssessmentFlow({ state, account, onState, onFinished }: 
   }
 
   async function askFollowup() {
-    const s = await call("followup", requestAssessmentFollowupAction());
+    const s = await call("followup", withAiConsent(() => requestAssessmentFollowupAction()));
     if (s?.assessment) setFollowups(s.assessment.followups);
   }
 
@@ -95,7 +99,7 @@ export default function AssessmentFlow({ state, account, onState, onFinished }: 
   async function makePlan() {
     await saveFollowupAnswers();
     setStep(PLAN_STEP);
-    await call("plan", generatePathPlanAction());
+    await call("plan", withAiConsent(() => generatePathPlanAction()));
   }
 
   async function skip() {

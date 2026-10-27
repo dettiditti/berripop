@@ -5,6 +5,7 @@ import { Download, Lock, PenLine, Sparkles, ThumbsDown, ThumbsUp, Trash2, X } fr
 import { PLAN_LIMITS } from "@/lib/billing/plans";
 import type { JournalEntryDTO, JournalError, JournalReflectionDTO, JournalResult, JournalState, WeeklyJournalDTO } from "@/lib/journal/types";
 import { useI18n } from "@/lib/i18n/client";
+import { useAiConsent } from "../AiConsent";
 import {
   deleteAllJournalAction, deleteJournalEntryAction, exportJournalAction, getJournalAction,
   reflectionFeedbackAction, reflectOnEntryAction, saveInsightAction, weeklyJournalAction,
@@ -107,6 +108,7 @@ export default function JournalScreen({ account, today, notify, starter, onJourn
   reflectRequest?: { entryId: string; id: number } | null;
 }) {
   const { d, t, plural, relativeDay, date } = useI18n();
+  const withAiConsent = useAiConsent();
   const j = d.journal;
   const [state, setState] = useState<JournalState | null>(null);
   const [failed, setFailed] = useState(false);
@@ -171,18 +173,21 @@ export default function JournalScreen({ account, today, notify, starter, onJourn
     setStarterBody(undefined);
     setOpenEntry(entryId);
     setReflecting(entryId);
-    const res = await reflectOnEntryAction(entryId, withInsights && canUseInsights);
+    const res = await withAiConsent(() => reflectOnEntryAction(entryId, withInsights && canUseInsights)).catch(() => undefined);
     setUseInsights(false);
     setReflecting(null);
-    apply(res);
+    if (res === undefined) notify(d.auth.error);
+    else if (res) apply(res);
   }
 
   async function runWeekly() {
     setWeeklyBusy(true);
-    const res = await weeklyJournalAction(useInsights && canUseInsights);
+    const res = await withAiConsent(() => weeklyJournalAction(useInsights && canUseInsights)).catch(() => undefined);
     setUseInsights(false);
     setWeeklyBusy(false);
-    if (res.ok) { setState(res.state); setWeekly(res.weekly); setHiddenProposals([]); }
+    if (res === undefined) notify(d.auth.error);
+    else if (!res) return;
+    else if (res.ok) { setState(res.state); setWeekly(res.weekly); setHiddenProposals([]); }
     else notify(res.error === "invalid" ? j.weekly.empty : errorText(res.error));
   }
 

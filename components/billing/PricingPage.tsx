@@ -8,8 +8,10 @@ import { isPaidPlan, PLAN_LIMITS, priceFor, type BillingInterval, type PaidPlanI
 import type { PublicSalesInfo } from "@/lib/billing/sales";
 import type { AccountDTO } from "@/lib/domain/types";
 import { useI18n } from "@/lib/i18n/client";
+import { LEGAL_VERSIONS } from "@/lib/legal/records";
 import { changePlanAction, getSnapshotAction, startCheckoutAction, trackAction } from "@/lib/server/actions";
 import BerripopMascot from "../berripop/BerripopMascot";
+import TermsGate from "../TermsGate";
 
 type Row = { label: string; hint?: string; value: string | boolean };
 
@@ -46,6 +48,8 @@ export default function PricingPage({ from, testMode, sales }: { from?: string; 
   const [account, setAccount] = useState<AccountDTO | null>(null);
   const [busy, setBusy] = useState<PaidPlanId | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // The plan whose checkout waits for Terms acceptance; checkout resumes once it is recorded.
+  const [termsFor, setTermsFor] = useState<PaidPlanId | null>(null);
 
   useEffect(() => {
     void trackAction("pricing_viewed", from && ["goals", "ai", "summary", "circles", "profile", "journal", "start", "path"].includes(from) ? from : "pricing");
@@ -91,7 +95,12 @@ export default function PricingPage({ from, testMode, sales }: { from?: string; 
         window.location.href = r.url;
         return;
       }
-      setError(r.error === "terms_required" ? b.termsRequired : r.error === "billing_unavailable" || r.error === "sales_unavailable" ? b.unavailable : r.error === "already_premium" ? b.alreadyPremium : b.checkoutError);
+      if (r.error === "terms_required") {
+        setTermsFor(plan);
+        setBusy(null);
+        return;
+      }
+      setError(r.error === "billing_unavailable" || r.error === "sales_unavailable" ? b.unavailable : r.error === "already_premium" ? b.alreadyPremium : b.checkoutError);
     } catch {
       setError(b.checkoutError);
     }
@@ -200,6 +209,7 @@ export default function PricingPage({ from, testMode, sales }: { from?: string; 
 
       {!sales.available && <p className="field-hint">{b.salesPaused}</p>}
       {error && <p className="field-hint" role="alert">{error}</p>}
+      {termsFor && <TermsGate version={LEGAL_VERSIONS.terms} context="checkout" onAccepted={() => { const plan = termsFor; setTermsFor(null); void subscribe(plan); }} onCancel={() => setTermsFor(null)} />}
       {testMode && <p className="prototype-note"><Info size={14} /> {b.testMode}</p>}
 
       <section className="pricing-terms">

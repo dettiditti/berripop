@@ -41,6 +41,19 @@ export function legalState(rows: LegalRecordRow[], kind: LegalRecordKind, curren
 }
 
 /**
+ * How to ask for the Terms, if at all. A new member (no path or circle yet)
+ * meets them as the first onboarding step; a member already using Berripop
+ * who has not accepted the current version sees a short in-app dialog over
+ * the screen they opened. Viewing the Terms never counts as acceptance.
+ */
+export type TermsPrompt = "none" | "onboarding" | "dialog";
+
+export function termsPrompt(state: LegalState, newMember: boolean): TermsPrompt {
+  if (state === "granted") return "none";
+  return newMember ? "onboarding" : "dialog";
+}
+
+/**
  * Whether AI features need the member's separate, recorded consent. Required
  * unless AI_CONSENT_MODE is explicitly "not_required" (to be set only after a
  * lawyer approves another legal basis for AI processing of journal content).
