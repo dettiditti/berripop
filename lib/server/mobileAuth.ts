@@ -1,5 +1,6 @@
 import "server-only";
 import { clerkClient } from "@clerk/nextjs/server";
+import { ensureUserRow } from "./session";
 
 /*
  * Authentication for the mobile API (/api/v1). Only a Clerk session token in
@@ -31,4 +32,24 @@ export async function bearerUserId(req: Request): Promise<string | null> {
   if (!state.isAuthenticated) return null;
   const { userId } = state.toAuth();
   return typeof userId === "string" && userId ? userId : null;
+}
+
+/**
+ * Like bearerUserId, and also creates our user row on the member's first
+ * mobile request (as the web does on first visit). For endpoints that write.
+ * The name comes from Clerk's user record; if that lookup fails the row is
+ * still created, without a name.
+ */
+export async function bearerMember(req: Request): Promise<string | null> {
+  const userId = await bearerUserId(req);
+  if (!userId) return null;
+  await ensureUserRow(userId, async () => {
+    try {
+      const u = await (await clerkClient()).users.getUser(userId);
+      return u.firstName || u.username || "";
+    } catch {
+      return "";
+    }
+  });
+  return userId;
 }
