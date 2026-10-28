@@ -1,4 +1,5 @@
 import "server-only";
+import { clerkClient } from "@clerk/nextjs/server";
 import { and, asc, desc, eq, inArray, ne } from "drizzle-orm";
 import { getDb } from "../db";
 import {
@@ -82,6 +83,23 @@ export async function deleteAccountData(userId: string, confirmation: unknown): 
   if (block) return { ok: false, error: block };
   await purgeAccount(userId);
   return { ok: true };
+}
+
+/**
+ * In-app deletion (web and mobile): deletes the data, then the Clerk login.
+ * The confirmation word and the subscription rule are checked first.
+ * loginDeleted false: the data is gone but the login could not be removed;
+ * signing in again would start an empty account.
+ */
+export async function deleteAccountAndLogin(userId: string, confirmation: unknown): Promise<{ ok: true; loginDeleted: boolean } | { ok: false; error: DeleteError }> {
+  const r = await deleteAccountData(userId, confirmation);
+  if (!r.ok) return r;
+  try {
+    await (await clerkClient()).users.deleteUser(userId);
+    return { ok: true, loginDeleted: true };
+  } catch {
+    return { ok: true, loginDeleted: false };
+  }
 }
 
 /**

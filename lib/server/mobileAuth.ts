@@ -34,22 +34,34 @@ export async function bearerUserId(req: Request): Promise<string | null> {
   return typeof userId === "string" && userId ? userId : null;
 }
 
+/** Clerk has no such user: the login was deleted, though its token may not have expired yet. */
+class LoginGone extends Error {}
+
 /**
  * Like bearerUserId, and also creates our user row on the member's first
  * mobile request (as the web does on first visit). For endpoints that write.
  * The name comes from Clerk's user record; if that lookup fails the row is
- * still created, without a name.
+ * still created, without a name. A login Clerk no longer has (deleted, with
+ * a token still in its short lifetime) gets null, so a deleted account is
+ * never recreated empty.
  */
 export async function bearerMember(req: Request): Promise<string | null> {
   const userId = await bearerUserId(req);
   if (!userId) return null;
-  await ensureUserRow(userId, async () => {
-    try {
-      const u = await (await clerkClient()).users.getUser(userId);
+  try {
+    await ensureUserRow(userId, async () => {
+      let u;
+      try {
+        u = await (await clerkClient()).users.getUser(userId);
+      } catch (e) {
+        if ((e as { status?: unknown })?.status === 404) throw new LoginGone();
+        return "";
+      }
       return u.firstName || u.username || "";
-    } catch {
-      return "";
-    }
-  });
+    });
+  } catch (e) {
+    if (e instanceof LoginGone) return null;
+    throw e;
+  }
   return userId;
 }

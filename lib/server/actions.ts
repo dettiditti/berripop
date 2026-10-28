@@ -1,7 +1,7 @@
 "use server";
 
 import { cookies, headers } from "next/headers";
-import { clerkClient, currentUser } from "@clerk/nextjs/server";
+import { currentUser } from "@clerk/nextjs/server";
 import { appOrigin } from "../billing/origin";
 import { isPaidPlan, type BillingInterval, type PaidPlanId } from "../billing/plans";
 import type { ActionResult, AnswerContext, QuestionRef, RewardDTO } from "../domain/types";
@@ -471,14 +471,5 @@ export async function exportAccountAction() {
 export async function deleteAccountAction(confirmation: string): Promise<{ ok: true; loginDeleted: boolean } | { ok: false; error: account.DeleteError }> {
   const userId = await requireUserId();
   if (!userId) return { ok: false, error: "unauthorized" };
-  const r = await account.deleteAccountData(userId, confirmation);
-  if (!r.ok) return r;
-  try {
-    const client = await clerkClient();
-    await client.users.deleteUser(userId);
-    return { ok: true, loginDeleted: true };
-  } catch {
-    // Data is gone; the login could not be removed. Signing in again would start an empty account.
-    return { ok: true, loginDeleted: false };
-  }
+  return account.deleteAccountAndLogin(userId, confirmation);
 }
