@@ -21,7 +21,8 @@ const B = "ddd.eee.fff";
 const P = "ppp.qqq.rrr";
 const E = "eee.nnn.ddd";
 // Tokens stay valid for their short lifetime even after the login is deleted.
-const valid: Record<string, string> = { [A]: "user_a", [B]: "user_b", [P]: "user_paying", [E]: "user_ending" };
+const S = "sss.ttt.aaa";
+const valid: Record<string, string> = { [A]: "user_a", [B]: "user_b", [P]: "user_paying", [E]: "user_ending", [S]: "user_stale" };
 const clerkUsers = new Set<string>();
 let clerkDown = false;
 let clerkDeleteFails = false;
@@ -96,7 +97,14 @@ const subs: Record<string, Parameters<typeof entitlementsFrom>[0]> = {
 };
 vi.mock("../lib/server/entitlements", () => ({ getUserEntitlements: async (id: string) => entitlementsFrom(subs[id] ?? null) }));
 const stopRenewal = vi.fn();
-vi.mock("../lib/server/billing", () => ({ stopRenewal }));
+// Stripe's live answer per member; the mirror above can disagree (user_stale).
+const live: Record<string, "clear" | "renewing" | "unknown"> = { user_paying: "renewing", user_stale: "renewing" };
+let stripeDown = false;
+const liveChecked: string[] = [];
+vi.mock("../lib/server/billing", () => ({
+  stopRenewal,
+  liveRenewalCheck: async (id: string) => (liveChecked.push(id), stripeDown ? "unknown" : (live[id] ?? "clear")),
+}));
 vi.mock("../lib/server/journal", () => ({ exportJournal: async () => ({ entries: [], reflections: [], insights: [] }) }));
 vi.mock("../lib/server/invoicing", () => ({ invoicesForUser: async () => [] }));
 vi.mock("../lib/server/analytics", () => ({ track: async () => {} }));
@@ -137,6 +145,8 @@ beforeEach(() => {
   deletedLogins.length = exported.length = 0;
   clerkDown = clerkDeleteFails = exportFails = false;
   stopRenewal.mockClear();
+  stripeDown = false;
+  liveChecked.length = 0;
   authenticateRequest.mockClear();
 });
 
@@ -214,6 +224,34 @@ describe("POST /api/v1/account/delete", () => {
     expect(stopRenewal).not.toHaveBeenCalled();
   });
 
+  it("Stripe's live state decides, not a stale mirror that says Free", async () => {
+    // The mirror has no subscription for user_stale, but Stripe holds a renewing one.
+    const r = await del(S, { confirmation: "TÖRLÉS" });
+    expect(r.status).toBe(409);
+    expect(await r.json()).toEqual({ error: "active_subscription" });
+    expect(store.has("user_stale")).toBe(true);
+    expect(deletedLogins).toEqual([]);
+    expect(liveChecked).toEqual(["user_stale"]);
+  });
+
+  it("503 billing_unavailable when Stripe can't be checked; nothing deleted, and retrying works", async () => {
+    stripeDown = true;
+    const r = await del(A, { confirmation: "TÖRLÉS" });
+    expect(r.status).toBe(503);
+    expect(await r.text()).toBe(JSON.stringify({ error: "billing_unavailable" }));
+    expect(r.headers.get("cache-control")).toBe("private, no-store");
+    expect(store.has("user_a")).toBe(true);
+    expect(deletedLogins).toEqual([]);
+    stripeDown = false;
+    expect((await del(A, { confirmation: "TÖRLÉS" })).status).toBe(200);
+    expect(store.has("user_a")).toBe(false);
+  });
+
+  it("the confirmation word is checked before Stripe is asked", async () => {
+    await del(A, { confirmation: "nope" });
+    expect(liveChecked).toEqual([]);
+  });
+
   it("a subscription already set to end does not block deletion", async () => {
     expect((await del(E, { confirmation: "TÖRLÉS" })).status).toBe(200);
     expect(store.has("user_ending")).toBe(false);
@@ -239,7 +277,7 @@ describe("POST /api/v1/account/delete", () => {
     for (const r of [await del(null, { confirmation: "TÖRLÉS" }), await del("zzz.zzz.zzz", { confirmation: "TÖRLÉS" }), await del(null, { confirmation: "TÖRLÉS" }, { cookie: `__session=${A}` })]) {
       expect(r.status).toBe(401);
     }
-    expect(store.size).toBe(4);
+    expect(store.size).toBe(Object.keys(valid).length);
     expect(deletedLogins).toEqual([]);
   });
 
@@ -268,6 +306,6 @@ describe("after deletion", () => {
   it("deleting again is harmless", async () => {
     await del(A, { confirmation: "TÖRLÉS" });
     expect((await del(A, { confirmation: "TÖRLÉS" })).status).toBe(200);
-    expect(store.size).toBe(3);
+    expect(store.size).toBe(Object.keys(valid).length - 1);
   });
 });

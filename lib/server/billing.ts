@@ -7,6 +7,7 @@ import { entitlementsFrom, shouldApplySubscription, type Entitlements } from "..
 import { isPaidPlan, planForLookupKey, priceFor, type BillingInterval, type PaidPlanId } from "../billing/plans";
 import { salesConfig, salesProblems } from "../billing/sales";
 import { LEGAL_VERSIONS } from "../legal/records";
+import { willRenew } from "../account/policy";
 import { getStripe, isTestMode } from "../billing/stripe";
 import { snapshotFromStripe, type SubscriptionSnapshot } from "../billing/subscription";
 import { processStripeEvent, subscriptionIdFromInvoice } from "../billing/webhook";
@@ -224,6 +225,32 @@ export async function stopRenewal(userId: string): Promise<void> {
   } catch (err) {
     // Already gone at Stripe (or from another mode): nothing left to renew.
     if ((err as { code?: string }).code !== "resource_missing") throw err;
+  }
+}
+
+/**
+ * Before deleting an account: does Stripe itself (not our mirror) hold a
+ * subscription for this member that will charge again? Reads every
+ * subscription of the stored customer, whatever its status. Read-only.
+ * "unknown" whenever Stripe can't answer for sure (not configured, timeout,
+ * network error, or a customer this key can't see, e.g. a live customer seen
+ * with a test key): the caller must not treat that as "nothing to renew".
+ */
+export async function liveRenewalCheck(userId: string): Promise<"clear" | "renewing" | "unknown"> {
+  const [row] = await getDb().select({ customerId: subscriptions.stripeCustomerId }).from(subscriptions).where(eq(subscriptions.userId, userId)).limit(1);
+  // Checkout always stores the customer first, so no row means no subscription.
+  if (!row) return "clear";
+  const stripe = getStripe();
+  if (!stripe) return "unknown";
+  try {
+    const list = stripe.subscriptions.list({ customer: row.customerId, status: "all", limit: 100 }, { timeout: 8_000, maxNetworkRetries: 1 });
+    for await (const sub of list) {
+      const snap = snapshotFromStripe(sub);
+      if (willRenew({ status: sub.status, cancelAtPeriodEnd: !!sub.cancel_at_period_end, cancelAt: sub.cancel_at ?? null, periodEnd: snap.periodEnd ? snap.periodEnd.getTime() / 1000 : null })) return "renewing";
+    }
+    return "clear";
+  } catch {
+    return "unknown";
   }
 }
 

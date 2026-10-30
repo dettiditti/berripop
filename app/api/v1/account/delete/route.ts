@@ -9,8 +9,10 @@ import { apiError, apiJson, readJsonObject, withBearer } from "@/lib/server/mobi
  * 200 → { deleted: true, loginDeleted } — the data is gone; loginDeleted
  *       false means the Clerk login could not be removed.
  * 400 → { error: "confirmation" } without the confirmation word.
- * 409 → { error: "active_subscription" } while a subscription would keep
- *       renewing (cancel it first; one set to end is fine).
+ * 409 → { error: "active_subscription" } while Stripe holds a subscription
+ *       that will renew (cancel it first; one set to end is fine).
+ * 503 → { error: "billing_unavailable" } when Stripe can't be checked;
+ *       nothing is deleted, and trying again is safe.
  *
  * Not gated on the Terms (deleting must always be possible), and never
  * creates a user row.
@@ -23,7 +25,11 @@ export function POST(req: Request) {
     const body = await readJsonObject(req);
     if (!body) return apiError(400, "invalid");
     const r = await deleteAccountAndLogin(userId, body.confirmation);
-    if (!r.ok) return r.error === "active_subscription" ? apiError(409, r.error) : apiError(400, "confirmation");
+    if (!r.ok) {
+      if (r.error === "active_subscription") return apiError(409, r.error);
+      if (r.error === "billing_unavailable") return apiError(503, r.error);
+      return apiError(400, "confirmation");
+    }
     return apiJson({ deleted: true, loginDeleted: r.loginDeleted });
   });
 }

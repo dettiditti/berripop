@@ -8,7 +8,7 @@ import {
 } from "../db/schema";
 import { deletionBlock, isDeleteConfirmation, type DeletionBlock } from "../account/policy";
 import { exportJournal } from "./journal";
-import { stopRenewal } from "./billing";
+import { liveRenewalCheck, stopRenewal } from "./billing";
 import { getUserEntitlements } from "./entitlements";
 import { invoicesForUser } from "./invoicing";
 
@@ -23,7 +23,7 @@ import { invoicesForUser } from "./invoicing";
  * Terms and AI consent records (`legal_records`) are deleted with the account.
  */
 
-export type DeleteError = "unauthorized" | "confirmation" | DeletionBlock;
+export type DeleteError = "unauthorized" | "confirmation" | "billing_unavailable" | DeletionBlock;
 
 /** Everything we store about the member, for download (their own data only). */
 export async function exportAccount(userId: string) {
@@ -79,8 +79,10 @@ export async function exportAccount(userId: string) {
  */
 export async function deleteAccountData(userId: string, confirmation: unknown): Promise<{ ok: true } | { ok: false; error: DeleteError }> {
   if (!isDeleteConfirmation(confirmation)) return { ok: false, error: "confirmation" };
-  const block = deletionBlock(await getUserEntitlements(userId));
-  if (block) return { ok: false, error: block };
+  // Decided from Stripe's live state, not our mirror, which can lag behind.
+  const billing = await liveRenewalCheck(userId);
+  if (billing === "unknown") return { ok: false, error: "billing_unavailable" };
+  if (billing === "renewing") return { ok: false, error: "active_subscription" };
   await purgeAccount(userId);
   return { ok: true };
 }

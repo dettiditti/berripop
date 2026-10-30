@@ -24,3 +24,30 @@ export function isDeleteConfirmation(text: unknown): boolean {
   const t = text.trim().toLocaleUpperCase("hu-HU");
   return (DELETE_WORDS as readonly string[]).includes(t);
 }
+
+/** The facts about a Stripe subscription that decide whether it will charge again. */
+export type LiveSubscription = {
+  status: string;
+  cancelAtPeriodEnd: boolean;
+  /** Stripe's cancel_at (seconds), if a cancellation is scheduled. */
+  cancelAt: number | null;
+  /** End of the current billing period (seconds), if known. */
+  periodEnd: number | null;
+};
+
+/** States that will (or, for incomplete, may within about 23 hours) charge again. */
+const CHARGING = new Set(["active", "trialing", "past_due", "incomplete"]);
+
+/**
+ * Whether a subscription read live from Stripe will renew, so the account
+ * must not be deleted yet. A scheduled cancellation only counts when it falls
+ * within the current period; with the period unknown it does not count.
+ * Canceled, incomplete_expired, unpaid (no more payment attempts) and paused
+ * (no invoices until resumed) do not renew.
+ */
+export function willRenew(sub: LiveSubscription): boolean {
+  if (!CHARGING.has(sub.status)) return false;
+  if (sub.status === "incomplete") return true;
+  if (sub.cancelAtPeriodEnd) return false;
+  return !(sub.cancelAt !== null && sub.periodEnd !== null && sub.cancelAt <= sub.periodEnd);
+}
