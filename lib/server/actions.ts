@@ -4,6 +4,7 @@ import { cookies, headers } from "next/headers";
 import { currentUser } from "@clerk/nextjs/server";
 import { appOrigin } from "../billing/origin";
 import { isPaidPlan, type BillingInterval, type PaidPlanId } from "../billing/plans";
+import { isBuyerRegion, type BuyerRegion } from "../billing/sales";
 import type { ActionResult, AnswerContext, QuestionRef, RewardDTO } from "../domain/types";
 import { isLocale, LOCALE_COOKIE } from "../i18n/config";
 import { track, trackDaily, type FunnelEvent } from "./analytics";
@@ -71,14 +72,14 @@ export async function weeklySummaryAction(circleId: string | null) {
   return growth.weeklySummary(userId, { circleId, locale: await locale() });
 }
 
-export async function startCheckoutAction(interval: BillingInterval, plan: PaidPlanId = "premium") {
+export async function startCheckoutAction(interval: BillingInterval, plan: PaidPlanId = "premium", region: BuyerRegion = "home") {
   const userId = await requireUserId();
   if (!userId) return { ok: false as const, error: "unauthorized" as const };
-  if ((interval !== "month" && interval !== "year") || !isPaidPlan(plan)) return { ok: false as const, error: "invalid" as const };
+  if ((interval !== "month" && interval !== "year") || !isPaidPlan(plan) || !isBuyerRegion(region)) return { ok: false as const, error: "invalid" as const };
   // No payment before the current Terms are accepted (the pricing page sits outside the in-app gate).
   if ((await legal.getLegalStatus(userId)).terms !== "granted") return { ok: false as const, error: "terms_required" as const };
   const user = await currentUser();
-  return billing.createCheckoutSession(userId, plan, interval, await origin(), { email: user?.primaryEmailAddress?.emailAddress, locale: await locale() });
+  return billing.createCheckoutSession(userId, plan, interval, await origin(), { email: user?.primaryEmailAddress?.emailAddress, locale: await locale(), region });
 }
 
 /** Premium ⇄ Premium Plus for a member who already pays (Stripe Customer Portal confirmation). */

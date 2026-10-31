@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { countryAllowed, publicSalesInfo, salesConfig, salesProblems } from "../lib/billing/sales";
+import { countryAllowed, isBuyerRegion, publicSalesInfo, salesConfig, salesProblems } from "../lib/billing/sales";
 import { aiConsentRequired, LEGAL_VERSIONS, legalState, type LegalRecordRow } from "../lib/legal/records";
 import { retentionDays } from "../lib/retention/policy";
 
@@ -9,7 +9,7 @@ describe("sales and tax configuration", () => {
     expect(cfg.countries).toEqual(["HU"]);
     expect(cfg.invoicing).toBe("manual");
     expect(salesProblems(cfg)).toEqual([]);
-    expect(publicSalesInfo({})).toEqual({ available: true, countries: ["HU"], taxNote: null });
+    expect(publicSalesInfo({})).toEqual({ available: true, countries: ["HU"], taxNote: null, abroad: false });
   });
   it("ignores the deferred provider settings", () => {
     const env = { INVOICING_MODE: "szamlazz", SZAMLAZZ_AGENT_KEY: "k" };
@@ -30,6 +30,18 @@ describe("sales and tax configuration", () => {
     const on = salesConfig({ SALES_COUNTRIES: "HU,AT", EU_SALES_ENABLED: "true", INVOICE_VAT_KEY_AT: "X" });
     expect(countryAllowed(on, "at")).toBe(true);
     expect(countryAllowed(on, null)).toBe(false);
+  });
+  it("offers buyers abroad Managed Payments only when it is switched on and sales are open", () => {
+    expect(publicSalesInfo({ MANAGED_PAYMENTS_ENABLED: "true" }).abroad).toBe(true);
+    expect(publicSalesInfo({ MANAGED_PAYMENTS_ENABLED: "1" }).abroad).toBe(false);
+    expect(publicSalesInfo({ MANAGED_PAYMENTS_ENABLED: "true", SALES_COUNTRIES: "US" }).abroad).toBe(false);
+    // Managed Payments never adds a country to the hand-invoiced sales.
+    expect(salesConfig({ MANAGED_PAYMENTS_ENABLED: "true" }).countries).toEqual(["HU"]);
+  });
+  it("accepts only the two buyer regions", () => {
+    expect(isBuyerRegion("home")).toBe(true);
+    expect(isBuyerRegion("abroad")).toBe(true);
+    for (const v of ["HU", "", null, undefined, 1, "Abroad"]) expect(isBuyerRegion(v)).toBe(false);
   });
   it("sells nowhere when no enabled country is left", () => {
     const cfg = salesConfig({ SALES_COUNTRIES: "US" });

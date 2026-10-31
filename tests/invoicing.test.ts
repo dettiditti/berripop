@@ -51,6 +51,16 @@ describe("manual invoicing follow-up", () => {
     expect([...store.keys()]).toEqual(["invoice:in_1", "invoice:in_2"]);
   });
 
+  it("flags a task whose billing address is outside Hungary, without storing the address", async () => {
+    await enqueueInvoice({ id: "in_de", amount_paid: 299000, currency: "huf", customer_address: { country: "DE", city: "Berlin" } }, "sub_1");
+    await enqueueInvoice({ id: "in_hu", amount_paid: 299000, currency: "huf", customer_address: { country: "hu", city: "Budapest" } }, "sub_2");
+    await enqueueInvoice({ id: "in_none", amount_paid: 299000, currency: "huf", customer_address: null }, "sub_3");
+    expect(store.get("invoice:in_de")?.lastError).toBe("billing_country_not_home");
+    expect(store.get("invoice:in_hu")).not.toHaveProperty("lastError");
+    expect(store.get("invoice:in_none")).not.toHaveProperty("lastError");
+    expect(JSON.stringify([...store.values()])).not.toMatch(/Berlin|Budapest|"DE"/);
+  });
+
   it("records nothing for zero-amount invoices", async () => {
     await enqueueInvoice({ id: "in_0", amount_paid: 0, currency: "huf" }, "sub_1");
     expect(store.size).toBe(0);

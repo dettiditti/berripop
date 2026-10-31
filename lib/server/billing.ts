@@ -4,8 +4,8 @@ import { eq } from "drizzle-orm";
 import { getDb } from "../db";
 import { stripeEvents, subscriptions, users } from "../db/schema";
 import { entitlementsFrom, shouldApplySubscription, type Entitlements } from "../billing/entitlements";
-import { isPaidPlan, planForLookupKey, priceFor, type BillingInterval, type PaidPlanId } from "../billing/plans";
-import { salesConfig, salesProblems } from "../billing/sales";
+import { isPaidPlan, PLAN_PRODUCTS, planForLookupKey, priceFor, PRODUCT_METADATA_KEY, type BillingInterval, type PaidPlanId } from "../billing/plans";
+import { managedPaymentsEnabled, salesConfig, salesProblems, type BuyerRegion } from "../billing/sales";
 import { LEGAL_VERSIONS } from "../legal/records";
 import { willRenew } from "../account/policy";
 import { getStripe, isTestMode } from "../billing/stripe";
@@ -34,45 +34,67 @@ async function ensureCustomer(stripe: Stripe, userId: string, email?: string | n
   return after.stripeCustomerId;
 }
 
+/**
+ * The Stripe price for a plan, only when it belongs to that plan's Berripop
+ * product (metadata kozos_plan, set by scripts/stripe-setup.ts). The lookup
+ * key alone is not trusted: a key moved to another product, or a product
+ * without the right metadata, sells nothing (fail closed).
+ */
 async function findPriceId(stripe: Stripe, plan: PaidPlanId, interval: BillingInterval): Promise<string | null> {
   const cfg = priceFor(plan, interval);
   if (!cfg) return null;
-  const list = await stripe.prices.list({ lookup_keys: [cfg.lookupKey], active: true, limit: 1 });
-  return list.data[0]?.id ?? null;
+  const list = await stripe.prices.list({ lookup_keys: [cfg.lookupKey], active: true, limit: 1, expand: ["data.product"] });
+  const price = list.data[0];
+  if (!price || price.lookup_key !== cfg.lookupKey) return null;
+  const product = price.product;
+  if (typeof product === "string" || product.deleted || !product.active) return null;
+  return product.metadata?.[PRODUCT_METADATA_KEY] === PLAN_PRODUCTS[plan].metadataValue ? price.id : null;
 }
 
 /**
  * New subscriptions only (Free → Premium or Premium Plus). A member who already
  * pays switches plans in the Customer Portal (createPlanChangeSession), so a
  * second, parallel subscription is never created.
+ *
+ * The buyer picks their region first (lib/billing/sales.ts BuyerRegion):
+ * "home" is the regular sale we invoice by hand; "abroad" turns on Stripe
+ * Managed Payments, where Stripe (Link) is the seller of record, collects the
+ * address and tax itself and does not accept customer_update.
  */
 export async function createCheckoutSession(
   userId: string,
   plan: PaidPlanId,
   interval: BillingInterval,
   origin: string,
-  opts: { email?: string | null; locale?: "hu" | "en" } = {},
+  opts: { email?: string | null; locale?: "hu" | "en"; region?: BuyerRegion } = {},
 ): Promise<{ ok: true; url: string } | { ok: false; error: BillingError }> {
   const stripe = getStripe();
   if (!stripe) return { ok: false, error: "billing_unavailable" };
   // No sale outside the enabled billing countries (lib/billing/sales.ts); invoicing is manual and does not block checkout.
   if (salesProblems(salesConfig(process.env)).length) return { ok: false, error: "sales_unavailable" };
+  const managed = opts.region === "abroad";
+  if (managed && !managedPaymentsEnabled(process.env)) return { ok: false, error: "sales_unavailable" };
   const ent = await getUserEntitlements(userId);
   if (!priceFor(plan, interval)) return { ok: false, error: "invalid" };
   if (isPaidPlan(ent.plan)) return { ok: false, error: "already_premium" };
   const priceId = await findPriceId(stripe, plan, interval);
   if (!priceId) return { ok: false, error: "billing_unavailable" };
   const customer = await ensureCustomer(stripe, userId, opts.email);
+  const metadata = { userId, disclosureVersion: LEGAL_VERSIONS.checkoutDisclosure, ...(managed ? { channel: "managed" } : {}) };
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     customer,
     client_reference_id: userId,
     line_items: [{ price: priceId, quantity: 1 }],
-    // The invoice needs the buyer's name and address; Stripe keeps them on the customer for renewals.
-    billing_address_collection: "required",
-    customer_update: { address: "auto", name: "auto" },
-    metadata: { userId, disclosureVersion: LEGAL_VERSIONS.checkoutDisclosure },
-    subscription_data: { metadata: { userId, disclosureVersion: LEGAL_VERSIONS.checkoutDisclosure } },
+    ...(managed
+      ? { managed_payments: { enabled: true } }
+      : {
+          // The invoice needs the buyer's name and address; Stripe keeps them on the customer for renewals.
+          billing_address_collection: "required" as const,
+          customer_update: { address: "auto" as const, name: "auto" as const },
+        }),
+    metadata,
+    subscription_data: { metadata },
     locale: opts.locale ?? "hu",
     success_url: `${origin}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/billing/canceled`,
@@ -81,6 +103,11 @@ export async function createCheckoutSession(
   await track(userId, "checkout_started", { plan, interval });
   if (!session.url) return { ok: false, error: "billing_unavailable" };
   return { ok: true, url: session.url };
+}
+
+/** Sold through Managed Payments: Stripe's own flag, or our metadata if Stripe leaves it out. */
+export function soldThroughManagedPayments(sub: Pick<Stripe.Subscription, "metadata"> & { managed_payments?: { enabled?: boolean } | null }): boolean {
+  return sub.managed_payments?.enabled === true || sub.metadata?.channel === "managed";
 }
 
 /** Reads a subscription from Stripe and stores the authoritative state. */
@@ -190,6 +217,8 @@ export async function createPlanChangeSession(userId: string, target: PaidPlanId
   if (!priceId) return { ok: false, error: "billing_unavailable" };
   try {
     const sub = await stripe.subscriptions.retrieve(row.stripeSubscriptionId);
+    // Not yet tried against Managed Payments: those members switch in the regular portal.
+    if (soldThroughManagedPayments(sub)) return { ok: false, error: "plan_change_unavailable" };
     const item = sub.items.data[0];
     if (!item) return { ok: false, error: "not_subscribed" };
     const returnUrl = `${origin}/settings#subscription`;
@@ -289,6 +318,7 @@ export async function handleWebhook(rawBody: string, signature: string | null): 
         const invoice = reversal.paymentIntentId ? await invoiceForPayment(stripe, reversal.paymentIntentId) : null;
         await enqueueReversal(reversal, invoice?.id ?? null);
       },
+      isManaged: async subscriptionId => soldThroughManagedPayments(await stripe.subscriptions.retrieve(subscriptionId)),
       endSubscription: async subscriptionId => {
         const sub = await stripe.subscriptions.retrieve(subscriptionId);
         if (sub.status !== "canceled" && sub.status !== "incomplete_expired") await stripe.subscriptions.cancel(subscriptionId);

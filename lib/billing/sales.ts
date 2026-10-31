@@ -13,6 +13,11 @@
  *   EU_SALES_ENABLED       "true" allows EU countries other than HU (default off)
  *   INVOICE_VAT_KEY_HU     optional: the approved VAT treatment for Hungary, e.g. "AAM" (only shown as a price note)
  *   INVOICE_VAT_KEY_<CC>   required for every other enabled country
+ *   MANAGED_PAYMENTS_ENABLED  "true" sells to buyers outside Hungary through
+ *                          Stripe Managed Payments (default off). Stripe (Link)
+ *                          is then the seller of record: it charges and remits
+ *                          the tax and sends the invoice, so no manual invoice
+ *                          task is created for those sales.
  */
 
 export const HOME_COUNTRY = "HU";
@@ -69,17 +74,34 @@ export function countryAllowed(cfg: SalesConfig, country: string | null | undefi
   return !!country && cfg.countries.includes(country.toUpperCase());
 }
 
+/**
+ * Where the buyer says their billing address is, chosen before checkout
+ * (Stripe only learns the address during checkout). "home" is the regular
+ * Hungarian sale invoiced by hand; "abroad" goes through Managed Payments.
+ */
+export type BuyerRegion = "home" | "abroad";
+
+export function isBuyerRegion(v: unknown): v is BuyerRegion {
+  return v === "home" || v === "abroad";
+}
+
+export function managedPaymentsEnabled(env: Env): boolean {
+  return env.MANAGED_PAYMENTS_ENABLED === "true";
+}
+
 /** What the pricing page may show: no secrets, no operator detail. */
 export type PublicSalesInfo = {
   available: boolean;
   countries: string[];
   /** Only "aam" has an approved wording today; any other key shows no tax note. */
   taxNote: "aam" | null;
+  /** Buyers outside Hungary can buy through Managed Payments, so the page asks where the billing address is. */
+  abroad: boolean;
 };
 
 export function publicSalesInfo(env: Env): PublicSalesInfo {
   const cfg = salesConfig(env);
   const available = salesProblems(cfg).length === 0;
   const keys = new Set(cfg.countries.map(c => cfg.vatKeys[c]));
-  return { available, countries: cfg.countries, taxNote: available && keys.size === 1 && keys.has("AAM") ? "aam" : null };
+  return { available, countries: cfg.countries, taxNote: available && keys.size === 1 && keys.has("AAM") ? "aam" : null, abroad: available && managedPaymentsEnabled(env) };
 }

@@ -201,4 +201,31 @@ describe("invoice jobs from webhook events", () => {
     ]);
     expect(d.ended).toEqual(["sub_paid"]);
   });
+
+  it("queues no invoice or reversal for a subscription sold through Managed Payments, but still syncs and ends it", async () => {
+    const d = invDeps();
+    d.isManaged = async id => id === "sub_paid" || id === "sub_1";
+    await processStripeEvent(paid("in_m", 1990, "evt_m1"), d);
+    await processStripeEvent(ev("charge.refunded", { id: "ch_m", refunded: true, amount_refunded: 1990, currency: "eur", payment_intent: "pi_sub" }, "evt_m2"), d);
+    expect(d.queued).toEqual([]);
+    expect(d.reversals).toEqual([]);
+    expect(d.synced).toEqual(["sub_1"]);
+    expect(d.ended).toEqual(["sub_paid"]);
+  });
+  it("still queues the Hungarian sales when Managed Payments is in use for others", async () => {
+    const d = invDeps();
+    d.isManaged = async () => false;
+    await processStripeEvent(paid("in_h", 299000, "evt_h1"), d);
+    await processStripeEvent(ev("charge.refunded", { id: "ch_h", refunded: false, amount_refunded: 1000, currency: "huf", payment_intent: "pi_x" }, "evt_h2"), d);
+    expect(d.queued).toEqual(["in_h"]);
+    expect(d.reversals.map(r => r.reversalId)).toEqual(["ch_h"]);
+  });
+  it("a refund of a payment that paid no subscription is still queued", async () => {
+    const d = invDeps();
+    const asked: string[] = [];
+    d.isManaged = async id => (asked.push(id), true);
+    await processStripeEvent(ev("charge.refunded", { id: "ch_n", refunded: false, amount_refunded: 1000, currency: "huf", payment_intent: "pi_none" }, "evt_n"), d);
+    expect(d.reversals.map(r => r.reversalId)).toEqual(["ch_n"]);
+    expect(asked).toEqual([]);
+  });
 });

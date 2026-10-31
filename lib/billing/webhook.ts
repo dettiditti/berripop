@@ -21,6 +21,8 @@ export type WebhookDeps = {
   enqueueInvoice?: (invoice: Record<string, unknown>, subscriptionId: string | null) => Promise<void>;
   /** Queues a storno or correction for a refund or lost dispute. */
   enqueueReversal?: (reversal: ReversalEvent) => Promise<void>;
+  /** Whether the subscription was sold through Managed Payments: Stripe invoices those, so no task is queued. */
+  isManaged?: (subscriptionId: string) => Promise<boolean>;
 };
 
 export type ReversalEvent = {
@@ -90,6 +92,8 @@ export function reversalFromEvent(event: Stripe.Event): ReversalEvent | null {
   return null;
 }
 
+const soldManaged = async (deps: WebhookDeps, subscriptionId: string | null) => !!subscriptionId && !!deps.isManaged && (await deps.isManaged(subscriptionId));
+
 export type WebhookOutcome = "processed" | "duplicate" | "ignored";
 
 export async function processStripeEvent(event: Stripe.Event, deps: WebhookDeps): Promise<WebhookOutcome> {
@@ -102,14 +106,16 @@ export async function processStripeEvent(event: Stripe.Event, deps: WebhookDeps)
       const subId = paymentIntent ? await deps.subscriptionForPayment(paymentIntent) : null;
       if (subId) await deps.endSubscription(subId);
       const reversal = reversalFromEvent(event);
-      if (reversal && deps.enqueueReversal) await deps.enqueueReversal(reversal);
+      if (reversal && deps.enqueueReversal && !(await soldManaged(deps, reversal.paymentIntentId ? await deps.subscriptionForPayment(reversal.paymentIntentId) : null))) {
+        await deps.enqueueReversal(reversal);
+      }
       return "processed";
     }
     const subId = subscriptionIdFromEvent(event);
     if (subId) await deps.syncSubscription(subId);
     if (event.type === "invoice.paid" && deps.enqueueInvoice) {
       const invoice = event.data.object as unknown as Record<string, unknown>;
-      if (Number(invoice.amount_paid ?? 0) > 0) await deps.enqueueInvoice(invoice, subId);
+      if (Number(invoice.amount_paid ?? 0) > 0 && !(await soldManaged(deps, subId))) await deps.enqueueInvoice(invoice, subId);
     }
     return "processed";
   } catch (err) {

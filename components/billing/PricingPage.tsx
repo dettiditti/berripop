@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@clerk/nextjs";
 import { Check, Info, Lock, Minus } from "lucide-react";
 import { isPaidPlan, PLAN_LIMITS, priceFor, type BillingInterval, type PaidPlanId, type PlanId } from "@/lib/billing/plans";
-import type { PublicSalesInfo } from "@/lib/billing/sales";
+import type { BuyerRegion, PublicSalesInfo } from "@/lib/billing/sales";
 import type { AccountDTO } from "@/lib/domain/types";
 import { useI18n } from "@/lib/i18n/client";
 import { LEGAL_VERSIONS } from "@/lib/legal/records";
@@ -50,6 +50,9 @@ export default function PricingPage({ from, testMode, sales }: { from?: string; 
   const [error, setError] = useState<string | null>(null);
   // The plan whose checkout waits for Terms acceptance; checkout resumes once it is recorded.
   const [termsFor, setTermsFor] = useState<PaidPlanId | null>(null);
+  // Only asked when sales abroad are on; without it every sale is the Hungarian one.
+  const [region, setRegion] = useState<BuyerRegion | null>(null);
+  const chosenRegion: BuyerRegion | null = sales.abroad ? region : "home";
 
   useEffect(() => {
     void trackAction("pricing_viewed", from && ["goals", "ai", "summary", "circles", "profile", "journal", "start", "path"].includes(from) ? from : "pricing");
@@ -87,10 +90,11 @@ export default function PricingPage({ from, testMode, sales }: { from?: string; 
   }
 
   async function subscribe(plan: PaidPlanId) {
+    if (!chosenRegion) return;
     setBusy(plan);
     setError(null);
     try {
-      const r = await startCheckoutAction(priceOf(plan).interval, plan);
+      const r = await startCheckoutAction(priceOf(plan).interval, plan, chosenRegion);
       if (r.ok) {
         window.location.href = r.url;
         return;
@@ -146,9 +150,13 @@ export default function PricingPage({ from, testMode, sales }: { from?: string; 
             <strong><Info size={15} /> {b.checkoutTitle}</strong>
             <p>{t(price.interval === "year" ? b.checkoutYear : b.checkoutMonth, { price: money(price.amount, price.currency) })}</p>
             <p>{b.cancelAnytime}</p>
-            {sales.taxNote === "aam" && <p>{b.taxNoteAam}</p>}
-            {sales.countries.length === 1 && sales.countries[0] === "HU" && <p>{b.countryHuOnly}</p>}
-            <p>{b.invoiceNote}</p>
+            {chosenRegion === "abroad" ? <p>{b.managedNote}</p> : (
+              <>
+                {sales.taxNote === "aam" && <p>{b.taxNoteAam}</p>}
+                {!sales.abroad && sales.countries.length === 1 && sales.countries[0] === "HU" && <p>{b.countryHuOnly}</p>}
+                <p>{b.invoiceNote}</p>
+              </>
+            )}
           </div>
         )}
         {paying && !isCurrent && <p className="plan-note">{b.switchNote}</p>}
@@ -161,7 +169,7 @@ export default function PricingPage({ from, testMode, sales }: { from?: string; 
             {busy === plan ? b.redirecting : t(b.switchTo, { plan: names[plan] })}
           </button>
         ) : (
-          <button className={`btn ${plan === "premium" ? "btn--primary" : "btn--ghost"} btn--lg btn--block plan-cta`} disabled={busy !== null || !account || !sales.available} onClick={() => subscribe(plan)}>
+          <button className={`btn ${plan === "premium" ? "btn--primary" : "btn--ghost"} btn--lg btn--block plan-cta`} disabled={busy !== null || !account || !sales.available || !chosenRegion} onClick={() => subscribe(plan)}>
             {busy === plan ? b.redirecting : `${plan === "premium" ? b.subscribe : b.subscribePlus} · ${priceText(plan)}`}
           </button>
         )}
@@ -185,6 +193,20 @@ export default function PricingPage({ from, testMode, sales }: { from?: string; 
           </button>
         ))}
       </div>
+
+      {sales.abroad && !paying && (
+        <div className="pricing-region">
+          <span id="region-label">{b.regionLabel}</span>
+          <div className="segmented pricing-toggle" role="radiogroup" aria-labelledby="region-label">
+            {(["home", "abroad"] as const).map(r => (
+              <button key={r} type="button" role="radio" aria-checked={region === r} className={`segmented-option ${region === r ? "is-active" : ""}`} onClick={() => setRegion(r)}>
+                {r === "home" ? b.regionHome : b.regionAbroad}
+              </button>
+            ))}
+          </div>
+          {!region && isSignedIn && <p className="field-hint">{b.regionPick}</p>}
+        </div>
+      )}
 
       <div className="plan-grid plan-grid--3">
         <section className={`card plan-card ${current === "free" ? "is-current" : ""}`} aria-labelledby="plan-free">

@@ -3,6 +3,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { getDb } from "../db";
 import { invoices, subscriptions } from "../db/schema";
 import { planReversal } from "../invoicing/jobs";
+import { HOME_COUNTRY } from "../billing/sales";
 import type { ReversalEvent } from "../billing/webhook";
 
 /*
@@ -24,12 +25,18 @@ async function userForCustomer(customerId: string | null): Promise<string | null
 type IdOrObject = string | { id: string } | null | undefined;
 const idOf = (v: IdOrObject) => (typeof v === "string" ? v : v?.id ?? null);
 
-/** invoice.paid with money taken: one follow-up task per Stripe invoice (idempotent). */
+/**
+ * invoice.paid with money taken: one follow-up task per Stripe invoice
+ * (idempotent). Only sales through the Hungarian route arrive here; a billing
+ * address outside Hungary means the buyer chose the wrong route, and the task
+ * says so (without storing the address) so the operator checks it first.
+ */
 export async function enqueueInvoice(inv: Record<string, unknown>, subscriptionId: string | null): Promise<void> {
   const id = inv.id as string;
   const amount = Number(inv.amount_paid ?? 0);
   if (!id || amount <= 0) return;
   const customerId = idOf(inv.customer as IdOrObject);
+  const country = (inv.customer_address as { country?: string | null } | null | undefined)?.country;
   await getDb()
     .insert(invoices)
     .values({
@@ -43,6 +50,7 @@ export async function enqueueInvoice(inv: Record<string, unknown>, subscriptionI
       currency: String(inv.currency ?? "").toLowerCase(),
       providerExternalId: `bp-${id}`,
       status: "manual",
+      ...(country && country.toUpperCase() !== HOME_COUNTRY ? { lastError: "billing_country_not_home" } : {}),
     })
     .onConflictDoNothing();
 }
