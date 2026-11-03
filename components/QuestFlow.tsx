@@ -10,6 +10,8 @@ import UpgradePrompt from "./billing/UpgradePrompt";
 import { useI18n } from "@/lib/i18n/client";
 import { questionPrompts, questionText } from "@/lib/i18n/content";
 import type { Question } from "@/lib/types";
+import { chooseFollowUp, restoredSuggestion } from "@/lib/ai/follow-up";
+import { trackAction } from "@/lib/server/actions";
 import BerripopMascot from "./berripop/BerripopMascot";
 import BerripopReaction from "./berripop/BerripopReaction";
 import BerripopSpeechBubble from "./berripop/BerripopSpeechBubble";
@@ -33,12 +35,22 @@ type Props = {
   ai?: { account: AccountDTO; ask: (draft: string) => Promise<{ question: string } | { error: string } | null> };
 };
 
-/** Optional "Ask Berripop" follow-up. Never required; reaching the allowance never blocks writing. */
-function AiFollowUp({ ai, draft, onUse }: { ai: NonNullable<Props["ai"]>; draft: string; onUse: (q: string) => void }) {
+/**
+ * Optional "Ask Berripop" follow-up. Never required; reaching the allowance
+ * never blocks writing. The suggestion lives in the parent, so it survives
+ * moving between steps, and choosing it never sends another request.
+ */
+function AiFollowUp({ ai, draft, suggestion, onSuggestion, selected, onUse }: {
+  ai: NonNullable<Props["ai"]>;
+  draft: string;
+  suggestion: string | null;
+  onSuggestion: (q: string) => void;
+  selected: boolean;
+  onUse: (q: string) => void;
+}) {
   const { d, t, plural, date } = useI18n();
   const a = d.aiAssist;
   const [busy, setBusy] = useState(false);
-  const [suggestion, setSuggestion] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const usage = ai.account.ai;
 
@@ -50,7 +62,7 @@ function AiFollowUp({ ai, draft, onUse }: { ai: NonNullable<Props["ai"]>; draft:
     const r = await ai.ask(draft);
     setBusy(false);
     if (!r) return; // consent declined: nothing was sent
-    if ("question" in r) setSuggestion(r.question);
+    if ("question" in r) onSuggestion(r.question);
     else setError(r.error);
   }
 
@@ -61,7 +73,10 @@ function AiFollowUp({ ai, draft, onUse }: { ai: NonNullable<Props["ai"]>; draft:
         <div className="ai-suggestion">
           <span className="shared-progress-label">{a.result}</span>
           <p>{suggestion}</p>
-          <button type="button" className="btn btn--ghost btn--sm" onClick={() => onUse(suggestion)}>{a.use}</button>
+          <button type="button" className={`btn btn--sm ${selected ? "btn--primary" : "btn--ghost"}`} aria-pressed={selected} disabled={selected} onClick={() => onUse(suggestion)}>
+            {selected ? a.selected : a.use}
+          </button>
+          {selected && <small className="muted" role="status">{a.selectedHint}</small>}
         </div>
       ) : !reached ? (
         <button type="button" className="btn btn--ghost btn--sm" disabled={busy} onClick={ask}>
@@ -90,6 +105,11 @@ export default function QuestFlow({ question, context, existing, draft, circleNa
   const [text, setText] = useState(draft?.text ?? existing?.text ?? "");
   const [reflection, setReflection] = useState(draft?.reflection ?? existing?.reflection ?? "");
   const [prompt, setPrompt] = useState(draft?.prompt ?? existing?.reflectionPrompt ?? "");
+  const prompts = questionPrompts(question, d);
+  // Berripop's AI question for this answer; kept here so it isn't lost (or asked for again) between steps.
+  const [aiQuestion, setAiQuestion] = useState<string | null>(() => restoredSuggestion(draft?.prompt ?? "", prompts));
+  const tracked = useRef<string | null>(null);
+  const reflectionRef = useRef<HTMLTextAreaElement>(null);
   const [share, setShare] = useState(!!existing?.shared);
   const [saving, setSaving] = useState(false);
   const textRef = useRef<HTMLTextAreaElement>(null);
@@ -99,7 +119,6 @@ export default function QuestFlow({ question, context, existing, draft, circleNa
   const topic = d.themes[question.theme].name;
   const tagline = d.themes[question.theme].tagline;
   const text0 = questionText(question, d);
-  const prompts = questionPrompts(question, d);
   const canShare = circleNames.length > 0;
   const alreadyShared = !!existing?.shared;
   const ready = text.trim().length >= 2;
@@ -122,6 +141,18 @@ export default function QuestFlow({ question, context, existing, draft, circleNa
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   });
+
+  function chooseAiQuestion(q: string) {
+    const next = chooseFollowUp({ text, reflection, prompt }, q);
+    if (next.prompt === prompt) return;
+    setPrompt(next.prompt);
+    if (tracked.current !== q) {
+      tracked.current = q;
+      void trackAction("journal_question_selected", context.kind);
+    }
+    // The answer field for the chosen question opens right below it.
+    window.requestAnimationFrame(() => reflectionRef.current?.focus());
+  }
 
   function close() {
     if (!existing) onDraft({ text, reflection, prompt });
@@ -195,10 +226,10 @@ export default function QuestFlow({ question, context, existing, draft, circleNa
                 </button>
               ))}
             </div>
+            {ai && <AiFollowUp ai={ai} draft={text} suggestion={aiQuestion} onSuggestion={setAiQuestion} selected={!!aiQuestion && prompt === aiQuestion} onUse={chooseAiQuestion} />}
             {prompt && (
-              <textarea className="answer-box answer-box--small" aria-label={prompt} value={reflection} onChange={e => setReflection(e.target.value)} placeholder={prompt} rows={3} maxLength={1000} />
+              <textarea ref={reflectionRef} className="answer-box answer-box--small" aria-label={prompt} value={reflection} onChange={e => setReflection(e.target.value)} placeholder={prompt} rows={3} maxLength={1000} />
             )}
-            {ai && <AiFollowUp ai={ai} draft={text} onUse={q => setPrompt(q)} />}
           </div>
 
           <div className="quest-flow-actions">

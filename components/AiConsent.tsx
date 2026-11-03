@@ -1,7 +1,6 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Sparkles } from "lucide-react";
 import { useI18n } from "@/lib/i18n/client";
 import { consentRefused, runWithAiConsent, type AiConsentGate } from "@/lib/legal/aiConsentFlow";
 import type { LegalStatus } from "@/lib/legal/records";
@@ -59,9 +58,14 @@ export function AiConsentProvider({ initial, children }: { initial: LegalStatus;
   );
 }
 
-/** The consent dialog: what is sent, to whom, why; unchecked by default; saved on the server before anything resumes. */
+/**
+ * The consent dialog: what is processed, by whom (an external AI service; the
+ * providers are named in the Privacy Policy), why, and that it is optional and
+ * can be withdrawn. Unchecked by default; saved on the server, with the notice
+ * version, before anything resumes.
+ */
 function AiConsentDialog({ version, onDone }: { version: string; onDone: (status: LegalStatus | null) => void }) {
-  const { d, t } = useI18n();
+  const { d } = useI18n();
   const c = d.aiConsentDialog;
   const g = d.legalGate;
   const [checked, setChecked] = useState(false);
@@ -95,26 +99,30 @@ function AiConsentDialog({ version, onDone }: { version: string; onDone: (status
   return (
     <div className="sheet-backdrop terms-backdrop" onClick={() => onDone(null)}>
       <div className="sheet terms-sheet" role="dialog" aria-modal="true" aria-labelledby="ai-consent-title" onClick={e => e.stopPropagation()}>
-        <div className="terms-consent">
+        <div className="terms-consent ai-consent">
           <div className="terms-consent-head">
-            <BerripopMascot size={60} mood="happy" />
+            <BerripopMascot size={44} mood="happy" />
             <div>
               <h2 id="ai-consent-title">{c.title}</h2>
               <p>{c.body}</p>
             </div>
           </div>
-          <ul className="terms-list">{c.points.map(p => <li key={p}>{p}</li>)}</ul>
+          <div>
+            <p className="ai-consent-points-title">{c.pointsTitle}</p>
+            <ul className="terms-list">{c.points.map(p => <li key={p}>{p}</li>)}</ul>
+          </div>
           <label className="terms-check">
             <input ref={box} type="checkbox" checked={checked} onChange={e => setChecked(e.target.checked)} />
             <span>{c.checkbox}</span>
           </label>
-          <p className="terms-note">{g.privacyBefore}<a href="/privacy" target="_blank" rel="noopener">{g.privacyLink}</a>{g.privacyAfter}</p>
+          <p className="terms-note"><a href="/privacy" target="_blank" rel="noopener">{c.privacyLink}</a></p>
           {error && <p className="field-hint" role="alert">{error}</p>}
-          <button type="button" className="btn btn--primary btn--lg btn--block" disabled={!checked || busy} onClick={grant}>
-            <Sparkles size={18} /> {c.accept}
-          </button>
-          <button type="button" className="btn btn--text terms-cancel" disabled={busy} onClick={() => onDone(null)}>{c.later}</button>
-          <small className="terms-version">{t(d.settings.aiVersion, { v: version })}</small>
+          <div className="ai-consent-actions">
+            <button type="button" className="btn btn--primary btn--lg btn--block" disabled={!checked || busy} onClick={grant}>
+              {c.accept}
+            </button>
+            <button type="button" className="btn btn--text terms-cancel" disabled={busy} onClick={() => onDone(null)}>{c.later}</button>
+          </div>
         </div>
       </div>
     </div>

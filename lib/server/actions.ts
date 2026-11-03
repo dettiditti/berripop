@@ -108,6 +108,9 @@ export async function openBillingPortalAction() {
 const CLIENT_EVENTS = new Set<string>([
   "pricing_viewed", "upgrade_prompt_shown", "upgrade_prompt_dismissed", "checkout_canceled", "premium_feature_requested",
   "today_step_started", "weekly_recap_viewed",
+  // Journal save flow; draft_started and final_save_succeeded are recorded by the server only.
+  "journal_draft_autosaved", "journal_final_save_clicked", "journal_final_save_failed", "journal_editor_closed_with_draft", "journal_ai_reflection_requested",
+  "journal_question_selected",
 ]);
 export async function trackAction(event: string, context?: string): Promise<void> {
   if (!CLIENT_EVENTS.has(event)) return;

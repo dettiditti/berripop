@@ -41,6 +41,16 @@ export const FUNNEL_EVENTS = [
   "journey_finished",
   "today_step_started",
   "weekly_recap_viewed",
+  // Journal save flow (event names only, never text).
+  "journal_draft_started",
+  "journal_draft_autosaved",
+  "journal_final_save_clicked",
+  "journal_final_save_succeeded",
+  "journal_final_save_failed",
+  "journal_editor_closed_with_draft",
+  "journal_ai_reflection_requested",
+  // Berripop's AI follow-up question chosen in the answer flow (context: where).
+  "journal_question_selected",
 ] as const;
 export type FunnelEvent = (typeof FUNNEL_EVENTS)[number];
 

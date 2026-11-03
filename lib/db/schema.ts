@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { boolean, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { encryptedJson, encryptedText } from "./encryption";
 
 /**
  * Berripop data model. Privacy rule: answer text is only ever read by its author,
@@ -62,9 +63,10 @@ export const answers = pgTable("answers", {
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   circleId: uuid("circle_id").references(() => circles.id, { onDelete: "cascade" }),
   questionRef: text("question_ref").notNull(),
-  text: text("text").notNull(),
-  reflectionPrompt: text("reflection_prompt").notNull().default(""),
-  reflection: text("reflection").notNull().default(""),
+  // Encrypted at rest (lib/db/encryption.ts), like every column marked encrypted* below.
+  text: encryptedText("text").notNull(),
+  reflectionPrompt: encryptedText("reflection_prompt").notNull().default(""),
+  reflection: encryptedText("reflection").notNull().default(""),
   sharedAt: timestamp("shared_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -238,7 +240,7 @@ export const funnelEvents = pgTable("funnel_events", {
 export const journalEntries = pgTable("journal_entries", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  body: text("body").notNull(),
+  body: encryptedText("body").notNull(),
   status: text("status", { enum: ["draft", "saved"] }).notNull().default("draft"),
   /** Local date (Europe/Budapest) the entry belongs to. */
   entryDate: text("entry_date").notNull(),
@@ -251,20 +253,20 @@ export const journalReflections = pgTable("journal_reflections", {
   id: uuid("id").primaryKey().defaultRandom(),
   entryId: uuid("entry_id").notNull().references(() => journalEntries.id, { onDelete: "cascade" }),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  noticed: text("noticed").notNull(),
-  strength: text("strength"),
-  explore: text("explore").notNull(),
-  nextStep: text("next_step"),
+  noticed: encryptedText("noticed").notNull(),
+  strength: encryptedText("strength"),
+  explore: encryptedText("explore").notNull(),
+  nextStep: encryptedText("next_step"),
   /** Other possible readings, phrased as possibilities. */
-  alternatives: jsonb("alternatives").$type<string[]>().notNull().default([]),
+  alternatives: encryptedJson<string[]>()("alternatives").notNull().default([]),
   /** The support mode the person chose for this reflection (listen | reflect | practical). */
   mode: text("mode"),
   /** Optional suggested link to a growth goal; nothing is saved from it without confirmation. */
   suggestionKind: text("suggestion_kind"),
-  suggestionText: text("suggestion_text"),
+  suggestionText: encryptedText("suggestion_text"),
   suggestionGoalId: uuid("suggestion_goal_id"),
   feedback: text("feedback", { enum: ["helpful", "not_helpful"] }),
-  correction: text("correction"),
+  correction: encryptedText("correction"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, t => [index("journal_reflections_entry_idx").on(t.entryId)]);
 
@@ -276,7 +278,7 @@ export const growthInsights = pgTable("growth_insights", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   kind: text("kind", { enum: ["theme", "question", "exercise", "quest"] }).notNull(),
-  text: text("text").notNull(),
+  text: encryptedText("text").notNull(),
   goalId: uuid("goal_id").references(() => growthGoals.id, { onDelete: "set null" }),
   sourceEntryId: uuid("source_entry_id").references(() => journalEntries.id, { onDelete: "set null" }),
   origin: text("origin", { enum: ["user", "ai_suggested"] }).notNull(),
@@ -376,9 +378,9 @@ export const worldMoments = pgTable("world_moments", {
   clientId: text("client_id"),
   date: text("date").notNull(),
   words: jsonb("words").$type<string[]>().notNull().default([]),
-  ownWords: jsonb("own_words").$type<string[]>().notNull().default([]),
+  ownWords: encryptedJson<string[]>()("own_words").notNull().default([]),
   promptId: text("prompt_id"),
-  note: text("note").notNull().default(""),
+  note: encryptedText("note").notNull().default(""),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, t => [index("world_moments_user_idx").on(t.userId, t.createdAt), uniqueIndex("world_moments_user_client_idx").on(t.userId, t.clientId)]);
 
@@ -394,10 +396,10 @@ export const dailyCheckins = pgTable("daily_checkins", {
   date: text("date").notNull(),
   state: text("state"),
   topics: jsonb("topics").$type<string[]>().notNull().default([]),
-  note: text("note").notNull().default(""),
+  note: encryptedText("note").notNull().default(""),
   need: text("need"),
   /** The AI follow-up the member asked for, if any (cleared when the check-in changes). */
-  aiReply: jsonb("ai_reply").$type<{ heard: string; question: string; idea: string | null } | null>(),
+  aiReply: encryptedJson<{ heard: string; question: string; idea: string | null } | null>()("ai_reply"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, t => [uniqueIndex("daily_checkins_user_date_idx").on(t.userId, t.date)]);

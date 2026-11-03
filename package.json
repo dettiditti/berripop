@@ -20,7 +20,9 @@
     "verify:account": "dotenv -e .env.local -- tsx --conditions=react-server scripts/verify-account.ts",
     "verify:progress": "dotenv -e .env.local -- tsx --conditions=react-server scripts/verify-progress.ts",
     "verify:goal-journey": "dotenv -e .env.local -- tsx --conditions=react-server scripts/verify-goal-journey.ts",
-    "invoices": "dotenv -e .env.local -- tsx --conditions=react-server scripts/invoices.ts"
+    "invoices": "dotenv -e .env.local -- tsx --conditions=react-server scripts/invoices.ts",
+    "funnel": "dotenv -e .env.local -- tsx scripts/funnel-report.ts",
+    "encrypt:content": "dotenv -e .env.local -- tsx --conditions=react-server scripts/encrypt-content.ts"
   },
   "dependencies": {
     "@clerk/localizations": "^4.24.1",

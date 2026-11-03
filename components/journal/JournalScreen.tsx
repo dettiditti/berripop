@@ -9,7 +9,7 @@ import { useI18n } from "@/lib/i18n/client";
 import { useAiConsent } from "../AiConsent";
 import {
   deleteAllJournalAction, deleteJournalEntryAction, exportJournalAction, getJournalAction,
-  reflectionFeedbackAction, reflectOnEntryAction, saveInsightAction, weeklyJournalAction,
+  reflectionFeedbackAction, reflectOnEntryAction, saveInsightAction, trackAction, weeklyJournalAction,
 } from "@/lib/server/actions";
 import BerripopMascot from "../berripop/BerripopMascot";
 import BerripopReaction from "../berripop/BerripopReaction";
@@ -200,6 +200,7 @@ export default function JournalScreen({ account, today, notify, starter, onJourn
     setStarterBody(undefined);
     setOpenEntry(entryId);
     setReflecting(entryId);
+    void trackAction("journal_ai_reflection_requested");
     const res = await withAiConsent(() => reflectOnEntryAction(entryId, withInsights && canUseInsights, mode)).catch(() => undefined);
     setUseInsights(false);
     setReflecting(null);
@@ -375,7 +376,7 @@ export default function JournalScreen({ account, today, notify, starter, onJourn
           initialBody={editing === "new" ? starterBody : undefined}
           state={state}
           onState={setState}
-          onClose={() => { setEditing(null); setStarterBody(undefined); }}
+          onClose={keptDraft => { setEditing(null); setStarterBody(undefined); if (keptDraft) notify(j.draftKept); }}
           onReflect={entryId => reflect(entryId)}
           insightToggle={<><SupportModePicker value={mode} onChange={setMode} />{canUseInsights && <UseInsightsToggle id="use-insights-editor" checked={useInsights} onChange={setUseInsights} />}</>}
         />

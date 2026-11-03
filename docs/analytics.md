@@ -21,10 +21,24 @@ sets `user_id` to null, so counts stay but the person is gone.
 | `today_step_started` | Member starts the step Today recommends | `daily`, `assessment`, `goal`, `journey`, `rest` |
 | `weekly_recap_viewed` | Weekly recap opened | – |
 | `first_entry_saved` / `first_reflection_received` | Journal activation | – |
+| `journal_draft_started` | Server: a new journal draft was stored (once per entry) | – |
+| `journal_draft_autosaved` | Editor: a draft autosaved (once per editor session) | – |
+| `journal_final_save_clicked` / `journal_final_save_failed` | Editor: "save entry" pressed / the save failed (each once per editor session) | – |
+| `journal_final_save_succeeded` | Server: an entry became saved (once per entry, only after the database stored it) | – |
+| `journal_editor_closed_with_draft` | Editor closed with the text kept as an unfinished draft | – |
+| `journal_ai_reflection_requested` | The member asked for an AI reflection on an entry | – |
+| `journal_question_selected` | Berripop's AI follow-up question was chosen in the answer flow (once per question; choosing never asks the AI again) | `daily`, `journey` or `goal` |
 | `pricing_viewed`, `upgrade_prompt_*`, `checkout_*`, `subscription_canceled`, `plan_changed`, `ai_allowance_reached`, `premium_feature_requested` | Subscription funnel | where it came from |
 
 Server-side events are written only after the underlying record was newly
 created (the same idempotent insert that grants XP), so retries never double count.
+
+## Quick report
+
+`npm run funnel` (or `npm run funnel -- 14` for members who joined in the last 14 days)
+prints the funnel, a line per member and D1/D7/D30 retention. It counts real members
+only: rows without a member (left by the deleted `verify:*` test users) and `test_` ids
+are left out. It runs in a read-only transaction and prints no ids, names or content.
 
 ## Retention method
 

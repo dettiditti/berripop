@@ -10,7 +10,7 @@ import { dictionaries } from "../i18n/dictionaries";
 import { isLocale, type Locale } from "../i18n/config";
 import { INSIGHT_KINDS, isSupportMode, parseReflection, parseWeekly, type InsightKind, type SupportMode } from "../journal/reflection";
 import type { JournalError, JournalReflectionDTO, JournalResult, JournalState, WeeklyJournalDTO } from "../journal/types";
-import { track } from "./analytics";
+import { track, type FunnelEvent } from "./analytics";
 import { aiConfigured, runMeteredAi } from "./ai";
 import { canAccessWeeklyJournal, getAiUsage, getUserEntitlements } from "./entitlements";
 
@@ -72,6 +72,15 @@ const ok = async <T,>(userId: string, data?: T): Promise<JournalResult<T>> => ({
 
 /* ---------- Entries ---------- */
 
+/**
+ * Save-flow events for one save: a new draft starts one, and an entry becomes
+ * finished once (only when the server stored it as saved). Names only, never text.
+ */
+export function entrySaveEvents(previous: "draft" | "saved" | null, next: "draft" | "saved"): FunnelEvent[] {
+  if (previous === null) return [next === "draft" ? "journal_draft_started" : "journal_final_save_succeeded"];
+  return previous !== "saved" && next === "saved" ? ["journal_final_save_succeeded"] : [];
+}
+
 /** Creates or updates the owner's entry. Drafts autosave; "saved" marks it complete. */
 export async function saveEntry(userId: string, input: { id?: string | null; body: string; status: "draft" | "saved" }): Promise<JournalResult<string>> {
   const body = input.body.slice(0, MAX_BODY);
@@ -84,13 +93,16 @@ export async function saveEntry(userId: string, input: { id?: string | null; bod
   if (input.id) {
     const existing = await ownEntry(userId, input.id);
     if (!existing) return fail("not_found");
+    const previous = existing.status;
     await db.update(journalEntries).set({ body, status, updatedAt: new Date() }).where(eq(journalEntries.id, existing.id));
     if (firstSaved) await track(userId, "first_entry_saved");
+    for (const e of entrySaveEvents(previous, status)) await track(userId, e);
     if (status === "saved") await grantGrowthXp(userId, "journal", existing.id);
     return ok(userId, existing.id);
   }
   const [row] = await db.insert(journalEntries).values({ userId, body, status, entryDate: circleToday() }).returning({ id: journalEntries.id });
   if (firstSaved) await track(userId, "first_entry_saved");
+  for (const e of entrySaveEvents(null, status)) await track(userId, e);
   // XP for saving (once per entry, within the daily cap). The text is never read for it.
   if (status === "saved") await grantGrowthXp(userId, "journal", row.id);
   return ok(userId, row.id);
