@@ -1055,6 +1055,26 @@ export const hu: Dictionary = {
     codePlaceholder: "pl. K7P2QM9X",
     join: "Csatlakozom",
     invalidCode: "Ehhez a kódhoz nem tartozik kör. Ellenőrizd, és próbáld újra.",
+    intro: {
+      helloTitle: "Szia! Én Berri vagyok!",
+      helloBody: "Én kísérlek az utadon: napi pár perc, egy kérdés, egy apró lépés.",
+      helloCta: "Szia, Berri!",
+      nameTitle: "Hogy szólíthatlak?",
+      nameLabel: "A neved",
+      namePlaceholder: "pl. Anna",
+      nameHint: "Csak arra használom, hogy így köszöntselek. A profilodon bármikor átírhatod.",
+      nameCta: "Tovább",
+      niceTitle: "Örülök, hogy megismerhetlek, {name}!",
+      niceBody: "Nézzük, hogyan szeretnél elindulni.",
+      niceCta: "Mehet!",
+    },
+  },
+
+  appWelcome: {
+    title: "Szia! Én Berri vagyok!",
+    body: "Napi pár perc csak magadra: egy kérdés, egy apró lépés, egy privát napló.",
+    start: "Kezdjük!",
+    signIn: "Már van fiókom",
   },
 
   assessment: {

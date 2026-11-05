@@ -8,6 +8,7 @@ import { assessmentOpen } from "@/lib/domain/next";
 import { buildView } from "@/lib/domain/view";
 import { setLocale, useI18n } from "@/lib/i18n/client";
 import { isLocale } from "@/lib/i18n/config";
+import { isNativeApp } from "@/lib/native";
 import { termsPrompt, type LegalStatus } from "@/lib/legal/records";
 import type { AssessmentState } from "@/lib/assessment/types";
 import type { JournalState } from "@/lib/journal/types";
@@ -60,6 +61,9 @@ export default function KozosApp() {
     document.title = d.meta.title;
   }, [locale, d]);
 
+  // Signed out inside the phone app (e.g. just after signing out): keep the
+  // splash while the server sends the visitor to the app's own welcome.
+  if (isLoaded && !isSignedIn && typeof navigator !== "undefined" && isNativeApp(navigator.userAgent)) return <Splash label={d.common.loading} />;
   return !isLoaded ? <Splash label={d.common.loading} /> : isSignedIn ? <SignedInApp /> : <Welcome />;
 }
 
@@ -109,7 +113,7 @@ function SignedInApp() {
   const newMember = !snapshot.circle && !snapshot.me.personalPath;
   const prompt = termsPrompt(legal.terms, newMember);
   const accepted = () => setLegal({ ...legal, terms: "granted" });
-  if (newMember) return <Onboarding onSnapshot={setSnapshot} terms={prompt === "onboarding" ? { version: legal.termsVersion, onAccepted: accepted } : null} />;
+  if (newMember) return <Onboarding name={snapshot.me.name} onSnapshot={setSnapshot} terms={prompt === "onboarding" ? { version: legal.termsVersion, onAccepted: accepted } : null} />;
   return (
     <AiConsentProvider initial={legal}>
       <AppShell snapshot={snapshot} setSnapshot={setSnapshot} />

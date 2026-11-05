@@ -1,9 +1,10 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { ArrowLeft, Check } from "lucide-react";
 import { defaultLocale, isLocale, LOCALE_COOKIE } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionaries";
+import { APP_HOME, isNativeApp } from "@/lib/native";
 import BerripopMascot from "./berripop/BerripopMascot";
 
 /**
@@ -15,10 +16,12 @@ export default async function AuthPage({ children }: { children: ReactNode }) {
   const dict = getDictionary(isLocale(stored) ? stored : defaultLocale);
   const a = dict.auth;
   const legalLinks = dict.account.legal;
+  // In the phone app "back" returns to the app's welcome, not the marketing page.
+  const home = isNativeApp((await headers()).get("user-agent")) ? APP_HOME : "/";
   return (
     <main className="auth-page">
       <aside className="auth-panel">
-        <Link className="auth-brand" href="/">
+        <Link className="auth-brand" href={home}>
           <BerripopMascot mood="happy" size={44} motion="none" />
           <span>berripop</span>
         </Link>
@@ -30,7 +33,7 @@ export default async function AuthPage({ children }: { children: ReactNode }) {
         <div className="auth-panel-art" aria-hidden><BerripopMascot pair mood="happy" size={120} motion="subtle" /></div>
       </aside>
       <section className="auth-form">
-        <Link className="auth-back" href="/"><ArrowLeft size={16} aria-hidden /> {a.backHome}</Link>
+        <Link className="auth-back" href={home}><ArrowLeft size={16} aria-hidden /> {a.backHome}</Link>
         {children}
         <nav className="auth-legal" aria-label={dict.landing.footer.legal}>
           <Link href="/privacy">{legalLinks.privacy}</Link>

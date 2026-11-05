@@ -1548,6 +1548,48 @@ html:has(.lp) { scroll-behavior: smooth; }
 .circle-setup-form { display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 16px; background: var(--cream); }
 @media (max-width: 760px) { .onboarding-options { grid-template-columns: 1fr; } .onboarding-choice { padding-top: 20px; gap: 20px; } }
 
+/* ---------- Berri on video: the app welcome and the first hello ---------- */
+/* The page takes the clips' own lavender so Berri stands in the scene, not in a box. */
+.berri-stage {
+  --berri-bg: #cbc3d9;
+  min-height: 100dvh; background: var(--berri-bg);
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: max(12px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+}
+.berri-video { position: relative; width: min(78vw, 340px, 40dvh); aspect-ratio: 3 / 4; flex-shrink: 0; }
+/* Transparent clip (Apple browsers and the app): Berri stands on the page,
+   with a soft shadow of their own on the ground. */
+.berri-video--clear::before {
+  content: ""; position: absolute; left: 26%; right: 26%; bottom: 5%; height: 5%;
+  border-radius: 50%; background: radial-gradient(closest-side, rgba(60, 40, 110, 0.28), transparent);
+}
+.berri-video--clear video, .berri-video--clear img { position: relative; }
+/* Clip with its own background (other browsers): the page colour matches it,
+   and only the top and bottom melt into the page. */
+.berri-video--scene {
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 16%, #000 82%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 16%, #000 82%, transparent);
+}
+.berri-video video, .berri-video img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 45%; display: block; }
+.berri-intro-card, .app-welcome-copy {
+  position: relative; width: min(100%, 440px); text-align: center;
+  background: var(--paper); border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 22px 20px 20px; display: flex; flex-direction: column; gap: 12px;
+}
+/* A small speech-bubble tail pointing up at Berri. */
+.berri-intro-card::before, .app-welcome-copy::before {
+  content: ""; position: absolute; top: -9px; left: 50%; width: 18px; height: 18px;
+  background: var(--paper); border-radius: 4px; transform: translateX(-50%) rotate(45deg);
+}
+.berri-intro-card h1, .app-welcome-copy h1 { font-family: var(--font-display); font-size: clamp(24px, 6.4vw, 30px); font-weight: 700; color: var(--ink); line-height: 1.15; }
+.berri-intro-card p, .app-welcome-copy p { color: var(--ink-2); font-size: 17px; line-height: 1.45; margin: 0; }
+.berri-intro-card .input { font-size: 18px; text-align: center; }
+.berri-intro-card .berri-intro-hint { font-size: 14px; }
+.berri-intro-card .btn { margin-top: 4px; }
+/* Typing the name: a smaller Berri leaves room for the on-screen keyboard. */
+.berri-intro:has(form) .berri-video { width: min(56vw, 240px, 28dvh); }
+.app-welcome-actions { width: min(100%, 440px); display: flex; flex-direction: column; gap: 10px; margin-top: auto; padding-top: 16px; }
+
 .personal-brand { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-display); font-weight: 700; font-size: 22px; color: var(--purple); }
 
 /* Unified shell: Today ("Ma") */

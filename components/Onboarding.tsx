@@ -5,18 +5,20 @@ import { ArrowRight, Check, Sprout, Users } from "lucide-react";
 import type { Snapshot } from "@/lib/domain/types";
 import { useI18n } from "@/lib/i18n/client";
 import { startPersonalPathAction } from "@/lib/server/actions";
+import BerriIntro from "./BerriIntro";
 import BerripopMascot from "./berripop/BerripopMascot";
 import CircleSetup from "./CircleSetup";
 import TermsGate from "./TermsGate";
 
 /**
- * First run after sign-in: start your own path (primary) or grow together in a
- * circle. A member who has not accepted the current Terms accepts them first,
- * as the opening step.
+ * First run after sign-in: Berri says hello and asks what to call you, then
+ * start your own path (primary) or grow together in a circle. A member who has
+ * not accepted the current Terms accepts them before choosing.
  */
-export default function Onboarding({ onSnapshot, terms }: { onSnapshot: (s: Snapshot) => void; terms: { version: string; onAccepted: () => void } | null }) {
+export default function Onboarding({ name, onSnapshot, terms }: { name: string; onSnapshot: (s: Snapshot) => void; terms: { version: string; onAccepted: () => void } | null }) {
   const { d } = useI18n();
   const o = d.onboarding;
+  const [met, setMet] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,6 +34,8 @@ export default function Onboarding({ onSnapshot, terms }: { onSnapshot: (s: Snap
     setBusy(false);
     setError(d.auth.error);
   }
+
+  if (!met) return <BerriIntro name={name} onSnapshot={onSnapshot} onDone={() => setMet(true)} />;
 
   return (
     <main className="onboarding-choice">

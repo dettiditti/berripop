@@ -1061,6 +1061,26 @@ export const en = {
     codePlaceholder: "e.g. K7P2QM9X",
     join: "Join",
     invalidCode: "No circle uses this code. Check it and try again.",
+    intro: {
+      helloTitle: "Hi! I'm Berri!",
+      helloBody: "I'll keep you company on your way: a few minutes a day, one question, one small step.",
+      helloCta: "Hi, Berri!",
+      nameTitle: "What should I call you?",
+      nameLabel: "Your name",
+      namePlaceholder: "e.g. Anna",
+      nameHint: "I'll only use it to greet you. You can change it any time on your profile.",
+      nameCta: "Continue",
+      niceTitle: "Lovely to meet you, {name}!",
+      niceBody: "Let's see how you'd like to start.",
+      niceCta: "Let's go!",
+    },
+  },
+
+  appWelcome: {
+    title: "Hi! I'm Berri!",
+    body: "A few minutes a day just for you: one question, one small step, a private journal.",
+    start: "Let's start!",
+    signIn: "I already have an account",
   },
 
   assessment: {
