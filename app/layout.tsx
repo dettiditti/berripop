@@ -1,11 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { ClerkProvider } from "@clerk/nextjs";
 import { enUS, huHU } from "@clerk/localizations";
 import { Analytics } from "@vercel/analytics/next";
 import { defaultLocale, isLocale, LOCALE_COOKIE, type Locale } from "@/lib/i18n/config";
 import { LocaleProvider } from "@/lib/i18n/client";
 import { getDictionary } from "@/lib/i18n/dictionaries";
+import { isNativeApp } from "@/lib/native";
 import "./globals.css";
 
 const d = getDictionary(defaultLocale);
@@ -62,16 +63,22 @@ const clerkAppearance = {
   },
 };
 
-export const viewport: Viewport = {
-  themeColor: "#FFF8EE",
-  width: "device-width",
-  initialScale: 1,
-};
+/**
+ * In the phone app the page reaches under the status bar and the home
+ * indicator ("cover"), so a page can colour the whole screen (Berri's
+ * lavender). Everything else keeps its old top: see `html[data-app]` in
+ * globals.css. The website is unchanged.
+ */
+export async function generateViewport(): Promise<Viewport> {
+  const inApp = isNativeApp((await headers()).get("user-agent"));
+  return { themeColor: "#FFF8EE", width: "device-width", initialScale: 1, ...(inApp ? { viewportFit: "cover" as const } : {}) };
+}
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   // The language cookie lets server-rendered screens (and Clerk's sign-in) match the app's language.
   const stored = (await cookies()).get(LOCALE_COOKIE)?.value;
   const locale = isLocale(stored) ? stored : defaultLocale;
+  const inApp = isNativeApp((await headers()).get("user-agent"));
   return (
     <ClerkProvider
       localization={clerkLocalization(locale)}
@@ -81,7 +88,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       signInFallbackRedirectUrl="/"
       signUpFallbackRedirectUrl="/"
     >
-      <html lang={locale} suppressHydrationWarning>
+      <html lang={locale} data-app={inApp ? "" : undefined} suppressHydrationWarning>
         <body>
           <LocaleProvider locale={locale}>{children}</LocaleProvider>
           {/* Cookieless, anonymous page views (Vercel Web Analytics). */}

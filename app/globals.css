@@ -1745,3 +1745,20 @@ html:has(.lp) { scroll-behavior: smooth; }
 .journey-chapter-title { font-size: 17px; margin: 4px 0 -4px; }
 .segmented-option:disabled { opacity: 0.5; cursor: not-allowed; }
 .segmented--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+/* ---------- Phone app: full screen ---------- */
+/* The app's page reaches under the status bar (viewport-fit=cover, set in the
+   layout). Pages keep their old look: content starts below the status bar,
+   which stays cream, and overlays open below it. Berri's pages fill the whole
+   screen with lavender instead. */
+html[data-app] { --safe-top: env(safe-area-inset-top, 0px); }
+html[data-app] body { padding-top: var(--safe-top); }
+html[data-app] body::before {
+  content: ""; position: fixed; z-index: 40; top: 0; left: 0; right: 0; height: var(--safe-top);
+  background: var(--cream);
+}
+html[data-app] .overlay { top: var(--safe-top); }
+html[data-app] .settings-top { top: var(--safe-top); }
+html[data-app]:has(.berri-stage), html[data-app] body:has(.berri-stage) { background: #cbc3d9; }
+html[data-app] body:has(.berri-stage) { padding-top: 0; }
+html[data-app] body:has(.berri-stage)::before { content: none; }
