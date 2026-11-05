@@ -20,6 +20,7 @@ import * as legal from "./legal";
 import type { JournalResult } from "../journal/types";
 import * as goalJourney from "./goalJourney";
 import * as personal from "./personal";
+import * as push from "./push";
 import * as service from "./service";
 import { requireUserId } from "./session";
 
@@ -458,6 +459,22 @@ export async function setAiConsentAction(granted: boolean, version: string) {
   const userId = await requireUserId();
   if (!userId) return { ok: false as const, error: "unauthorized" as const };
   return legal.setAiConsent(userId, granted === true, String(version));
+}
+
+/* ---------- Daily reminder (iPhone app) ---------- */
+
+/** `on`: whether this phone gets the daily reminder after the call. */
+export async function setPushReminderAction(token: string, on: boolean): Promise<{ ok: boolean; on: boolean }> {
+  const userId = await requireUserId();
+  if (!userId) return { ok: false, on: false };
+  const ok = on ? await push.savePushDevice(userId, token) : await push.removePushDevice(userId, token);
+  return { ok, on: ok ? on : !on };
+}
+
+export async function pushReminderStatusAction(token: string): Promise<boolean> {
+  const userId = await requireUserId();
+  if (!userId) return false;
+  return push.hasPushDevice(userId, token);
 }
 
 /* ---------- Account: export and deletion ---------- */

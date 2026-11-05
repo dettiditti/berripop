@@ -491,3 +491,18 @@ export const invoices = pgTable("invoices", {
   index("invoices_stripe_invoice_idx").on(t.stripeInvoiceId),
   index("invoices_user_idx").on(t.userId),
 ]);
+
+/**
+ * Phones that asked for the daily reminder (the iPhone app). One row per
+ * device token; switching the reminder off deletes the row, and so does
+ * deleting the account. The reminder itself never carries any content.
+ */
+export const pushDevices = pgTable("push_devices", {
+  token: text("token").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  platform: text("platform", { enum: ["ios"] }).notNull().default("ios"),
+  /** The local date (Europe/Budapest) the last reminder went out, so it is sent at most once a day. */
+  lastSentDate: text("last_sent_date"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [index("push_devices_user_idx").on(t.userId)]);

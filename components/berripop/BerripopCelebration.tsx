@@ -7,6 +7,7 @@ import { achievementDefs, type MilestoneId } from "@/lib/domain/rules";
 import type { RewardDTO } from "@/lib/domain/types";
 import { useI18n } from "@/lib/i18n/client";
 import { levelName } from "@/lib/i18n/content";
+import { hapticSuccess } from "@/lib/nativeBridge";
 import { getLevelInfo } from "@/lib/progress";
 import { decorForBadge, regionForWeek } from "@/lib/world";
 import AchievementBadge from "../AchievementBadge";
@@ -61,6 +62,11 @@ export default function BerripopCelebration({ reward, next, canShare, onShare, o
   const levelUp = levelAfter.level > levelBefore.level;
   const newBadges = achievementDefs.filter(a => reward.newAchievements.includes(a.id));
   const major = levelUp || newBadges.length > 0 || reward.weekCompleted !== null || reward.newMilestones.length > 0 || reward.sharedDayCompleted !== null;
+
+  // In the iPhone app a new completion also gives a soft "well done" buzz.
+  useEffect(() => {
+    if (reward.isNew) hapticSuccess();
+  }, [reward.isNew]);
 
   useEffect(() => {
     closeRef.current?.focus();

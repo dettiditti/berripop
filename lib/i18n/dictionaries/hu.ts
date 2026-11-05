@@ -1486,6 +1486,15 @@ export const hu: Dictionary = {
   },
 
   settings: {
+    reminderTitle: "Napi emlékeztető",
+    reminderBody: "Esténként egy rövid értesítés, ha aznap még nem jártál itt. Csak annyit ír, hogy vár a mai kérdés: soha nem mutatja, mit írtál vagy mi a célod.",
+    reminderOn: "Bekapcsolva ezen a telefonon.",
+    reminderOff: "Kikapcsolva.",
+    reminderEnable: "Bekapcsolom",
+    reminderDisable: "Kikapcsolom",
+    reminderDenied: "Az értesítések ki vannak kapcsolva a telefonod beállításaiban. A Beállítások › Berripop › Értesítések alatt kapcsolhatod be.",
+    reminderSaved: "Mentettük.",
+    reminderError: "Nem sikerült. Próbáld újra kicsit később.",
     languageTitle: "Nyelv",
     languageHint: "Az alkalmazás nyelvét változtatja meg. A válaszaid és a haladásod változatlan marad.",
     languageChanged: "A nyelv mostantól magyar.",

@@ -9,6 +9,7 @@ import type { Snapshot } from "@/lib/domain/types";
 import { useI18n } from "@/lib/i18n/client";
 import { deleteAccountAction, exportAccountAction, getSnapshotAction, setDisplayNameAction } from "@/lib/server/actions";
 import BerripopMascot from "./berripop/BerripopMascot";
+import ReminderCard from "./ReminderCard";
 import AiConsentCard from "./AiConsentCard";
 import SubscriptionCard from "./billing/SubscriptionCard";
 import LanguageSelector from "./LanguageSelector";
@@ -118,6 +119,8 @@ export default function SettingsPage() {
             </section>
 
             <LanguageSelector persist onChanged={notify} />
+
+            <ReminderCard notify={notify} />
 
             <AiConsentCard notify={notify} />
 

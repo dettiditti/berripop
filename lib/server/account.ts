@@ -4,7 +4,7 @@ import { and, asc, desc, eq, inArray, ne } from "drizzle-orm";
 import { getDb } from "../db";
 import {
   aiCalls, answers, circleMembers, dailyCheckins, circles, customQuestions, funnelEvents, growthGoals, growthSteps, legalRecords,
-  pathAssessments, subscriptions, userAchievements, userActivity, userPrefs, users, userXpEvents, worldMoments,
+  pathAssessments, pushDevices, subscriptions, userAchievements, userActivity, userPrefs, users, userXpEvents, worldMoments,
 } from "../db/schema";
 import { deletionBlock, isDeleteConfirmation, type DeletionBlock } from "../account/policy";
 import { exportJournal } from "./journal";
@@ -28,7 +28,7 @@ export type DeleteError = "unauthorized" | "confirmation" | "billing_unavailable
 /** Everything we store about the member, for download (their own data only). */
 export async function exportAccount(userId: string) {
   const db = getDb();
-  const [[user], [prefs], [sub], memberships, myAnswers, myQuestions, goals, steps, [assessment], journal, usage, events, activity, xp, badges, moments, legal, invoiceRows, checkins] = await Promise.all([
+  const [[user], [prefs], [sub], memberships, myAnswers, myQuestions, goals, steps, [assessment], journal, usage, events, activity, xp, badges, moments, legal, invoiceRows, checkins, phones] = await Promise.all([
     db.select().from(users).where(eq(users.id, userId)).limit(1),
     db.select().from(userPrefs).where(eq(userPrefs.userId, userId)).limit(1),
     db.select().from(subscriptions).where(eq(subscriptions.userId, userId)).limit(1),
@@ -50,6 +50,7 @@ export async function exportAccount(userId: string) {
     db.select({ kind: legalRecords.kind, version: legalRecords.version, granted: legalRecords.granted, createdAt: legalRecords.createdAt }).from(legalRecords).where(eq(legalRecords.userId, userId)).orderBy(desc(legalRecords.createdAt)),
     invoicesForUser(userId),
     db.select({ date: dailyCheckins.date, state: dailyCheckins.state, topics: dailyCheckins.topics, note: dailyCheckins.note, need: dailyCheckins.need, aiReply: dailyCheckins.aiReply, updatedAt: dailyCheckins.updatedAt }).from(dailyCheckins).where(eq(dailyCheckins.userId, userId)).orderBy(desc(dailyCheckins.date)),
+    db.select({ platform: pushDevices.platform, lastReminder: pushDevices.lastSentDate, createdAt: pushDevices.createdAt }).from(pushDevices).where(eq(pushDevices.userId, userId)),
   ]);
   return {
     exportedAt: new Date().toISOString(),
@@ -67,6 +68,8 @@ export async function exportAccount(userId: string) {
     progress: { activity, xp, badges },
     innerWorldMoments: moments,
     dailyCheckins: checkins,
+    /** Phones with the daily reminder on (the device token itself is left out). */
+    reminderPhones: phones,
     legalRecords: legal,
     invoices: invoiceRows,
   };

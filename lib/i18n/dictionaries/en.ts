@@ -1492,6 +1492,15 @@ export const en = {
   },
 
   settings: {
+    reminderTitle: "Daily reminder",
+    reminderBody: "A short evening notification if you haven't stopped by that day. It only says today's question is waiting: it never shows what you wrote or what your goal is.",
+    reminderOn: "On for this phone.",
+    reminderOff: "Off.",
+    reminderEnable: "Turn on",
+    reminderDisable: "Turn off",
+    reminderDenied: "Notifications are turned off in your phone's settings. You can turn them on under Settings › Berripop › Notifications.",
+    reminderSaved: "Saved.",
+    reminderError: "That didn't work. Please try again a bit later.",
     languageTitle: "Language",
     languageHint: "Changes the app's language. Your answers and progress stay exactly as they are.",
     languageChanged: "Language set to English.",
