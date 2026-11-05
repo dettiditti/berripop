@@ -1591,6 +1591,8 @@ html:has(.lp) { scroll-behavior: smooth; }
 /* Inside the app, a limit is explained without any offer. */
 .app-limit-note { margin: 0; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--lavender); color: var(--ink-2); font-size: 15px; font-weight: 700; }
 .app-welcome-actions { width: min(100%, 440px); display: flex; flex-direction: column; gap: 10px; margin-top: auto; padding-top: 16px; }
+/* Berri and the card sit in the middle of the space above the buttons, not pushed to the top. */
+.app-welcome-berri { margin-top: auto; }
 
 .personal-brand { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-display); font-weight: 700; font-size: 22px; color: var(--purple); }
 
