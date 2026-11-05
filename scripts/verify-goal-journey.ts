@@ -62,14 +62,14 @@ async function main() {
 
     broken = true;
     const bad = await buildGoalJourney(A, "hu");
-    check("malformed AI output is refused and nothing is stored", !bad.ok && (await db.select().from(goalJourneys).where(eq(goalJourneys.userId, A))).length === 0);
+    check("malformed AI output is retried once, then refused, and nothing is stored", !bad.ok && calls === 2 && (await db.select().from(goalJourneys).where(eq(goalJourneys.userId, A))).length === 0);
     broken = false;
 
     const built = await buildGoalJourney(A, "hu");
     const gj = built.ok ? built.snapshot.progress.goalJourney : null;
     check("one AI call builds a 21-day journey from the goals", !!gj && gj.days.length === 21 && gj.weeks.length === 3 && gj.goals[0] === "Bátrabban megszólalni" && !gj.outdated);
     const again = await buildGoalJourney(A, "hu");
-    check("rebuilding with unchanged goals is refused (no extra AI use)", !again.ok && again.error === "invalid" && calls === 2);
+    check("rebuilding with unchanged goals is refused (no extra AI use)", !again.ok && again.error === "invalid" && calls === 3);
     const logged = await db.select().from(aiCalls).where(eq(aiCalls.userId, A));
     check("the AI call is logged as goal_journey", logged.some(r => r.feature === "goal_journey"));
 

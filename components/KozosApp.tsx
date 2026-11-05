@@ -217,6 +217,8 @@ function AppShell({ snapshot, setSnapshot }: { snapshot: Snapshot; setSnapshot: 
       if (quiet) {
         const r = await buildGoalJourneyAction().catch(() => null);
         if (r?.ok) setSnapshot(r.snapshot);
+        // No goals or no AI consent stay quiet; a failed build is said, so they know they can retry.
+        else if (!r || r.error === "ai_unavailable") notify(d.journey.buildFailed);
       } else {
         const r = await withAiConsent(() => buildGoalJourneyAction()).catch(() => undefined);
         if (r === undefined) return notify(d.auth.error);

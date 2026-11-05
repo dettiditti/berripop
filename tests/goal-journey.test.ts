@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { journeyNodes } from "../lib/content";
 import { personalFacts } from "../lib/domain/personal";
-import { describeGoals, goalNodes, goalQuestion, goalRef, goalsKey, isGoalRef, parseGoalJourney, parseGoalRef } from "../lib/journey/goal";
+import { describeGoals, goalJourneyInstructions, goalNodes, goalQuestion, goalRef, goalsKey, isGoalRef, parseGoalJourney, parseGoalRef } from "../lib/journey/goal";
 
 const ID = "0f8fad5b-d9cb-469f-a165-70867728950e";
 const raw = (days = 21) => JSON.stringify({
@@ -28,6 +28,29 @@ describe("goal journey content", () => {
     const missing = JSON.parse(raw());
     missing.days[4].prompt = "  ";
     expect(parseGoalJourney(JSON.stringify(missing))).toBeNull();
+  });
+  it("reads days nested per week, the format the AI is asked for", () => {
+    const flat = JSON.parse(raw());
+    const nested = (perWeek = [7, 7, 7]) => JSON.stringify({
+      weeks: flat.weeks.map((w: object, i: number) => ({ ...w, days: flat.days.slice(i * 7, i * 7 + perWeek[i]).map((d: object, k: number) => ({ day: k + 1, ...d })) })),
+    });
+    const j = parseGoalJourney(nested())!;
+    expect(j.days.map(d => d.title)).toEqual(flat.days.map((d: { title: string }) => d.title));
+    expect(j.days[13]).toMatchObject({ day: 14, week: 2, kind: "challenge", title: "Nap 14" });
+    // A week with a day missing is incomplete; an extra day is dropped.
+    expect(parseGoalJourney(nested([7, 6, 7]))).toBeNull();
+    const extra = JSON.parse(nested());
+    extra.weeks[0].days.push({ day: 8, title: "Plusz", prompt: "Plusz?" });
+    expect(parseGoalJourney(JSON.stringify(extra))!.days[7]).toMatchObject({ day: 8, title: "Nap 8" });
+  });
+  it("asks for 3 weeks of 7 days rather than one list of 21", () => {
+    expect(goalJourneyInstructions("hu")).toMatch(/Each week has exactly 7 days/);
+  });
+  it("closes brackets the model left open at the very end, but not a cut-off answer", () => {
+    const full = raw();
+    expect(parseGoalJourney(full.slice(0, -2))).not.toBeNull(); // "]}" missing
+    expect(parseGoalJourney(full.slice(0, -40))).toBeNull(); // stopped mid-day
+    expect(parseGoalJourney(full.slice(0, full.lastIndexOf("{")) + "]}")).toBeNull(); // a day short
   });
   it("accepts JSON wrapped in prose or a code fence", () => {
     expect(parseGoalJourney("Here you go:\n```json\n" + raw() + "\n```")).not.toBeNull();

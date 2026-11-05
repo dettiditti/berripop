@@ -148,6 +148,35 @@ export function extractJson(raw: string): unknown {
   try {
     return JSON.parse(text.slice(start, end + 1));
   } catch {
+    return parseUnclosed(text.slice(start));
+  }
+}
+
+/**
+ * Models sometimes stop one or two closing brackets short of the end of a long
+ * answer. When everything else is complete (no string left open), close what
+ * is still open and try once more; anything else stays a failure.
+ */
+function parseUnclosed(text: string): unknown {
+  const open: string[] = [];
+  let inString = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inString) {
+      if (c === "\\") i++;
+      else if (c === '"') inString = false;
+    } else if (c === '"') inString = true;
+    else if (c === "{") open.push("}");
+    else if (c === "[") open.push("]");
+    else if (c === "}" || c === "]") {
+      if (open.pop() !== c) return null;
+      if (!open.length) return null; // closed before the end: not a cut-off answer
+    }
+  }
+  if (inString || !open.length) return null;
+  try {
+    return JSON.parse(text + open.reverse().join(""));
+  } catch {
     return null;
   }
 }

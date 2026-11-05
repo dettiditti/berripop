@@ -512,6 +512,7 @@ export const hu: Dictionary = {
     outdatedCta: "Utazás újraépítése",
     building: "Berripop összeállítja az utazásodat… ez legfeljebb egy percig tart.",
     built: "Kész az utazásod!",
+    buildFailed: "Most nem sikerült összeállítani a saját utazásodat. Az Utazás fülön bármikor újrapróbálhatod, addig a beépített utazással folytathatod.",
     sharedLink: "Közös út megnyitása",
     stopsDone: "kész állomás",
     toGo: "van még hátra",

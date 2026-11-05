@@ -56,10 +56,11 @@ export function goalJourneyInstructions(locale: string): string {
   return [
     `You are Berripop, a warm companion in a personal growth app. Write in ${language(locale)}, addressing the person informally.`,
     `Create a gentle ${GOAL_JOURNEY_DAYS}-day journey (3 weeks of 7 days) that helps them move towards THEIR goals, using only what they told you.`,
-    "Each day is one short reflective question or tiny practical exercise doable in 2-5 minutes. Days 7, 14 and 21 are weekly challenges: one small real-life action (10-15 minutes) that builds on that week.",
+    "Each day is one short reflective question or tiny practical exercise doable in 2-5 minutes. The 7th day of every week is a weekly challenge: one small real-life action (10-15 minutes) that builds on that week.",
     "Build gradually: week 1 explores where they are and what matters, week 2 practises small steps, week 3 consolidates and looks ahead.",
-    `Respond ONLY with JSON: {"weeks": [{"theme": string, "tagline": string}], "days": [{"title": string, "prompt": string, "theme": one of ${questThemes.map(t => `"${t}"`).join(", ")}, "followups": [string, string]}]}.`,
-    `weeks: exactly 3 (theme at most 4 words, tagline one short sentence). days: exactly ${GOAL_JOURNEY_DAYS}, in order (title at most 6 words, prompt one or two sentences, followups: two short optional deeper questions).`,
+    // Days nested per week: counting to 7 three times is reliable, a flat list of 21 often came back with 20.
+    `Respond ONLY with JSON: {"weeks": [{"theme": string, "tagline": string, "days": [{"day": number, "title": string, "prompt": string, "theme": one of ${questThemes.map(t => `"${t}"`).join(", ")}, "followups": [string, string]}]}]}.`,
+    `weeks: exactly 3 (theme at most 4 words, tagline one short sentence). Each week has exactly 7 days, numbered 1-7 within the week (title at most 6 words, prompt one or two sentences, followups: two short optional deeper questions).`,
     SAFETY,
   ].join(" ");
 }
@@ -86,17 +87,22 @@ const str = (v: unknown, max: number) => (typeof v === "string" && v.trim() ? v.
 /** Keeps only a complete, well-formed journey; anything less is rejected (and the allowance refunded). */
 export function parseGoalJourney(raw: string): GoalJourneyContent | null {
   const j = extractJson(raw) as { weeks?: unknown; days?: unknown } | null;
-  if (!j || !Array.isArray(j.weeks) || !Array.isArray(j.days)) return null;
-  const weeks = j.weeks.slice(0, 3).map((w, i) => {
-    const o = (w ?? {}) as Record<string, unknown>;
+  if (!j || !Array.isArray(j.weeks)) return null;
+  const weekList = j.weeks.slice(0, 3).map(w => (w ?? {}) as Record<string, unknown>);
+  const weeks = weekList.map((o, i) => {
     const theme = str(o.theme, 40);
     return theme ? { week: i + 1, theme, tagline: str(o.tagline, 140) ?? "" } : null;
   });
   if (weeks.length !== 3 || weeks.some(w => !w)) return null;
-  if (j.days.length < GOAL_JOURNEY_DAYS) return null;
+  // Days come nested per week (7 each); a flat "days" list is the earlier format.
+  const nested = weekList.every(w => Array.isArray(w.days));
+  const all: unknown[] | null = nested
+    ? (weekList.every(w => (w.days as unknown[]).length >= 7) ? weekList.flatMap(w => (w.days as unknown[]).slice(0, 7)) : null)
+    : Array.isArray(j.days) ? j.days : null;
+  if (!all || all.length < GOAL_JOURNEY_DAYS) return null;
   const days: GoalJourneyDay[] = [];
   for (const node of goalNodes) {
-    const o = (j.days[node.day - 1] ?? {}) as Record<string, unknown>;
+    const o = (all[node.day - 1] ?? {}) as Record<string, unknown>;
     const title = str(o.title, 60);
     const prompt = str(o.prompt, 280);
     if (!title || !prompt) return null;

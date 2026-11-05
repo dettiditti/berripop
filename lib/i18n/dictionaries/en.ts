@@ -516,6 +516,7 @@ export const en = {
     outdatedCta: "Rebuild journey",
     building: "Berripop is building your journey… this takes up to a minute.",
     built: "Your journey is ready!",
+    buildFailed: "We couldn't build your own journey just now. You can try again any time on the Journey tab; until then, carry on with the built-in journey.",
     sharedLink: "Open the shared journey",
     stopsDone: "stops done",
     toGo: "to go",

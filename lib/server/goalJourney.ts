@@ -36,7 +36,7 @@ export async function buildGoalJourney(userId: string, localeInput: string): Pro
 
   const [assessment] = await getDb().select({ answers: pathAssessments.answers }).from(pathAssessments).where(eq(pathAssessments.userId, userId)).limit(1);
   const a = assessment ? sanitizeAnswers(assessment.answers) : {};
-  const out = await runMeteredAi(userId, "assessment", {
+  const build = () => runMeteredAi(userId, "assessment", {
     feature: "goal_journey",
     instructions: goalJourneyInstructions(locale),
     prompt: describeGoals({
@@ -44,8 +44,14 @@ export async function buildGoalJourney(userId: string, localeInput: string): Pro
       previousWeeks: finished ? (current.weeks as GoalJourneyWeek[]).map(w => w.theme) : undefined,
     }),
     maxOutputTokens: 6000,
+    // Three weeks of text takes 20-40 seconds, longer than the default limit.
+    timeoutMs: 90_000,
     parse: parseGoalJourney,
   });
+  let out = await build();
+  // A malformed journey is rare but costs the member their whole journey: try once more
+  // (the allowance was refunded for the failed attempt, so this reserves it again).
+  if (!out.ok && out.reason === "parse_failed") out = await build();
   if (!out.ok) return fail(out.error);
 
   const db = getDb();
