@@ -7,13 +7,19 @@ import { isPaidPlan } from "@/lib/billing/plans";
 import type { AccountDTO } from "@/lib/domain/types";
 import { useI18n } from "@/lib/i18n/client";
 import { openBillingPortalAction } from "@/lib/server/actions";
+import { useNativeApp } from "../useNativeApp";
 
-/** Current plan, status and billing management. Shows only what Stripe has confirmed. */
+/**
+ * Current plan, status and billing management. Shows only what Stripe has
+ * confirmed. Inside the phone app the plan and AI allowance stay visible, but
+ * nothing links to buying or managing a subscription (App Store rules).
+ */
 export default function SubscriptionCard({ account, notify }: { account: AccountDTO; notify: (m: string) => void }) {
   const { d, t, date } = useI18n();
   const s = d.billing.settings;
   const ent = account.entitlements;
   const [busy, setBusy] = useState(false);
+  const inApp = useNativeApp();
   const periodEnd = ent.currentPeriodEnd ? date(ent.currentPeriodEnd.slice(0, 10), "long") : null;
   const statusLabel = s.statuses[ent.status as keyof typeof s.statuses] ?? ent.status;
   const paid = isPaidPlan(ent.plan);
@@ -50,11 +56,11 @@ export default function SubscriptionCard({ account, notify }: { account: Account
         <small className="muted">{t(s.aiUsage, { used: account.ai.used, limit: account.ai.limit })} · {t(s.aiResets, { date: date(account.ai.resets) })}</small>
       </div>
 
-      <div className="row-gap">
+      {!inApp && <div className="row-gap">
         {ent.plan === "free" && <Link className="btn btn--primary btn--sm" href="/pricing?from=profile"><Sparkles size={16} /> {s.upgrade}</Link>}
         {paid && <Link className="btn btn--ghost btn--sm" href="/pricing?from=profile">{s.changePlan}</Link>}
         {account.hasBillingCustomer && <button className="btn btn--ghost btn--sm" disabled={busy} onClick={portal}>{s.manage}</button>}
-      </div>
+      </div>}
     </section>
   );
 }

@@ -262,6 +262,10 @@ export const en = {
       aiUsage: "{used} of {limit} used",
       aiResets: "Resets on {date}.",
     },
+    appLimits: {
+      goals: "This is how many goals you can have active at once for now. Finish one to start a new one.",
+      ai: "You've used this week's AI questions. They're back on {date}. Until then you can still answer and reflect as usual.",
+    },
     prompts: {
       goals: { title: "Want to work on more than one goal?", body: "Premium lets you keep up to {n} goals active at once. Your current goal stays exactly as it is." },
       ai: { title: "You've used this week's AI follow-ups", body: "They refresh on {date}. Keep answering and reflecting as usual. Premium includes {n} a week." },

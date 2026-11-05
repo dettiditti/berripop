@@ -6,6 +6,7 @@ import { Sparkles, X } from "lucide-react";
 import { PRICES } from "@/lib/billing/plans";
 import { useI18n } from "@/lib/i18n/client";
 import { startCheckoutAction, trackAction } from "@/lib/server/actions";
+import { useNativeApp } from "../useNativeApp";
 
 export type UpgradeKind = "goals" | "ai" | "summary" | "circles" | "journal" | "start" | "path";
 
@@ -24,6 +25,10 @@ function wasDismissed(kind: UpgradeKind) {
  * concrete benefit, shows the real monthly price and renewal, and can start
  * the existing Stripe checkout. Once dismissed it stays hidden on this device
  * (unless `force`, e.g. right at a limit); it never blocks content.
+ *
+ * Inside the phone app nothing is sold (App Store rules): no price, button or
+ * link, and no "shown" event. At a limit the member still learns why
+ * something stopped, in a neutral note.
  */
 export default function UpgradePrompt({ kind, vars = {}, force = false }: { kind: UpgradeKind; vars?: Record<string, string | number>; force?: boolean }) {
   const { d, t, money } = useI18n();
@@ -32,13 +37,19 @@ export default function UpgradePrompt({ kind, vars = {}, force = false }: { kind
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const price = money(PRICES.monthly.amount, PRICES.monthly.currency);
+  const inApp = useNativeApp();
 
   useEffect(() => {
+    if (inApp) return;
     const dismissed = !force && wasDismissed(kind);
     setHidden(dismissed);
     if (!dismissed) void trackAction("upgrade_prompt_shown", kind);
-  }, [kind, force]);
+  }, [kind, force, inApp]);
 
+  if (inApp) {
+    const note = kind === "goals" || kind === "ai" ? d.billing.appLimits[kind] : null;
+    return note ? <p className="app-limit-note" role="status">{t(note, vars)}</p> : null;
+  }
   if (hidden) return null;
 
   function dismiss() {

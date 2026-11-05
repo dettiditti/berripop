@@ -259,6 +259,10 @@ export const hu: Dictionary = {
       aiUsage: "{limit} közül {used} felhasználva",
       aiResets: "Újraindul: {date}.",
     },
+    appLimits: {
+      goals: "Most ennyi aktív célod lehet egyszerre. Ha egyet lezársz, újat indíthatsz.",
+      ai: "Elfogytak az e heti AI-s kérdéseid. Újra elérhetők: {date}. Addig is ugyanúgy válaszolhatsz és elmélyülhetsz.",
+    },
     prompts: {
       goals: { title: "Több célon is dolgoznál?", body: "A Premiummal egyszerre legfeljebb {n} célod lehet aktív. A mostani célod pontosan úgy marad, ahogy van." },
       ai: { title: "Elfogytak az e heti AI-s kérdéseid", body: "Újra elérhetők: {date}. Addig is ugyanúgy válaszolhatsz és elmélyülhetsz. A Premium heti {n} kérdést ad." },
