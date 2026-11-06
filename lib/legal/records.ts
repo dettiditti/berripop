@@ -10,7 +10,7 @@
  */
 export const LEGAL_VERSIONS = {
   terms: "2026-10-27.2",
-  privacy: "2026-10-27.3",
+  privacy: "2026-11-06",
   cookies: "2026-10-27",
   aiConsent: "2026-10-27.2",
   checkoutDisclosure: "2026-10-27",

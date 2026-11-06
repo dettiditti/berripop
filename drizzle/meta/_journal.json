@@ -71,6 +71,13 @@
       "when": 1793909447628,
       "tag": "0009_push_devices",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793974327146,
+      "tag": "0010_app_waitlist",
+      "breakpoints": true
     }
   ]
 }

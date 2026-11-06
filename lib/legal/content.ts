@@ -29,7 +29,7 @@ type LegalSet = {
 
 const hu: LegalSet = {
   back: "Vissza a Berripophoz",
-  updated: "Utolsó módosítás: 2026. október 27.",
+  updated: "Utolsó módosítás: 2026. november 6.",
   version: "Dokumentumverzió: {v}",
   nav: { privacy: "Adatkezelési tájékoztató", terms: "Felhasználási feltételek", cookies: "Cookie-tájékoztató", contact: "Kapcsolat" },
   docs: {
@@ -49,6 +49,7 @@ const hu: LegalSet = {
           "Nyilatkozatok: a Felhasználási feltételek elfogadása és az AI-feldolgozáshoz adott vagy visszavont hozzájárulás, a szöveg verziójával és az időponttal; valamint az, hogy a fizetés előtt melyik tájékoztató-változatot láttad.",
           "AI-használat: funkció, modell, tokenszám, becsült költség és időpont. A kérések és válaszok szövegét ebben a naplóban nem tároljuk.",
           "Termékesemények: például regisztráció, első cél, az alkalmazás napi megnyitása vagy előfizetés indítása. Az esemény neve és időpontja, és ahol releváns, a csomag és az alkalmazásnak az a része, ahol történt. Tartalmat nem tárolunk benne.",
+          "Mobilapp-értesítő: ha a honlapon feliratkozol, hogy szóljunk, amikor megjelenik a mobilapp, az e-mail-címed, a választott nyelv, a feliratkozás időpontja és annak a hozzájárulási szövegnek a verziója, amelyet elfogadtál. Ehhez nem kell fiók, és a címet nem kapcsoljuk fiókhoz.",
           "Technikai adatok: a tárhely- és bejelentkezési szolgáltatók a működéshez és a biztonsághoz naplózhatnak IP-címet, böngésző- és eszközadatokat.",
         ] },
         { heading: "Mire használjuk és milyen jogalapon", list: [
@@ -56,6 +57,7 @@ const hu: LegalSet = {
           "AI-funkciók, kizárólag a kifejezett kérésedre és a külön hozzájárulásod alapján. Jogalap: hozzájárulás (GDPR 6. cikk (1) a) pont, és ha a szöveg különleges adatot tartalmaz, 9. cikk (2) a) pont). A hozzájárulást az első AI-kérésednél kérjük, és bármikor visszavonhatod a Beállításokban.",
           "Előfizetés a Stripe-on keresztül és a számla kiállítása. Jogalap: szerződés teljesítése és jogi kötelezettség (GDPR 6. cikk (1) b) és c) pont).",
           "A rendszer biztonsága, a hibák javítása és a termék fejlesztését segítő, tartalom nélküli mérés. Jogalap: jogos érdek (GDPR 6. cikk (1) f) pont). Ez ellen bármikor tiltakozhatsz.",
+          "Értesítés a mobilapp megjelenéséről, ha feliratkozol rá. Jogalap: hozzájárulás (GDPR 6. cikk (1) a) pont). A címedet csak erre használjuk: hírlevelet és reklámot nem küldünk rá, és nem adjuk át senkinek marketingcélra.",
         ] },
         { heading: "AI-feldolgozás", body: [
           "Ha AI-funkciót kérsz (napló-reflexió, heti naplóösszefoglaló, továbbgondoló kérdés, heti összefoglaló a válaszaidról, a kezdeti felmérés, a céljaidhoz tartozó 21 napos út összeállítása, a napi check-in átgondolása), az ehhez szükséges szöveget a Vercel továbbítja az OpenAI nyelvi modelljéhez. Kérés nélkül semmilyen tartalmad nem kerül AI-hoz.",
@@ -79,6 +81,7 @@ const hu: LegalSet = {
           "A számlákat és a kiállításukhoz szükséges adatokat 8 évig őrizzük (ez lefedi az adójogszabályok szerinti elévülési időt), a fiók törlése után is, a fiókhoz nem kapcsolva. A Stripe a fizetési adatokat a saját feltételei és a jogszabályok szerint is tárolja; a Berripop-fiók törlése ezeket nem törli.",
           "A Feltételek elfogadásáról és az AI-hozzájárulásról szóló nyilvántartást a fiók törléséig őrizzük.",
           "A panaszokat és az azokra adott válaszunkat három évig őrizzük (a fogyasztóvédelmi törvény 17/A. §-a szerint).",
+          "A mobilapp-értesítő listáján szereplő e-mail-címet a megjelenésről szóló értesítés kiküldése után töröljük, vagy korábban, ha leiratkozol.",
         ] },
         { heading: "A jogaid", list: [
           "Hozzáférés és adathordozhatóság: Beállítások → „Adataim letöltése” (JSON-fájl).",
@@ -86,6 +89,7 @@ const hu: LegalSet = {
           "Törlés: Beállítások → „Fiók törlése”. Ez a bejelentkezési fiókodat és a tartalmaidat is véglegesen törli. Ha megújuló előfizetésed van, előbb azt kell lemondanod. A saját köreidet a legrégebbi másik tag kapja meg; ha nincs más tag, a kör is törlődik.",
           "Az adatkezelés korlátozása és tiltakozás: kérheted az adatkezelés korlátozását, és tiltakozhatsz a jogos érdeken alapuló adatkezelés ellen. Írj a novakbernadett94@gmail.com címre.",
           "Hozzájárulás visszavonása: ha egy adatkezelés hozzájáruláson alapul, azt bármikor visszavonhatod. Ez a korábbi, jogszerű adatkezelést nem érinti.",
+          "Leiratkozás a mobilapp-értesítőről: írj a novakbernadett94@gmail.com címre, és töröljük a címedet a listáról.",
         ] },
         { heading: "Jogorvoslat", list: [
           "Nemzeti Adatvédelmi és Információszabadság Hatóság (NAIH): 1055 Budapest, Falk Miksa utca 9–11., naih.hu",
@@ -181,7 +185,7 @@ const hu: LegalSet = {
 
 const en: LegalSet = {
   back: "Back to Berripop",
-  updated: "Last updated: 27 October 2026",
+  updated: "Last updated: 6 November 2026",
   version: "Document version: {v}",
   nav: { privacy: "Privacy policy", terms: "Terms of service", cookies: "Cookie policy", contact: "Contact" },
   docs: {
@@ -201,6 +205,7 @@ const en: LegalSet = {
           "Statements: your acceptance of the Terms of Use and the consent to AI processing you gave or withdrew, with the text version and time; and which notice version you saw before paying.",
           "AI usage: feature, model, token counts, estimated cost and time. This log doesn't store the text of requests or responses.",
           "Product events: for example sign-up, first goal, opening the app on a given day or starting a subscription. The event name and time and, where relevant, the plan and the part of the app where it happened. No content is stored in them.",
+          "Phone-app notice: if you sign up on the website to hear when the phone app launches, your email address, the chosen language, the time you signed up and the version of the consent wording you agreed to. No account is needed, and the address is not linked to an account.",
           "Technical data: hosting and sign-in providers may log IP addresses, browser and device data for operation and security.",
         ] },
         { heading: "Purposes and legal bases", list: [
@@ -208,6 +213,7 @@ const en: LegalSet = {
           "AI features, only when you explicitly ask and based on your separate consent. Legal basis: consent (GDPR Art. 6(1)(a) and, where the text includes special category data, Art. 9(2)(a)). We ask for it the first time you use an AI feature, and you can withdraw it any time in Settings.",
           "Subscription via Stripe and issuing the invoice. Legal basis: contract and legal obligation (GDPR Art. 6(1)(b) and (c)).",
           "System security, fixing errors and content-free measurement to improve the product. Legal basis: legitimate interest (GDPR Art. 6(1)(f)). You can object to this at any time.",
+          "Letting you know when the phone app launches, if you sign up for it. Legal basis: consent (GDPR Art. 6(1)(a)). We use the address for this only: no newsletter or advertising, and we never pass it on to anyone for marketing.",
         ] },
         { heading: "AI processing", body: [
           "When you ask for an AI feature (journal reflection, weekly journal summary, follow-up question, weekly summary of your answers, the initial assessment, building a 21-day journey for your goals, thinking through today's check-in), Vercel forwards the text it needs to an OpenAI language model. None of your content goes to an AI unless you ask.",
@@ -231,6 +237,7 @@ const en: LegalSet = {
           "Invoices and the data needed to issue them are kept for 8 years (which covers the limitation period under tax law), also after your account is deleted, no longer linked to it. Stripe also stores payment data under its own terms and the law; deleting your Berripop account doesn't delete it.",
           "Records of your acceptance of the Terms and of your AI consent are kept until your account is deleted.",
           "Complaints and our replies are kept for three years (as required by section 17/A of the Hungarian Consumer Protection Act).",
+          "Email addresses on the phone-app notice list are deleted once the launch notice has been sent, or earlier if you unsubscribe.",
         ] },
         { heading: "Your rights", list: [
           "Access and portability: Settings → \"Download my data\" (JSON file).",
@@ -238,6 +245,7 @@ const en: LegalSet = {
           "Erasure: Settings → \"Delete account\". This permanently deletes your sign-in account and your content. If you have a renewing subscription, cancel it first. Your own circles go to the longest-standing other member; a circle with no other member is deleted.",
           "Restriction and objection: you can ask us to restrict processing and object to processing based on legitimate interest. Write to novakbernadett94@gmail.com.",
           "Withdrawing consent: where processing is based on consent, you can withdraw it any time. This doesn't affect earlier lawful processing.",
+          "Unsubscribing from the phone-app notice: email novakbernadett94@gmail.com and we will remove your address from the list.",
         ] },
         { heading: "Remedies", list: [
           "Hungarian National Authority for Data Protection and Freedom of Information (NAIH): Falk Miksa utca 9–11., 1055 Budapest, naih.hu",

@@ -506,3 +506,16 @@ export const pushDevices = pgTable("push_devices", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, t => [index("push_devices_user_idx").on(t.userId)]);
+
+/**
+ * Website visitors who asked to hear when the phone app launches. Kept apart
+ * from accounts on purpose (no user id): the address, the language, when, and
+ * which consent wording was ticked (lib/waitlist.ts). The address is used for
+ * the launch notice only; rows are deleted after it goes out, or on request.
+ */
+export const appWaitlist = pgTable("app_waitlist", {
+  email: text("email").primaryKey(),
+  locale: text("locale", { enum: ["hu", "en"] }).notNull(),
+  consentVersion: text("consent_version").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});

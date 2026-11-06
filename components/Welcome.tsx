@@ -2,11 +2,12 @@
 
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import Link from "next/link";
-import { ArrowRight, BookHeart, Check, Footprints, Lock, Map, Menu, MessageCircle, Sparkles, Target, X } from "lucide-react";
+import { ArrowRight, BookHeart, Check, Footprints, Lock, Map, Menu, MessageCircle, Smartphone, Sparkles, Target, X } from "lucide-react";
 import { PLAN_LIMITS, PRICES } from "@/lib/billing/plans";
 import { localeLabels, locales } from "@/lib/i18n/config";
 import { setLocale, useI18n } from "@/lib/i18n/client";
 import BerripopMascot from "./berripop/BerripopMascot";
+import AppWaitlist, { PhoneMock } from "./landing/AppWaitlist";
 
 /*
  * Signed-out landing page. Rendered on the server for signed-out visitors (see
@@ -98,12 +99,13 @@ function Hero() {
             <a className="btn btn--ghost btn--lg" href="#product">{h.secondary}</a>
           </div>
           <ul className="lp-trust">{h.trust.map(x => <li key={x}><Check size={16} strokeWidth={3} aria-hidden /> {x}</li>)}</ul>
+          <AppWaitlist />
         </div>
 
-        <div className="lp-hero-stage" role="img" aria-label={h.visualLabel}>
+        <div className="lp-hero-stage lp-hero-stage--phone">
           <div className="lp-stage-disc" aria-hidden />
-          <p className="lp-stage-bubble" aria-hidden>{h.bubble}</p>
-          <div className="lp-stage-mascot" aria-hidden><BerripopMascot size={250} mood="happy" motion="subtle" /></div>
+          <a className="lp-phone-tag" href="#app-waitlist"><Smartphone size={15} aria-hidden /> {l.appWaitlist.phoneTag}</a>
+          <PhoneMock />
           <div className="lp-stage-card" aria-hidden>
             <span className="lp-chip lp-chip--sun"><MessageCircle size={14} /> {h.cardTag}</span>
             <p className="lp-stage-question">{question}</p>

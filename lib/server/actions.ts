@@ -23,6 +23,8 @@ import * as personal from "./personal";
 import * as push from "./push";
 import * as service from "./service";
 import { requireUserId } from "./session";
+import { joinWaitlist } from "./waitlist";
+import { readWaitlist, type WaitlistError, type WaitlistInput } from "../waitlist";
 
 /** Server actions: authenticate the caller, then delegate to the circle, growth or billing services. */
 
@@ -493,4 +495,19 @@ export async function deleteAccountAction(confirmation: string): Promise<{ ok: t
   const userId = await requireUserId();
   if (!userId) return { ok: false, error: "unauthorized" };
   return account.deleteAccountAndLogin(userId, confirmation);
+}
+
+/* ---------- Phone-app waitlist (landing page, no sign-in) ---------- */
+
+/** Saves a landing-page sign-up for the phone-app launch notice. Needs the consent box ticked. */
+export async function joinAppWaitlistAction(input: WaitlistInput): Promise<{ ok: true } | { ok: false; error: WaitlistError | "server" }> {
+  const r = readWaitlist(input);
+  if (!r.ok) return r.error === "bot" ? { ok: true } : { ok: false, error: r.error };
+  try {
+    await joinWaitlist(r.entry);
+    return { ok: true };
+  } catch {
+    console.error("waitlist: save failed");
+    return { ok: false, error: "server" };
+  }
 }
