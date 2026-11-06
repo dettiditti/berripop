@@ -8,6 +8,7 @@
 
 export const CHECKIN_STATES = ["good", "calm", "tired", "tense", "sad", "mixed"] as const;
 export type CheckinState = (typeof CHECKIN_STATES)[number];
+export const isCheckinState = (v: unknown): v is CheckinState => CHECKIN_STATES.includes(v as CheckinState);
 
 export const CHECKIN_TOPICS = ["work", "relationships", "family", "health", "self", "money", "other"] as const;
 export type CheckinTopic = (typeof CHECKIN_TOPICS)[number];
@@ -86,3 +87,13 @@ export function checkinWeekLine(w: CheckinWeek): string {
   const list = (xs: [string, number][]) => (xs.length ? xs.map(([k, n]) => `${k} ×${n}`).join(", ") : "none");
   return `Daily check-ins this week (counts only, not their words): ${w.days} days; topics: ${list(w.topics)}; help asked for: ${list(w.needs)}.`;
 }
+
+/** Calendar colours for each state: soft, and none of them reads as "bad". */
+export const MOOD_COLOR: Record<CheckinState, string> = {
+  good: "#FFD66B",
+  calm: "#8EE3BA",
+  tired: "#A9C8FF",
+  tense: "#FFAE8F",
+  sad: "#A99BF2",
+  mixed: "#F0B8E6",
+};

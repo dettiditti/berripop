@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { prefersReducedMotion } from "@/lib/motion";
 
-/** Short silent clips of Berri, all starting and ending in the same smiling pose. */
-export type BerriClip = "wave" | "wonder" | "joy" | "joy2" | "care";
+/** Short silent clips of Berri, all starting in the same smiling pose. */
+export type BerriClip = "wave" | "wonder" | "joy" | "joy2" | "care" | "peckish" | "hungry" | "missed" | "eat";
 
 /**
  * How Berri can be shown without a background in this browser:

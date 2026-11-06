@@ -10,6 +10,7 @@ import { setLocale, useI18n } from "@/lib/i18n/client";
 import { isLocale } from "@/lib/i18n/config";
 import { isNativeApp } from "@/lib/native";
 import { clearStart } from "@/lib/onboarding/start";
+import { deriveWorld } from "@/lib/world";
 import { termsPrompt, type LegalStatus } from "@/lib/legal/records";
 import type { AssessmentState } from "@/lib/assessment/types";
 import type { JournalState } from "@/lib/journal/types";
@@ -295,7 +296,7 @@ function AppShell({ snapshot, setSnapshot }: { snapshot: Snapshot; setSnapshot: 
     if (!circle && assessmentOpen(false, assessment?.assessment?.status ?? null)) {
       return { label: d.today.assessmentTitle, onClick: () => { setReward(null); setAssessing(true); } };
     }
-    if (rw.weekCompleted) return { label: c.nextWorld, onClick: () => { setReward(null); go("world"); } };
+    if (rw.weekCompleted || rw.newAchievements.length > 0) return { label: c.nextWorld, onClick: () => { setReward(null); go("world"); } };
     if (rw.context === "journey") return { label: c.nextJourney, onClick: () => { setReward(null); openJourney(circle ? "shared" : "own"); } };
     if (rw.context === "goal") return { label: c.nextJourney, onClick: () => { setReward(null); openJourney("own"); } };
     if (circle) return { label: c.nextReadTogether, onClick: () => { setReward(null); setDetail(rw.questionRef); } };
@@ -313,6 +314,7 @@ function AppShell({ snapshot, setSnapshot }: { snapshot: Snapshot; setSnapshot: 
     journeyMode, openJourney, buildJourney: () => buildJourney(), journeyBuilding,
     assessmentStatus: assessment?.assessment?.status ?? null, openAssessment: () => setAssessing(true),
     writeInJournal,
+    covered: !!quest || !!reward || !!detail,
   };
   const questQuestion = quest ? view.question(quest.ref) : null;
 
@@ -392,6 +394,7 @@ function AppShell({ snapshot, setSnapshot }: { snapshot: Snapshot; setSnapshot: 
           }}
           onClose={() => { setReward(null); go("home"); }}
           onWorld={() => { setReward(null); go("world"); }}
+          world={deriveWorld(view, view.snapshot.progress.moments)}
         />
       )}
 

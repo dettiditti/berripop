@@ -27,4 +27,6 @@ export type ScreenProps = {
   openAssessment: () => void;
   /** Opens a new journal entry starting with this text. */
   writeInJournal: (starter: string) => void;
+  /** A full-screen layer (a question being answered, the celebration…) covers the screen right now. */
+  covered?: boolean;
 };

@@ -10,6 +10,7 @@ import { decorForBadge, deriveWorld, regionForWeek, type DecorId } from "@/lib/w
 import BerripopReaction from "../berripop/BerripopReaction";
 import Companion from "../world/Companion";
 import ThemeGlyph from "../world/ThemeGlyph";
+import MoodCalendar from "../world/MoodCalendar";
 import WorldScene from "../world/WorldScene";
 import type { ScreenProps } from "./types";
 
@@ -109,7 +110,9 @@ export default function InnerWorldScreen({ view, run, notify, go }: ScreenProps)
         </details>
       </section>
 
-      <section className="card moment-card" aria-labelledby="moment-title">
+      <MoodCalendar moods={view.snapshot.progress.moods} today={today} />
+
+      <section id="world-moment" className="card moment-card" aria-labelledby="moment-title">
         <h2 id="moment-title">{w.moment.title}</h2>
         <p className="muted">{w.moment.subtitle}</p>
 

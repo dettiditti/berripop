@@ -2,18 +2,21 @@
 
 import { useRef } from "react";
 import { CalendarCheck } from "lucide-react";
+import { MOOD_COLOR } from "@/lib/checkin/checkin";
 import { parseKey } from "@/lib/dates";
 import { recapTone, weeklyRecap } from "@/lib/domain/recap";
 import type { View } from "@/lib/domain/view";
 import { useI18n } from "@/lib/i18n/client";
 import { trackAction } from "@/lib/server/actions";
 
-/** The free weekly recap on Today: counted from the member's own records, no AI, no journal text. */
+/** The free weekly recap on Today: counted from the member's own records (and the moods they tapped), no AI, no journal text. */
 export default function WeeklyRecap({ view }: { view: View }) {
   const { d, t, plural, locale } = useI18n();
   const r = d.today.recap;
   const recap = weeklyRecap(view);
   const tracked = useRef(false);
+  const moodOn = new Map(view.snapshot.progress.moods.map(m => [m.date, m.state]));
+  const weekMoods = recap.days.map(day => moodOn.get(day.date) ?? null);
   const weekday = (date: string) => parseKey(date).toLocaleDateString(locale === "hu" ? "hu-HU" : "en-GB", { weekday: "short" });
 
   return (
@@ -34,6 +37,16 @@ export default function WeeklyRecap({ view }: { view: View }) {
           {recap.journeyStops > 0 && <span className="pill">{plural(r.stops, recap.journeyStops)}</span>}
           {recap.xp > 0 && <span className="pill">{t(r.xp, { n: recap.xp })}</span>}
         </span>
+        {weekMoods.some(Boolean) && (
+          <span className="weekly-recap-moods" role="img" aria-label={`${r.moodTitle}: ${recap.days.map((day, i) => `${weekday(day.date)} ${weekMoods[i] ? d.checkin.states[weekMoods[i]!] : "–"}`).join(", ")}`}>
+            {recap.days.map((day, i) => (
+              <span key={day.date} className="weekly-recap-mood">
+                <i style={weekMoods[i] ? { background: MOOD_COLOR[weekMoods[i]!] } : undefined} className={weekMoods[i] ? "has-mood" : ""} />
+                <small>{weekday(day.date)}</small>
+              </span>
+            ))}
+          </span>
+        )}
         <span className="weekly-recap-more">{r.details}</span>
       </summary>
       <div className="weekly-recap-body stack-sm">

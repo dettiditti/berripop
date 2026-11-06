@@ -143,6 +143,8 @@ export type ProgressDTO = {
   canBuildJourney: boolean;
   /** Today's check-in, if the member did one (never earns XP or counts for streaks). */
   checkin: CheckinDTO | null;
+  /** How the member felt on each check-in day of the last few months (date and state only, never notes): the mood calendar. */
+  moods: { date: string; state: CheckinState }[];
 };
 
 export type CheckinDTO = {

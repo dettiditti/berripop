@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 import type { World } from "@/lib/world";
 import BerripopMascot, { type BerripopMood } from "../berripop/BerripopMascot";
 import Companion from "./Companion";
@@ -40,13 +40,15 @@ type Props = {
   label: string;
   mood?: BerripopMood;
   compact?: boolean;
+  /** Draws this instead of the still Berri, e.g. a Berri video clip. */
+  berri?: ReactNode;
 };
 
 /**
  * The little world, drawn in SVG. It grows from participation: plants for
  * answers, places for journey weeks, decorations for badges, glows for moments.
  */
-export default function WorldScene({ world, label, mood = "happy", compact = false }: Props) {
+export default function WorldScene({ world, label, mood = "happy", compact = false, berri }: Props) {
   const id = useId().replace(/:/g, "");
   const { regions, decorations: dec } = world;
 
@@ -190,7 +192,7 @@ export default function WorldScene({ world, label, mood = "happy", compact = fal
       </svg>
 
       <div className="world-cast">
-        <BerripopMascot mood={mood} size={compact ? 58 : 84} className="world-berripop" />
+        {berri ?? <BerripopMascot mood={mood} size={compact ? 58 : 84} className="world-berripop" />}
         {world.companions.nubi && <Companion id="nubi" size={compact ? 34 : 52} className="world-nubi" />}
         {world.companions.zing && <Companion id="zing" size={compact ? 30 : 46} className="world-zing" />}
         {world.companions.kobi && <Companion id="kobi" size={compact ? 32 : 50} className="world-kobi" />}

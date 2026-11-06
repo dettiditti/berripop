@@ -2,21 +2,21 @@
 
 import { ArrowRight, Check, Clock, Compass, Lock, NotebookPen, Sparkles, Sprout, UserPlus, Users } from "lucide-react";
 import { chapterNodes, chapterOf, journeyNodes } from "@/lib/content";
-import { berripopSays, moodFor, type MessageKey } from "@/lib/berripop-messages";
+import { berripopSays, type MessageKey } from "@/lib/berripop-messages";
 import { recommendNext } from "@/lib/domain/next";
 import type { View } from "@/lib/domain/view";
 import { useI18n } from "@/lib/i18n/client";
 import { questionText } from "@/lib/i18n/content";
 import { trackAction } from "@/lib/server/actions";
 import { goalNodes, goalRef } from "@/lib/journey/goal";
-import { deriveWorld } from "@/lib/world";
+import type { Meal } from "@/lib/berriHunger";
+import { prefersReducedMotion } from "@/lib/motion";
 import AchievementBadge from "../AchievementBadge";
-import BerripopReaction from "../berripop/BerripopReaction";
 import CheckinCard from "../checkin/CheckinCard";
 import Feed from "../Feed";
 import StreakIndicator from "../StreakIndicator";
 import ThemeGlyph from "../world/ThemeGlyph";
-import WorldScene from "../world/WorldScene";
+import BerriHome from "../world/BerriHome";
 import WeeklyRecap from "../WeeklyRecap";
 import XPProgress from "../XPProgress";
 import type { ScreenProps } from "./types";
@@ -46,7 +46,7 @@ function Avatar({ name, tone = "purple", done }: { name: string; tone?: string; 
 const TONES = ["purple", "coral", "mint", "sky", "sun"];
 
 /** Today ("Ma"): one recommended step first, the other options in one row, then progress and the circle. */
-export default function HomeScreen({ view, run, notify, go, startQuest, openQuestion, onInvite, openJourney, assessmentStatus, openAssessment, journeyBuilding, writeInJournal }: ScreenProps) {
+export default function HomeScreen({ view, run, notify, go, startQuest, openQuestion, onInvite, openJourney, assessmentStatus, openAssessment, journeyBuilding, writeInJournal, covered }: ScreenProps) {
   const { d, t, num, plural } = useI18n();
   const h = d.dashboard;
   const td = d.today;
@@ -72,6 +72,19 @@ export default function HomeScreen({ view, run, notify, go, startQuest, openQues
   const startJourneyDay = (day: number) =>
     own ? startQuest(goalRef(goal!.id, day), { kind: "goal", day }) : startQuest(journeyNodes[day - 1].questionId, { kind: "journey", day });
 
+  // Feeding Berri: today's question (or the next journey day), the check-in card, or a moment in the inner world.
+  const feed = (meal: Meal) => {
+    if (meal === "checkin") {
+      document.getElementById("home-checkin")?.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "start" });
+      return;
+    }
+    if (meal === "moment") return go("world");
+    if (view.dailyRef && !view.dailyDoneByMe) return startQuest(view.dailyRef, { kind: "daily" });
+    if (jNext && !jState.doneToday) return startJourneyDay(jNext.day);
+    if (view.dailyRef) return openQuestion(view.dailyRef);
+    go("journal");
+  };
+
   return (
     <div className="stack">
       <header className="page-head home-head">
@@ -82,7 +95,7 @@ export default function HomeScreen({ view, run, notify, go, startQuest, openQues
         <div className="home-chips"><StreakIndicator streak={view.streak} /></div>
       </header>
 
-      <BerripopReaction mood={moodFor[key]} message={berripopSays(d, key, view.today, { n: view.streak.current })} size={64} className="home-berripop" />
+      <BerriHome view={view} covered={!!covered} onWorld={() => go("world")} onFeed={feed} fullMessage={berripopSays(d, key, view.today, { n: view.streak.current })} />
 
       <section className="quest-card" aria-labelledby="next-title">
         {step.kind === "daily" && daily && view.dailyRef ? (
@@ -166,7 +179,9 @@ export default function HomeScreen({ view, run, notify, go, startQuest, openQues
         </button>
       </nav>
 
-      <CheckinCard checkin={view.snapshot.progress.checkin} run={run} notify={notify} onJournal={writeInJournal} />
+      <div id="home-checkin" className="home-checkin-anchor">
+        <CheckinCard checkin={view.snapshot.progress.checkin} run={run} notify={notify} onJournal={writeInJournal} />
+      </div>
 
       <button type="button" className="card home-journey lift" onClick={() => openJourney(own ? "own" : circle ? "shared" : "own")}>
         <span className="eyebrow">{own ? <><Sprout size={13} /> {d.journey.eyebrowGoals}</> : <><Compass size={13} /> {t(d.journey.chapterLabel, { n: chapter })} · {d.journey.chapters[chapter - 1]}</>}</span>
@@ -191,13 +206,6 @@ export default function HomeScreen({ view, run, notify, go, startQuest, openQues
       <WeeklyRecap view={view} />
 
       <div className="home-more">
-        <button type="button" className="card world-teaser lift" onClick={() => go("world")}>
-          <WorldScene world={deriveWorld(view, view.snapshot.progress.moments)} label={d.innerWorld.homeBody} compact mood={view.dailyDoneByMe ? "proud" : "curious"} />
-          <span className="world-teaser-copy">
-            <span><strong>{d.innerWorld.homeTitle}</strong><small>{d.innerWorld.homeBody}</small></span>
-            <span className="pill">{d.innerWorld.homeCta} <ArrowRight size={14} /></span>
-          </span>
-        </button>
         <nav className="home-links" aria-label={td.shortcuts}>
           <button type="button" className="btn btn--ghost btn--sm" onClick={() => go("goals")}><Sprout size={16} /> {d.navigation.goals}</button>
           <button type="button" className="btn btn--ghost btn--sm" onClick={() => go("explore")}><Compass size={16} /> {d.navigation.explore}</button>

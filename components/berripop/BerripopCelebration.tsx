@@ -9,11 +9,12 @@ import { useI18n } from "@/lib/i18n/client";
 import { levelName } from "@/lib/i18n/content";
 import { hapticSuccess } from "@/lib/nativeBridge";
 import { getLevelInfo } from "@/lib/progress";
-import { decorForBadge, regionForWeek } from "@/lib/world";
+import { decorForBadge, regionForWeek, type World } from "@/lib/world";
 import AchievementBadge from "../AchievementBadge";
 import AnimatedNumber from "../AnimatedNumber";
 import LevelBadge from "../LevelBadge";
 import XPProgress from "../XPProgress";
+import WorldScene from "../world/WorldScene";
 import BerripopMascot from "./BerripopMascot";
 import BerripopSpeechBubble from "./BerripopSpeechBubble";
 
@@ -49,10 +50,12 @@ type Props = {
   onClose: () => void;
   onWorld: () => void;
   seed: string;
+  /** The member's world after this answer: shown big when a badge or a journey week added something new to it. */
+  world?: World;
 };
 
 /** The completion screen: Berripop celebrates, XP counts up, progress fills. */
-export default function BerripopCelebration({ reward, next, canShare, onShare, onClose, onWorld, seed }: Props) {
+export default function BerripopCelebration({ reward, next, canShare, onShare, onClose, onWorld, seed, world }: Props) {
   const { d, t, num } = useI18n();
   const c = d.gamification.celebration;
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -61,6 +64,8 @@ export default function BerripopCelebration({ reward, next, canShare, onShare, o
   const levelAfter = getLevelInfo(reward.xpAfter);
   const levelUp = levelAfter.level > levelBefore.level;
   const newBadges = achievementDefs.filter(a => reward.newAchievements.includes(a.id));
+  // A badge or a finished journey week puts something new in the inner world: the world itself pops up here.
+  const worldNews = newBadges.length > 0 || reward.weekCompleted !== null;
   const major = levelUp || newBadges.length > 0 || reward.weekCompleted !== null || reward.newMilestones.length > 0 || reward.sharedDayCompleted !== null;
 
   // In the iPhone app a new completion also gives a soft "well done" buzz.
@@ -138,7 +143,12 @@ export default function BerripopCelebration({ reward, next, canShare, onShare, o
         )}
 
         {reward.isNew && (
-          <button type="button" className="world-growth" onClick={onWorld}>
+          <button type="button" className={`world-growth ${worldNews ? "world-growth--news" : ""}`} onClick={onWorld}>
+            {worldNews && world && (
+              <span className="world-growth-scene">
+                <WorldScene world={world} label={c.growthTitle} compact mood="excited" />
+              </span>
+            )}
             <span className="world-growth-sprout" aria-hidden>
               <svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 21 V12" stroke="#3FBF86" strokeWidth="2.2" strokeLinecap="round" /><path d="M12 14 q-6 0 -6 -6 q6 0 6 6" fill="#6EDCA6" /><path d="M12 12 q5 0 5 -5 q-5 0 -5 5" fill="#8BE6B8" /></svg>
             </span>

@@ -1687,6 +1687,16 @@ html:has(.lp) { scroll-behavior: smooth; }
 .app-topbar { max-width: 560px; margin: 0 auto; padding: 12px 16px 0; display: flex; justify-content: flex-end; }
 @media (min-width: 900px) { .app-topbar { margin-left: max(260px, calc(228px + (100vw - 228px - 640px) / 2)); max-width: 640px; padding: 20px 24px 0; } }
 .app-topbar + .screen { padding-top: 8px; }
+/* Phones: the account button sits beside the page title instead of on a row of its own. */
+@media (max-width: 899px) {
+  .app:not(.app--focus) { position: relative; }
+  .app:not(.app--focus) > .app-topbar { position: absolute; z-index: 20; top: 0; left: 0; right: 0; height: 0; padding: 0; }
+  .app:not(.app--focus) > .app-topbar .account-menu { position: absolute; top: 20px; right: 16px; }
+  .app:not(.app--focus) .home-head .home-chips { align-self: flex-start; }
+  .app:not(.app--focus) > .app-topbar + .screen { padding-top: 20px; }
+  .app:not(.app--focus) > .app-topbar + .screen > .stack > .page-head:first-child { padding-right: 56px; min-height: 44px; }
+  .app:not(.app--focus) > .app-topbar + .screen > .stack > .profile-head:first-child { margin-top: 56px; }
+}
 .account-menu { position: relative; }
 .account-menu-btn { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 999px; background: var(--purple); color: #fff; font-family: var(--font-display); font-weight: 700; font-size: 18px; box-shadow: 0 3px 0 var(--purple-dark); }
 .account-menu-btn:hover { filter: brightness(1.05); }
@@ -1810,3 +1820,64 @@ html[data-app] body:has(.berri-stage)::before { content: none; }
   background: var(--purple); color: #fff; font-size: 12px; font-weight: 800; flex-shrink: 0;
 }
 .assessment-option:disabled { opacity: 0.45; cursor: default; }
+
+/* ============ Berri's home on Today: the world, Berri's appetite and the three ways to feed Berri ============ */
+.berri-home { display: flex; flex-direction: column; gap: 12px; padding: 10px 10px 14px; }
+.berri-home-world { position: relative; display: block; width: 100%; padding: 0; border: 0; background: none; border-radius: 18px; text-align: left; }
+.berri-home-world .world-scene--compact { aspect-ratio: 16 / 9; }
+.berri-home-open { position: absolute; right: 10px; top: 10px; background: rgba(255, 255, 255, 0.92); color: var(--purple-dark); font-weight: 800; box-shadow: 0 2px 0 rgba(43, 33, 64, 0.08); }
+.berri-home .bp-bubble { margin: 0 4px; }
+.berri-bowl { display: flex; align-items: center; gap: 10px; padding: 0 6px; font-weight: 800; color: var(--ink-2); font-size: 15px; }
+.berri-bowl-dots { display: inline-flex; gap: 5px; }
+.berri-bowl-dots i { width: 14px; height: 14px; border-radius: 999px; background: var(--lavender); border: 2px solid #D9CCFF; transition: background 0.3s ease, transform 0.3s ease; }
+.berri-bowl-dots i.is-on { background: var(--purple); border-color: var(--purple-dark); transform: scale(1.08); }
+.berri-feed { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 0 4px; }
+.berri-feed-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 60px; padding: 8px 6px; border-radius: 16px; background: var(--lavender); color: var(--purple-dark); font-weight: 800; font-size: 14px; text-align: center; box-shadow: 0 3px 0 #D9CCFF; }
+.berri-feed-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #D9CCFF; }
+.berri-feed-btn.is-eaten { background: #E3F8EE; color: #23855A; box-shadow: 0 3px 0 #BDEBD3; }
+.berri-home.is-hungry .berri-home-world .world-berripop, .berri-home.is-peckish .berri-home-world .world-berripop { animation: berri-rumble 2.6s ease-in-out infinite; }
+@keyframes berri-rumble { 0%, 86%, 100% { transform: translateX(-50%); } 89% { transform: translateX(calc(-50% - 2px)) rotate(-2deg); } 92% { transform: translateX(calc(-50% + 2px)) rotate(2deg); } 95% { transform: translateX(calc(-50% - 1px)); } }
+@media (prefers-reduced-motion: reduce) { .berri-home .world-berripop { animation: none !important; } .berri-bowl-dots i { transition: none; } }
+.home-checkin-anchor { scroll-margin-top: 16px; }
+
+/* A badge or a journey week grew something new: the world pops up inside the celebration. */
+.world-growth--news { flex-wrap: wrap; }
+.world-growth-scene { flex: 1 0 100%; display: block; border-radius: 16px; overflow: hidden; animation: world-pop 0.6s cubic-bezier(0.2, 1.4, 0.4, 1) 0.35s backwards; }
+@keyframes world-pop { from { opacity: 0; transform: translateY(14px) scale(0.86); } }
+@media (prefers-reduced-motion: reduce) { .world-growth-scene { animation: none; } }
+.world-growth--news > span:nth-child(2) { flex: 0 0 auto; display: grid; }
+.world-growth--news > span:nth-child(3) { flex: 1; display: flex; flex-direction: column; }
+
+/* ============ Mood calendar (My Inner World) ============ */
+.mood-calendar { display: flex; flex-direction: column; gap: 10px; }
+.mood-cal-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mood-cal-head h2 { font-size: 18px; margin: 0; }
+.mood-cal-nav { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 999px; background: var(--lavender); color: var(--purple-dark); }
+.mood-cal-nav:disabled { opacity: 0.35; }
+.mood-cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; }
+.mood-cal-weekday { text-align: center; font-size: 12px; font-weight: 800; color: var(--muted); text-transform: uppercase; }
+.mood-cal-day { display: grid; place-items: center; aspect-ratio: 1; border-radius: 10px; background: #F6F2FF; font-size: 13px; font-weight: 800; color: var(--ink-2); }
+.mood-cal-day.has-mood { color: #2B2140; box-shadow: inset 0 -2px 0 rgba(43, 33, 64, 0.08); }
+.mood-cal-day.is-today { outline: 2px solid var(--purple); outline-offset: 1px; }
+.mood-cal-day.is-future { opacity: 0.45; }
+.mood-cal-most { font-weight: 800; color: var(--ink-2); }
+.mood-cal-legend { display: flex; flex-wrap: wrap; gap: 6px 12px; list-style: none; padding: 0; margin: 0; font-size: 13px; font-weight: 700; color: var(--ink-2); }
+.mood-cal-legend li { display: inline-flex; align-items: center; gap: 5px; }
+.mood-cal-legend i { width: 12px; height: 12px; border-radius: 4px; }
+.weekly-recap-moods { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-top: 4px; }
+.weekly-recap-mood { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.weekly-recap-mood i { width: 22px; height: 22px; border-radius: 999px; background: #F1ECFF; border: 2px dashed #DCD2FA; }
+.weekly-recap-mood i.has-mood { border: 0; box-shadow: inset 0 -2px 0 rgba(43, 33, 64, 0.08); }
+.weekly-recap-mood small { font-size: 11px; font-weight: 800; color: var(--muted); text-transform: capitalize; }
+/* Berri as a video inside the little world on Today. */
+.world-scene .world-berri-video { position: absolute; left: 50%; bottom: -4%; transform: translateX(-50%); width: auto; height: 82%; }
+.berri-home-intro { margin: 0 6px; font-weight: 700; font-size: 15px; line-height: 1.45; color: var(--ink-2); }
+.berri-home-how { margin: 0 6px; }
+.berri-home-how summary { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 800; font-size: 14px; color: var(--purple-dark); list-style: none; min-height: 32px; }
+.berri-home-how summary::-webkit-details-marker { display: none; }
+.berri-home-how ul { margin: 6px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 600; color: var(--ink-2); line-height: 1.45; }
+/* Feeding moment: the new dot pops once Berri has the star. */
+.berri-bowl-dots i.is-new { animation: berri-dot-pop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) 1.8s both; }
+@keyframes berri-dot-pop { 0% { transform: scale(0.4); background: var(--lavender); } 60% { transform: scale(1.5); } 100% { transform: scale(1.08); } }
+.berri-home.is-feeding .bp-bubble { animation: pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+@media (prefers-reduced-motion: reduce) { .berri-bowl-dots i.is-new, .berri-home.is-feeding .bp-bubble { animation: none; } }
