@@ -14,7 +14,10 @@ export type TimeBudget = (typeof TIMES)[number];
 export type Support = (typeof SUPPORTS)[number];
 
 export type AssessmentAnswers = {
+  /** The main area: the first one picked (kept for answers saved before several could be picked). */
   area?: Area;
+  /** Every area picked, the main one first, at most MAX_AREAS. */
+  areas?: Area[];
   areaText?: string;
   situation?: string;
   outcome?: string;
@@ -44,6 +47,23 @@ export const TOTAL_STEPS = PLAN_STEP + 1; // 8
 export const MAX_FOLLOWUPS = 2;
 export const MAX_AI_CALLS = 4;
 export const MAX_TEXT = 600;
+/** How many areas can be picked: enough for a couple of related wishes, few enough to stay focused. */
+export const MAX_AREAS = 3;
+
+/** The areas picked, the main one first; answers from before several could be picked have just one. */
+export const areasOf = (a: AssessmentAnswers): Area[] => (a.areas?.length ? a.areas : a.area ? [a.area] : []);
+
+/** Picks or unpicks an area; a fourth is ignored (null). The main area follows the first pick. */
+export function toggleArea(a: AssessmentAnswers, k: Area): Pick<AssessmentAnswers, "area" | "areas"> | null {
+  const list = areasOf(a);
+  if (list.includes(k)) {
+    const areas = list.filter(x => x !== k);
+    return { areas, area: areas[0] };
+  }
+  if (list.length >= MAX_AREAS) return null;
+  const areas = [...list, k];
+  return { areas, area: areas[0] };
+}
 
 const clean = (v: unknown, max = MAX_TEXT) => (typeof v === "string" ? v.trim().slice(0, max) : undefined) || undefined;
 const pick = <T extends string>(v: unknown, allowed: readonly T[]) => (typeof v === "string" && (allowed as readonly string[]).includes(v) ? (v as T) : undefined);
@@ -53,8 +73,10 @@ const pickMany = <T extends string>(v: unknown, allowed: readonly T[]) =>
 /** Keeps only known fields, known option keys and trimmed, length-limited text. */
 export function sanitizeAnswers(raw: unknown): AssessmentAnswers {
   const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const areas = pickMany(r.areas, AREAS)?.slice(0, MAX_AREAS);
   const out: AssessmentAnswers = {
-    area: pick(r.area, AREAS),
+    area: areas?.length ? areas[0] : pick(r.area, AREAS),
+    areas,
     areaText: clean(r.areaText, 200),
     situation: clean(r.situation),
     outcome: clean(r.outcome),
@@ -78,7 +100,10 @@ export function sanitizeFollowups(raw: unknown): Followup[] {
 /** Whether a base step has enough to continue. Free-text steps need a few words. */
 export function stepComplete(a: AssessmentAnswers, step: (typeof BASE_STEPS)[number]): boolean {
   switch (step) {
-    case "area": return !!a.area && (a.area !== "other" || (a.areaText?.length ?? 0) >= 3);
+    case "area": {
+      const list = areasOf(a);
+      return list.length > 0 && (!list.includes("other") || (a.areaText?.length ?? 0) >= 3);
+    }
     case "situation": return (a.situation?.length ?? 0) >= 10;
     case "outcome": return (a.outcome?.length ?? 0) >= 5;
     case "obstacles": return !!a.obstacles?.length || (a.obstaclesText?.length ?? 0) >= 3;
@@ -104,7 +129,7 @@ const SUPPORT_EN: Record<Support, string> = { questions: "reflective questions",
 
 export function describeAnswers(a: AssessmentAnswers, followups: Followup[]): string {
   const lines = [
-    `Area: ${a.area ? AREA_EN[a.area] : "-"}${a.areaText ? ` (${a.areaText})` : ""}`,
+    `Area: ${areasOf(a).map(x => AREA_EN[x]).join(", ") || "-"}${a.areaText ? ` (${a.areaText})` : ""}`,
     `Current situation, in their words: ${a.situation ?? "-"}`,
     `Desired outcome: ${a.outcome ?? "-"}`,
     `Obstacles: ${(a.obstacles ?? []).map(o => OBSTACLE_EN[o]).join(", ") || "-"}${a.obstaclesText ? ` (${a.obstaclesText})` : ""}`,

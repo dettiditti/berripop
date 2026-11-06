@@ -73,3 +73,27 @@ describe("parsing AI output", () => {
     expect(sanitizeAccepted({ goals: ["Cél"], firstStep: "" })).toBeNull();
   });
 });
+
+describe("several areas", () => {
+  it("keeps at most three known areas, the first as the main one", async () => {
+    const { sanitizeAnswers, areasOf } = await import("../lib/assessment/model");
+    const a = sanitizeAnswers({ area: "habits", areas: ["stress", "nope", "confidence", "stress", "habits", "selfcare"] });
+    expect(a.areas).toEqual(["stress", "confidence", "habits"]);
+    expect(a.area).toBe("stress");
+    expect(areasOf({ area: "habits" })).toEqual(["habits"]);
+    expect(areasOf({})).toEqual([]);
+  });
+  it("toggles areas and ignores a fourth", async () => {
+    const { toggleArea } = await import("../lib/assessment/model");
+    expect(toggleArea({}, "stress")).toEqual({ areas: ["stress"], area: "stress" });
+    expect(toggleArea({ areas: ["stress", "habits"], area: "stress" }, "stress")).toEqual({ areas: ["habits"], area: "habits" });
+    expect(toggleArea({ areas: ["stress", "habits", "confidence"], area: "stress" }, "selfcare")).toBeNull();
+    expect(toggleArea({ area: "habits" }, "stress")).toEqual({ areas: ["habits", "stress"], area: "habits" });
+  });
+  it("needs a few words when something else is among the picks, and names every area in the prompt", async () => {
+    const { stepComplete, describeAnswers } = await import("../lib/assessment/model");
+    expect(stepComplete({ areas: ["stress", "other"], area: "stress" }, "area")).toBe(false);
+    expect(stepComplete({ areas: ["stress", "other"], area: "stress", areaText: "zene" }, "area")).toBe(true);
+    expect(describeAnswers({ areas: ["stress", "confidence"], area: "stress" }, [])).toContain("Area: handling stress and calm, self-confidence and speaking up");
+  });
+});

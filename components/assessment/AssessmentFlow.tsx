@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, Lock, RefreshCw, Sparkles, Trash2 } from "lucide-react";
 import {
-  AREAS, BASE_STEPS, FOLLOWUP_STEP, MAX_FOLLOWUPS, OBSTACLES, PLAN_STEP, stepComplete, SUPPORTS, TIMES, TOTAL_STEPS,
+  AREAS, areasOf, BASE_STEPS, MAX_AREAS, toggleArea, FOLLOWUP_STEP, MAX_FOLLOWUPS, OBSTACLES, PLAN_STEP, stepComplete, SUPPORTS, TIMES, TOTAL_STEPS,
   type AssessmentAnswers, type Followup,
 } from "@/lib/assessment/model";
 import type { AssessmentError, AssessmentResult, AssessmentState } from "@/lib/assessment/types";
@@ -211,14 +211,19 @@ function BaseQuestion({ step, answers, onChange }: { step: (typeof BASE_STEPS)[n
 
       {step === "area" && (
         <>
-          <div className="assessment-options" role="radiogroup" aria-labelledby={id}>
-            {AREAS.map(k => (
-              <button key={k} type="button" role="radio" aria-checked={answers.area === k} className={`assessment-option ${answers.area === k ? "is-selected" : ""}`} onClick={() => onChange({ area: k })}>
-                {answers.area === k && <Check size={16} strokeWidth={3} aria-hidden />} {a.options.area[k]}
-              </button>
-            ))}
+          <div className="assessment-options" role="group" aria-labelledby={id}>
+            {AREAS.map(k => {
+              const at = areasOf(answers).indexOf(k);
+              const on = at >= 0;
+              const full = !on && areasOf(answers).length >= MAX_AREAS;
+              return (
+                <button key={k} type="button" aria-pressed={on} disabled={full} className={`assessment-option ${on ? "is-selected" : ""}`} onClick={() => { const patch = toggleArea(answers, k); if (patch) onChange(patch); }}>
+                  {on && <span className="assessment-option-rank" aria-hidden>{at + 1}</span>} {a.options.area[k]}
+                </button>
+              );
+            })}
           </div>
-          {answers.area === "other" && (
+          {areasOf(answers).includes("other") && (
             <>
               <label className="field-label" htmlFor="as-area-other">{a.questions.area.otherLabel}</label>
               <input id="as-area-other" className="input" maxLength={200} value={answers.areaText ?? ""} onChange={e => onChange({ areaText: e.target.value })} />

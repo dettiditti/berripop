@@ -19,7 +19,7 @@ import BerripopSpeechBubble from "./BerripopSpeechBubble";
 
 const CONFETTI_COLORS = ["#7B4DFF", "#FF7A5C", "#2DD4A0", "#FFC93C", "#B796FF"];
 
-function Confetti({ pieces }: { pieces: number }) {
+export function Confetti({ pieces }: { pieces: number }) {
   return (
     <div className="confetti" aria-hidden>
       {Array.from({ length: pieces }, (_, i) => (

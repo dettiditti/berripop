@@ -2,7 +2,7 @@ import "server-only";
 import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "../db";
 import { goalJourneys, pathAssessments, userActivity } from "../db/schema";
-import { AREA_EN, sanitizeAnswers, TIME_EN } from "../assessment/model";
+import { AREA_EN, areasOf, sanitizeAnswers, TIME_EN } from "../assessment/model";
 import type { ActionResult } from "../domain/types";
 import { isLocale } from "../i18n/config";
 import { describeGoals, GOAL_JOURNEY_DAYS, goalJourneyInstructions, goalsKey, parseGoalJourney, type GoalJourneyWeek } from "../journey/goal";
@@ -40,7 +40,7 @@ export async function buildGoalJourney(userId: string, localeInput: string): Pro
     feature: "goal_journey",
     instructions: goalJourneyInstructions(locale),
     prompt: describeGoals({
-      goals, area: a.area ? AREA_EN[a.area] : undefined, time: a.time ? TIME_EN[a.time] : undefined,
+      goals, area: areasOf(a).map(x => AREA_EN[x]).join(", ") || undefined, time: a.time ? TIME_EN[a.time] : undefined,
       previousWeeks: finished ? (current.weeks as GoalJourneyWeek[]).map(w => w.theme) : undefined,
     }),
     maxOutputTokens: 6000,

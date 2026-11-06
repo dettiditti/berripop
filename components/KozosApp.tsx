@@ -9,6 +9,7 @@ import { buildView } from "@/lib/domain/view";
 import { setLocale, useI18n } from "@/lib/i18n/client";
 import { isLocale } from "@/lib/i18n/config";
 import { isNativeApp } from "@/lib/native";
+import { clearStart } from "@/lib/onboarding/start";
 import { termsPrompt, type LegalStatus } from "@/lib/legal/records";
 import type { AssessmentState } from "@/lib/assessment/types";
 import type { JournalState } from "@/lib/journal/types";
@@ -27,6 +28,7 @@ import { InviteModal, QuestionComposer, Toast } from "./Modals";
 import Onboarding from "./Onboarding";
 import QuestFlow, { type Draft } from "./QuestFlow";
 import QuestionDetail from "./QuestionDetail";
+import ReminderPrompt from "./ReminderPrompt";
 import TermsGate from "./TermsGate";
 import Welcome from "./Welcome";
 import CircleScreen from "./screens/CircleScreen";
@@ -151,6 +153,7 @@ function AppShell({ snapshot, setSnapshot }: { snapshot: Snapshot; setSnapshot: 
   const [assessing, setAssessing] = useState(false);
   const [journeyMode, setJourneyMode] = useState<JourneyMode>("own");
   const [journeyBuilding, setJourneyBuilding] = useState(false);
+  const [askReminder, setAskReminder] = useState(false);
 
   const view = useMemo(() => buildView(snapshot, d.common.you), [snapshot, d.common.you]);
   const circle = view.circle;
@@ -186,6 +189,9 @@ function AppShell({ snapshot, setSnapshot }: { snapshot: Snapshot; setSnapshot: 
     // Only on first load: joining a circle later shouldn't reopen it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Answers from the phone app's first questions are only needed until onboarding; never kept after.
+  useEffect(() => { clearStart(); }, []);
 
   // Counted once a day on the server (retention); never blocks the app.
   useEffect(() => { appOpenedAction().catch(() => {}); }, []);
@@ -244,7 +250,11 @@ function AppShell({ snapshot, setSnapshot }: { snapshot: Snapshot; setSnapshot: 
     // Accepting created goals: refresh so the snapshot has them.
     await refresh();
     // Then build the journey from those goals in the background (refused quietly if there are none).
-    if (s.assessment?.status === "accepted") buildJourney(true);
+    if (s.assessment?.status === "accepted") {
+      // In the phone app, the moment the path is ready is when a reminder makes sense.
+      if (isNativeApp(navigator.userAgent)) setAskReminder(true);
+      buildJourney(true);
+    }
   }
 
   function xpPreview(ref: QuestionRef, context: AnswerContext) {
@@ -398,6 +408,7 @@ function AppShell({ snapshot, setSnapshot }: { snapshot: Snapshot; setSnapshot: 
           }}
         />
       )}
+      {askReminder && <ReminderPrompt notify={notify} onClose={() => setAskReminder(false)} />}
       {toast && <Toast key={toast.id} message={toast.message} />}
     </div>
   );

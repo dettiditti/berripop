@@ -7,15 +7,26 @@ import { prefersReducedMotion } from "@/lib/motion";
 export type BerriClip = "wave" | "wonder" | "joy" | "joy2" | "care";
 
 /**
- * Apple's browsers (Safari, and every iPhone browser and app web view,
- * including the Berripop app) play HEVC video with transparency, so Berri
- * appears on the page itself with no background. Elsewhere (Chrome, Android)
- * the same codec would show a black box, so those get the clip with its own
- * lavender background, which the page colour matches.
+ * How Berri can be shown without a background in this browser:
+ * - "mov": Apple's browsers (Safari, every iPhone browser and the Berripop
+ *   app) play HEVC video with transparency directly.
+ * - "stack": elsewhere (Chrome, Firefox, Android), a plain H.264 clip with
+ *   the colour in its top half and the transparency in its bottom half, put
+ *   back together on a canvas with WebGL.
+ * - "scene": no WebGL either, so the clip with its own lavender background.
  */
-function canPlayTransparent(): boolean {
+type Mode = "mov" | "stack" | "scene";
+
+function detectMode(): Mode {
   const v = document.createElement("video");
-  return navigator.vendor.startsWith("Apple") && v.canPlayType('video/quicktime; codecs="hvc1"') !== "";
+  if (navigator.vendor.startsWith("Apple") && v.canPlayType('video/quicktime; codecs="hvc1"') !== "") return "mov";
+  try {
+    const c = document.createElement("canvas");
+    if (c.getContext("webgl", { premultipliedAlpha: true })) return "stack";
+  } catch {
+    // No WebGL.
+  }
+  return "scene";
 }
 const noSubscribe = () => () => {};
 
@@ -30,7 +41,7 @@ export default function BerriVideo({ clip, className }: { clip: BerriClip; class
   const ref = useRef<HTMLVideoElement>(null);
   const [failed, setFailed] = useState(false);
   // Decided in the browser only; the server and first render draw an empty stage.
-  const transparent = useSyncExternalStore(noSubscribe, canPlayTransparent, () => null);
+  const mode = useSyncExternalStore(noSubscribe, detectMode, () => null);
   const still = useSyncExternalStore(noSubscribe, prefersReducedMotion, () => false) || failed;
 
   useEffect(() => {
@@ -40,21 +51,24 @@ export default function BerriVideo({ clip, className }: { clip: BerriClip; class
     v.play().catch(() => {
       // Autoplay refused (e.g. low-power mode): the first frame stays.
     });
-  }, [clip, transparent]);
+  }, [clip, mode]);
 
   const base = `/berri/berri-${clip}`;
-  const kind = transparent ? "berri-video--clear" : "berri-video--scene";
+  const clear = mode === "mov" || mode === "stack";
+  const kind = mode === null ? "" : clear ? "berri-video--clear" : "berri-video--scene";
   return (
-    <div className={`berri-video ${transparent === null ? "" : kind}${className ? ` ${className}` : ""}`} aria-hidden>
-      {transparent === null ? null : still ? (
+    <div className={`berri-video ${kind}${className ? ` ${className}` : ""}`} aria-hidden>
+      {mode === null ? null : still ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={transparent ? `${base}.png` : `${base}.jpg`} alt="" />
+        <img src={clear ? `${base}.png` : `${base}.jpg`} alt="" />
+      ) : mode === "stack" ? (
+        <StackedClip key={clip} src={`${base}-alpha.mp4`} still={`${base}.png`} onError={() => setFailed(true)} />
       ) : (
         <video
           ref={ref}
-          key={`${clip}-${transparent}`}
-          src={transparent ? `${base}.mov` : `${base}.mp4`}
-          poster={transparent ? undefined : `${base}.jpg`}
+          key={`${clip}-${mode}`}
+          src={mode === "mov" ? `${base}.mov` : `${base}.mp4`}
+          poster={mode === "mov" ? undefined : `${base}.jpg`}
           muted
           playsInline
           autoPlay
@@ -64,5 +78,110 @@ export default function BerriVideo({ clip, className }: { clip: BerriClip; class
         />
       )}
     </div>
+  );
+}
+
+const VERTEX = `attribute vec2 p; varying vec2 uv;
+void main() { uv = vec2((p.x + 1.0) * 0.5, (1.0 - p.y) * 0.25); gl_Position = vec4(p, 0.0, 1.0); }`;
+// The colour is already premultiplied (drawn over black), as the canvas expects.
+const FRAGMENT = `precision mediump float; uniform sampler2D t; varying vec2 uv;
+void main() { vec3 c = texture2D(t, uv).rgb; float a = texture2D(t, uv + vec2(0.0, 0.5)).r; gl_FragColor = vec4(min(c, vec3(a)), a); }`;
+
+/**
+ * Plays a stacked-alpha clip in a hidden video and draws each frame onto a
+ * transparent canvas: the top half gives the colour, the bottom half how
+ * see-through each pixel is. The still image stays underneath until the first
+ * frame is drawn.
+ */
+function StackedClip({ src, still, onError }: { src: string; still: string; onError: () => void }) {
+  const video = useRef<HTMLVideoElement>(null);
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const [drawn, setDrawn] = useState(false);
+  // The parent passes a new function on every render; the canvas is set up once per clip.
+  const failRef = useRef(onError);
+  failRef.current = onError;
+
+  useEffect(() => {
+    const onError = () => failRef.current();
+    const v = video.current, c = canvas.current;
+    if (!v || !c) return;
+    const gl = c.getContext("webgl", { premultipliedAlpha: true, alpha: true, antialias: false });
+    if (!gl) return onError();
+    const shader = (type: number, code: string) => {
+      const s = gl.createShader(type)!;
+      gl.shaderSource(s, code);
+      gl.compileShader(s);
+      return s;
+    };
+    const prog = gl.createProgram()!;
+    gl.attachShader(prog, shader(gl.VERTEX_SHADER, VERTEX));
+    gl.attachShader(prog, shader(gl.FRAGMENT_SHADER, FRAGMENT));
+    gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return onError();
+    gl.useProgram(prog);
+    const buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(prog, "p");
+    gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    const tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+    let live = true;
+    let raf = 0;
+    let first = false;
+    const draw = () => {
+      if (!live || v.readyState < 2) return;
+      if (c.width !== v.videoWidth || c.height !== v.videoHeight / 2) {
+        c.width = v.videoWidth;
+        c.height = v.videoHeight / 2;
+        gl.viewport(0, 0, c.width, c.height);
+      }
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, v);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      if (!first) { first = true; setDrawn(true); }
+    };
+    // One draw per decoded frame where supported, otherwise once per screen refresh while playing.
+    type FrameVideo = HTMLVideoElement & { requestVideoFrameCallback?: (cb: () => void) => number };
+    const fv = v as FrameVideo;
+    const loop = () => {
+      draw();
+      if (!live || v.paused || v.ended) return;
+      if (fv.requestVideoFrameCallback) fv.requestVideoFrameCallback(loop);
+      else raf = requestAnimationFrame(loop);
+    };
+    const onPlay = () => loop();
+    v.addEventListener("loadeddata", draw);
+    v.addEventListener("play", onPlay);
+    v.addEventListener("seeked", draw);
+    v.addEventListener("ended", draw);
+    v.play().catch(() => draw());
+    return () => {
+      live = false;
+      cancelAnimationFrame(raf);
+      v.removeEventListener("loadeddata", draw);
+      v.removeEventListener("play", onPlay);
+      v.removeEventListener("seeked", draw);
+      v.removeEventListener("ended", draw);
+      gl.deleteTexture(tex);
+      gl.deleteBuffer(buf);
+      gl.deleteProgram(prog);
+    };
+  }, [src]);
+
+  return (
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      {!drawn && <img src={still} alt="" />}
+      <canvas ref={canvas} className={drawn ? undefined : "berri-video-pending"} />
+      <video ref={video} className="berri-video-source" src={src} muted playsInline autoPlay preload="auto" disablePictureInPicture onError={() => failRef.current()} />
+    </>
   );
 }

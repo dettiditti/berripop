@@ -1556,7 +1556,7 @@ html:has(.lp) { scroll-behavior: smooth; }
   display: flex; flex-direction: column; align-items: center; gap: 4px;
   padding: max(12px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
 }
-.berri-video { position: relative; width: min(78vw, 340px, 40dvh); aspect-ratio: 3 / 4; flex-shrink: 0; }
+.berri-video { position: relative; width: min(78vw, 340px, 40dvh); aspect-ratio: 3 / 4; min-height: 0; overflow: hidden; flex-shrink: 0; }
 /* Transparent clip (Apple browsers and the app): Berri stands on the page,
    with a soft shadow of their own on the ground. */
 .berri-video--clear::before {
@@ -1570,7 +1570,11 @@ html:has(.lp) { scroll-behavior: smooth; }
   -webkit-mask-image: linear-gradient(to bottom, transparent, #000 16%, #000 82%, transparent);
   mask-image: linear-gradient(to bottom, transparent, #000 16%, #000 82%, transparent);
 }
-.berri-video video, .berri-video img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 45%; display: block; }
+.berri-video video, .berri-video img, .berri-video canvas { width: 100%; height: 100%; object-fit: cover; object-position: 50% 45%; display: block; }
+.berri-video--clear canvas { position: relative; }
+/* The stacked clip's source video only feeds the canvas. */
+.berri-video .berri-video-source { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.berri-video img + .berri-video-pending { position: absolute; inset: 0; opacity: 0; }
 .berri-intro-card, .app-welcome-copy {
   position: relative; width: min(100%, 440px); text-align: center;
   background: var(--paper); border-radius: var(--radius); box-shadow: var(--shadow);
@@ -1766,3 +1770,43 @@ html[data-app] .settings-top { top: var(--safe-top); }
 html[data-app]:has(.berri-stage), html[data-app] body:has(.berri-stage) { background: #cbc3d9; }
 html[data-app] body:has(.berri-stage) { padding-top: 0; }
 html[data-app] body:has(.berri-stage)::before { content: none; }
+
+/* ---------- Phone app: the first questions before sign-up ---------- */
+.app-start { gap: 6px; }
+.app-start .app-start-berri { width: min(32vw, 136px, 17dvh); }
+.app-start--ready .app-start-berri { width: min(64vw, 280px, 34dvh); }
+.app-start-card { gap: 8px; text-align: center; }
+.app-start-top { display: flex; align-items: center; gap: 10px; }
+.app-start-back {
+  flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; border: 0; background: var(--lavender);
+  color: var(--purple-dark); display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.app-start-back:active { transform: scale(0.94); }
+.app-start-progress { flex: 1; height: 10px; border-radius: 99px; background: var(--lavender); overflow: hidden; }
+.app-start-progress span { display: block; height: 100%; border-radius: inherit; background: var(--purple); transition: width 0.45s cubic-bezier(0.3, 1.4, 0.5, 1); }
+.app-start-progress.is-full span { background: linear-gradient(90deg, var(--purple), #2DD4A0); }
+.app-start-count { flex-shrink: 0; min-width: 32px; font-weight: 800; font-size: 14px; color: var(--purple-dark); }
+.app-start-left { margin: -4px 0 0; font-size: 13px !important; font-weight: 700; color: var(--ink-3, var(--ink-2)) !important; text-align: right; }
+.app-start-cheer {
+  align-self: center; padding: 4px 12px; border-radius: 99px; background: #e6f9f1; color: #13795b;
+  font-weight: 800; font-size: 14px; animation: app-start-pop 0.4s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+}
+@keyframes app-start-pop { from { opacity: 0; transform: scale(0.7); } }
+.app-start-options { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.app-start-options .assessment-option { font-size: 15px; min-height: 40px; padding: 7px 13px; border-radius: 14px; }
+/* The next button stays in reach while the options scroll. */
+.app-start-card > .btn--primary { position: sticky; bottom: max(12px, env(safe-area-inset-bottom)); z-index: 2; box-shadow: 0 6px 18px rgba(80, 50, 160, 0.25); }
+.app-start-options .assessment-option:active { transform: scale(0.96); }
+.app-start-privacy { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px !important; }
+.app-start-back-low { margin-top: 8px; color: var(--purple-dark); }
+@media (prefers-reduced-motion: reduce) { .app-start-cheer { animation: none; } .app-start-progress span { transition: none; } }
+.reminder-prompt { display: flex; align-items: center; gap: 14px; }
+.reminder-prompt p { margin: 0; color: var(--ink-2); line-height: 1.45; }
+.app-start-progress.is-full { flex: none; width: 100%; }
+.app-start-back-low { align-self: center; }
+/* Several areas: a small number shows the order, the first is the main focus. */
+.assessment-option-rank {
+  display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%;
+  background: var(--purple); color: #fff; font-size: 12px; font-weight: 800; flex-shrink: 0;
+}
+.assessment-option:disabled { opacity: 0.45; cursor: default; }
