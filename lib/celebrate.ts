@@ -32,10 +32,7 @@ export function writeCelebrated(key: string, ids: readonly string[]) {
   try { window.localStorage.setItem(key, JSON.stringify(ids)); } catch { /* storage blocked: celebrations just may repeat */ }
 }
 
-/** How long the full-screen celebration stays before closing by itself. */
-export const CELEBRATION_MS = 1800;
-
 export const CELEBRATE_COPY = {
-  hu: { badge: "Új jelvény!", milestone: "Mérföldkő elérve!", close: "Bezárás" },
-  en: { badge: "New badge!", milestone: "Milestone reached!", close: "Close" },
+  hu: { badge: "Új jelvény!", milestone: "Mérföldkő elérve!", close: "Koppints a bezáráshoz" },
+  en: { badge: "New badge!", milestone: "Milestone reached!", close: "Tap to close" },
 } as const;

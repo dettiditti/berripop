@@ -5,14 +5,17 @@ import { Check, Lightbulb, Lock, Sparkles, X } from "lucide-react";
 import type { JournalEntryDTO, JournalState } from "@/lib/journal/types";
 import { createEntrySaver, MIN_ENTRY_CHARS, saveStatusText, type SaveStatus } from "@/lib/journal/editor-save";
 import { useI18n } from "@/lib/i18n/client";
-import { saveJournalEntryAction, trackAction } from "@/lib/server/actions";
-import { MoodPicker } from "./MoodSticker";
+import type { Mood } from "@/lib/journal/moods";
+import { saveJournalEntryAction, setEntryMoodAction, trackAction } from "@/lib/server/actions";
+import { MoodChoice } from "./MoodSticker";
 
 /**
  * Distraction-free writer. Drafts autosave shortly after typing stops; only
  * "save entry" makes it a finished entry, confirmed by the server. Nothing is
  * sent to AI from here. After saving, the owner chooses whether to ask for a
- * reflection or go back to the journal.
+ * reflection or go back to the journal. The feeling sticker is picked while
+ * writing and saved once the entry exists (it travels with the first autosave
+ * or the final save).
  */
 export default function JournalEditor({
   entry,
@@ -56,6 +59,27 @@ export default function JournalEditor({
     onState: s => onStateRef.current(s),
   }));
   const done = status === "final_saved";
+
+  // The feeling sticker: chosen while writing, sent once the entry has an id, and again whenever it changes.
+  const [mood, setMood] = useState<Mood | null>(entry?.mood ?? null);
+  const sentMood = useRef<Mood | null>(entry?.mood ?? null);
+  const sendingMood = useRef(false);
+  const [moodTick, setMoodTick] = useState(0);
+  useEffect(() => {
+    const id = saver.id;
+    if (!state.moodsEnabled || !id || sendingMood.current || mood === sentMood.current) return;
+    sendingMood.current = true;
+    const want = mood;
+    setEntryMoodAction(id, want)
+      .then(res => {
+        sendingMood.current = false;
+        if (!res.ok) return;
+        sentMood.current = want;
+        onStateRef.current(res.state);
+        setMoodTick(n => n + 1); // picked again meanwhile? send the newer one
+      })
+      .catch(() => { sendingMood.current = false; /* kept locally; retried with the next save */ });
+  }, [mood, status, saver, state.moodsEnabled, moodTick]);
 
   useEffect(() => {
     textRef.current?.focus();
@@ -134,6 +158,7 @@ export default function JournalEditor({
             {body.length > 0 && body.trim().length < MIN_ENTRY_CHARS && <p className="field-hint">{j.tooShort}</p>}
           </div>
           <div className="journal-editor-actions">
+            {state.moodsEnabled && <MoodChoice value={mood} onPick={setMood} size={42} hint={!keyboard} />}
             <button className="btn btn--primary btn--lg btn--block" disabled={body.trim().length < MIN_ENTRY_CHARS || finishing} aria-busy={finishing} onClick={() => void saver.finish(body)}>
               <Check size={18} /> {finishing ? j.finishing : j.finish}
             </button>
@@ -143,9 +168,6 @@ export default function JournalEditor({
         <div className="journal-editor-body journal-after" role="status">
           <h2>{j.afterSaveTitle}</h2>
           <p className="muted">{j.afterSaveBody}</p>
-          {state.moodsEnabled && saver.id && (
-            <MoodPicker entryId={saver.id} value={state.entries.find(e => e.id === saver.id)?.mood ?? null} onResult={res => { if (res.ok) onState(res.state); return res.ok; }} />
-          )}
           {canReflect && (
             <>
               {insightToggle}

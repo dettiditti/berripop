@@ -2458,7 +2458,7 @@ html[data-app] body:has(.berri-stage)::before { content: none; }
 @media (prefers-reduced-motion: reduce) { .milestones-bar i { transition: none; } }
 
 /* ============ Full-screen celebration (new badge / milestone) ============ */
-.celebrate { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 24px; background: rgba(48, 41, 67, 0.42); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); animation: celebrate-fade 1.8s ease both; cursor: pointer; }
+.celebrate { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 24px; background: rgba(48, 41, 67, 0.42); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); animation: celebrate-fade 0.3s ease both; cursor: pointer; }
 .celebrate-card { position: relative; width: min(100%, 340px); display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 36px 24px 30px; text-align: center; border-radius: 32px; background: linear-gradient(160deg, #ffffff, #f6f0ff 60%, #fdeee6); border: 1px solid #fff; box-shadow: 0 30px 60px -20px rgba(48, 30, 110, 0.45); animation: celebrate-pop 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
 .celebrate-medal { position: relative; width: 116px; height: 116px; border-radius: 38px; display: grid; place-items: center; margin-bottom: 6px; color: var(--tone-ink, #fff); background: var(--tone, var(--purple)); box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.12), 0 16px 30px -12px var(--tone-dark, var(--purple-dark)); animation: celebrate-medal 0.7s 0.1s cubic-bezier(0.2, 1.5, 0.4, 1) both; }
 .celebrate-eyebrow { font-size: 12px; font-weight: 900; letter-spacing: 0.14em; text-transform: uppercase; color: var(--purple-dark, #5a3cb8); }
@@ -2466,7 +2466,7 @@ html[data-app] body:has(.berri-stage)::before { content: none; }
 .celebrate-hint { font-size: 14px; color: var(--muted); max-width: 26ch; }
 .celebrate-burst { position: absolute; top: 82px; left: 50%; width: 0; height: 0; }
 .celebrate-burst i { position: absolute; width: 9px; height: 9px; border-radius: 3px; background: hsl(calc(var(--i) * 36deg + 250deg) 80% 70%); transform: rotate(calc(var(--i) * 36deg)) translateY(0); animation: celebrate-burst 0.9s 0.15s ease-out both; }
-@keyframes celebrate-fade { 0% { opacity: 0; } 10% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes celebrate-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes celebrate-pop { from { transform: scale(0.7) translateY(20px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes celebrate-medal { from { transform: scale(0.3) rotate(-20deg); } to { transform: none; } }
 @keyframes celebrate-burst { from { opacity: 1; transform: rotate(calc(var(--i) * 36deg)) translateY(0) scale(1); } to { opacity: 0; transform: rotate(calc(var(--i) * 36deg)) translateY(-120px) scale(0.6); } }
@@ -2475,3 +2475,13 @@ html[data-app] body:has(.berri-stage)::before { content: none; }
   .celebrate-card, .celebrate-medal { animation: none; }
   .celebrate-burst { display: none; }
 }
+
+/* Feeling stickers inside the journal editor, above the save button */
+.journal-editor-actions .mood-picker { gap: 4px; margin-bottom: 10px; }
+.journal-editor-actions .mood-picker .field-label { font-size: 13px; }
+.journal-editor-actions .mood-picker-row { padding: 4px 2px 2px; }
+.journal-editor-actions .mood-sticker-label { font-size: 10.5px; }
+.mood-picker-hint { font-size: 12px; }
+.journal-open-mood { display: inline-flex; align-self: flex-start; }
+.celebrate-close { margin-top: 14px; min-height: 44px; padding: 10px 22px; border-radius: 999px; font-size: 14px; font-weight: 800; color: #fff; background: var(--purple, #7654d9); box-shadow: 0 8px 18px -10px rgba(84, 60, 150, 0.6); }
+.celebrate-close:focus-visible { outline: 3px solid var(--purple-soft, #e9e1fb); outline-offset: 2px; }

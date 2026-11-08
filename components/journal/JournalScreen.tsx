@@ -24,7 +24,7 @@ import { SafetyCard, SafetyLink } from "../safety/SafetyCard";
 import { crisisSignal } from "@/lib/safety/crisis";
 import { THOUGHT_COPY } from "@/lib/thought/copy";
 import ThoughtDissector from "../thought/ThoughtDissector";
-import { MoodPicker, MoodSticker } from "./MoodSticker";
+import { MoodSticker } from "./MoodSticker";
 
 /** How Berripop should help with this entry: listen, think it through together, or a practical idea (per request). */
 export function SupportModePicker({ value, onChange }: { value: SupportMode; onChange: (m: SupportMode) => void }) {
@@ -305,7 +305,7 @@ export default function JournalScreen({ account, today, notify, starter, onJourn
             <button className="icon-btn" onClick={() => setOpenEntry(null)} aria-label={j.close}><X size={18} /></button>
           </div>
           <p className="journal-body-text">{open.body}</p>
-          {open.status === "saved" && state.moodsEnabled && <MoodPicker key={open.id} entryId={open.id} value={open.mood ?? null} onResult={apply} />}
+          {open.mood && <span className="journal-open-mood"><MoodSticker mood={open.mood} size={40} label /></span>}
           {(crisisSignal(open.body) || aiSafety.includes(open.id)) && <SafetyCard />}
           <div className="row-gap">
             <button className="btn btn--ghost btn--sm" onClick={() => setEditing(open)}><PenLine size={14} /> {j.edit}</button>
