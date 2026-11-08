@@ -44,6 +44,7 @@ import GoalsScreen from "./screens/GoalsScreen";
 import type { JourneyMode } from "./screens/types";
 import { useRun } from "./useRun";
 import Celebration, { type CelebrationItem } from "./Celebration";
+import { OfferContext } from "./billing/UpgradePrompt";
 import { celebratedKey, freshlyReached, readCelebrated, writeCelebrated, type CelebrationKind } from "@/lib/celebrate";
 import { achievementDefs } from "@/lib/domain/rules";
 import { milestonesFrom, type MilestoneCounts, type MilestoneId } from "@/lib/milestones";
@@ -366,19 +367,23 @@ function AppShell({ snapshot, setSnapshot }: { snapshot: Snapshot; setSnapshot: 
     covered: !!quest || !!reward || !!detail,
   };
   const questQuestion = quest ? view.question(quest.ref) : null;
+  const offerRules = useMemo(() => ({ activeDays: new Set(snapshot.progress.activeDates).size }), [snapshot.progress.activeDates]);
 
   if (assessing && assessment) {
     return (
-      <div className="app app--focus">
-        <div className="app-topbar"><AccountMenu /></div>
-        <main className="screen">
-          <AssessmentFlow state={assessment} account={snapshot.account} onState={setAssessment} onFinished={finishAssessment} />
-        </main>
-      </div>
+      <OfferContext.Provider value={offerRules}>
+        <div className="app app--focus">
+          <div className="app-topbar"><AccountMenu /></div>
+          <main className="screen">
+            <AssessmentFlow state={assessment} account={snapshot.account} onState={setAssessment} onFinished={finishAssessment} />
+          </main>
+        </div>
+      </OfferContext.Provider>
     );
   }
 
   return (
+    <OfferContext.Provider value={offerRules}>
     <div className="app">
       <BottomNavigation active={tab} onChange={go} />
       <div className="app-topbar"><AccountMenu /></div>
@@ -464,6 +469,7 @@ function AppShell({ snapshot, setSnapshot }: { snapshot: Snapshot; setSnapshot: 
       {toast && <Toast key={toast.id} message={toast.message} />}
       {nextCelebration && !quest && !reward && <Celebration key={`${nextCelebration.kind}:${nextCelebration.id}`} item={nextCelebration} onDone={finishCelebration} />}
     </div>
+    </OfferContext.Provider>
   );
 }
 

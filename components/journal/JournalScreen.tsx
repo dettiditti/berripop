@@ -325,7 +325,7 @@ export default function JournalScreen({ account, today, notify, starter, onJourn
           {state.usage.reached && <small className="muted">{t(j.limitReached, { date: date(state.usage.resets) })}</small>}
           {reflecting === open.id && <p className="muted" aria-live="polite">{j.reflecting}</p>}
           {openReflections.map(r => <ReflectionCard key={r.id} r={r} goals={goals} onResult={apply} notify={notify} />)}
-          {state.usage.reached && account.entitlements.plan === "free" && <UpgradePrompt kind="journal" vars={{ n: PLAN_LIMITS.premium.journalAiPerPeriod }} />}
+          {state.usage.reached && account.entitlements.plan === "free" && <UpgradePrompt kind="journal" vars={{ n: PLAN_LIMITS.premium.journalAiPerPeriod }} atLimit />}
         </section>
       )}
 

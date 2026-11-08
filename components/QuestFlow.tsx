@@ -89,7 +89,7 @@ function AiFollowUp({ ai, draft, suggestion, onSuggestion, selected, onUse }: {
       {reached && (
         <>
           <small className="muted">{t(d.billing.prompts.ai.body, { date: date(usage.resets), n: PLAN_LIMITS.premium.aiPerPeriod })}</small>
-          {ai.account.entitlements.plan === "free" && <UpgradePrompt kind="ai" vars={{ date: date(usage.resets), n: PLAN_LIMITS.premium.aiPerPeriod }} />}
+          {ai.account.entitlements.plan === "free" && <UpgradePrompt kind="ai" vars={{ date: date(usage.resets), n: PLAN_LIMITS.premium.aiPerPeriod }} atLimit />}
         </>
       )}
     </div>

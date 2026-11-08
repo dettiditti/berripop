@@ -114,7 +114,7 @@ export default function CircleScreen({ view, run, notify, go, openQuestion, onIn
         </ul>
         <label className="field-label" htmlFor="new-circle">{c.createAnother}</label>
         {view.snapshot.account.entitlements.plan === "free" && view.snapshot.account.ownedCircles >= view.snapshot.account.entitlements.limits.ownedCircles && (
-          <UpgradePrompt kind="circles" vars={{ n: PLAN_LIMITS.premium.ownedCircles }} />
+          <UpgradePrompt kind="circles" vars={{ n: PLAN_LIMITS.premium.ownedCircles }} atLimit />
         )}
         <div className="own-word-row">
           <input id="new-circle" className="input" value={newName} maxLength={60} placeholder={d.onboarding.namePlaceholder} onChange={e => setNewName(e.target.value)} />

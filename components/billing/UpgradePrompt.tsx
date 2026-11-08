@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import Link from "next/link";
 import { Sparkles, X } from "lucide-react";
 import { PRICES } from "@/lib/billing/plans";
+import { OFFER_CLAIM_KEY, OFFER_TRACKED_KEY, offerAllowed } from "@/lib/billing/prompt-policy";
 import { useI18n } from "@/lib/i18n/client";
 import { startCheckoutAction, trackAction } from "@/lib/server/actions";
 import { useNativeApp } from "../useNativeApp";
@@ -11,6 +12,24 @@ import { useNativeApp } from "../useNativeApp";
 export type UpgradeKind = "goals" | "ai" | "summary" | "circles" | "journal" | "start" | "path";
 
 const key = (kind: UpgradeKind) => `kozos-upgrade-dismissed:${kind}`;
+
+/** How many different days the member has been active; the app shell provides it. Without it offers behave as before. */
+export const OfferContext = createContext<{ activeDays: number }>({ activeDays: Number.POSITIVE_INFINITY });
+
+function session(key: string): string | null {
+  try { return window.sessionStorage.getItem(key); } catch { return null; }
+}
+function setSession(key: string, value: string) {
+  try { window.sessionStorage.setItem(key, value); } catch { /* not kept: rules still apply within this page */ }
+}
+
+/** Counts "shown" once per kind and visit, so moving between tabs does not inflate the numbers. */
+function countShown(kind: UpgradeKind) {
+  const counted = (session(OFFER_TRACKED_KEY) ?? "").split(",").filter(Boolean);
+  if (counted.includes(kind)) return;
+  setSession(OFFER_TRACKED_KEY, [...counted, kind].join(","));
+  void trackAction("upgrade_prompt_shown", kind);
+}
 
 function wasDismissed(kind: UpgradeKind) {
   try {
@@ -26,11 +45,15 @@ function wasDismissed(kind: UpgradeKind) {
  * the existing Stripe checkout. Once dismissed it stays hidden on this device
  * (unless `force`, e.g. right at a limit); it never blocks content.
  *
+ * Offers that are not at a limit wait for a few active days and show at most
+ * one per visit (lib/billing/prompt-policy.ts); `atLimit` (or `force`) marks
+ * the ones that explain a limit the member just reached.
+ *
  * Inside the phone app nothing is sold (App Store rules): no price, button or
  * link, and no "shown" event. At a limit the member still learns why
  * something stopped, in a neutral note.
  */
-export default function UpgradePrompt({ kind, vars = {}, force = false }: { kind: UpgradeKind; vars?: Record<string, string | number>; force?: boolean }) {
+export default function UpgradePrompt({ kind, vars = {}, force = false, atLimit = false }: { kind: UpgradeKind; vars?: Record<string, string | number>; force?: boolean; atLimit?: boolean }) {
   const { d, t, money } = useI18n();
   const p = d.billing.prompts;
   const [hidden, setHidden] = useState(true);
@@ -38,13 +61,18 @@ export default function UpgradePrompt({ kind, vars = {}, force = false }: { kind
   const [error, setError] = useState<string | null>(null);
   const price = money(PRICES.monthly.amount, PRICES.monthly.currency);
   const inApp = useNativeApp();
+  const { activeDays } = useContext(OfferContext);
+  const limit = atLimit || force;
 
   useEffect(() => {
     if (inApp) return;
     const dismissed = !force && wasDismissed(kind);
-    setHidden(dismissed);
-    if (!dismissed) void trackAction("upgrade_prompt_shown", kind);
-  }, [kind, force, inApp]);
+    const allowed = !dismissed && offerAllowed({ kind, atLimit: limit, activeDays, claimedThisVisit: session(OFFER_CLAIM_KEY) });
+    setHidden(!allowed);
+    if (!allowed) return;
+    if (!limit) setSession(OFFER_CLAIM_KEY, kind);
+    countShown(kind);
+  }, [kind, force, limit, activeDays, inApp]);
 
   if (inApp) {
     const note = kind === "goals" || kind === "ai" ? d.billing.appLimits[kind] : null;
