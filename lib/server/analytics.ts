@@ -51,12 +51,22 @@ export const FUNNEL_EVENTS = [
   "journal_ai_reflection_requested",
   // Berripop's AI follow-up question chosen in the answer flow (context: where).
   "journal_question_selected",
+  // Gondolatboncoló (event names only, never text).
+  "thought_dissector_opened",
+  "thought_dissector_started",
+  "thought_dissector_viewpoint_completed",
+  "thought_dissector_message_sent",
+  "thought_dissector_completed",
+  "thought_dissector_abandoned",
+  "thought_dissector_saved_to_journal",
+  "thought_dissector_quota_exhausted",
+  "thought_dissector_premium_clicked",
 ] as const;
 export type FunnelEvent = (typeof FUNNEL_EVENTS)[number];
 
 const CONTEXTS = new Set([
   "goals", "ai", "summary", "circles", "pricing", "profile", "journal", "start", "path",
-  "personal", "circle", "daily", "journey", "goal", "assessment", "building", "rest",
+  "personal", "circle", "daily", "journey", "goal", "assessment", "building", "rest", "thought",
 ]);
 export const isTrackContext = (c: string | undefined) => !!c && CONTEXTS.has(c);
 

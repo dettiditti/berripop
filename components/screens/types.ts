@@ -1,6 +1,7 @@
 import type { AssessmentStatus } from "@/lib/assessment/types";
 import type { AnswerContext, ActionResult, QuestionRef } from "@/lib/domain/types";
 import type { View } from "@/lib/domain/view";
+import type { MilestoneCounts } from "@/lib/milestones";
 import type { Tab } from "../BottomNavigation";
 
 /** Runs a server action, applies the returned snapshot, and reports errors. Resolves to null on failure. */
@@ -27,6 +28,8 @@ export type ScreenProps = {
   openAssessment: () => void;
   /** Opens a new journal entry starting with this text. */
   writeInJournal: (starter: string) => void;
+  /** Personal milestone counts (undefined: loading, null: unavailable). */
+  milestoneCounts?: MilestoneCounts | null;
   /** A full-screen layer (a question being answered, the celebration…) covers the screen right now. */
   covered?: boolean;
 };

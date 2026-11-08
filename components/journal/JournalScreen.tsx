@@ -1,12 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Download, Lock, PenLine, Sparkles, ThumbsDown, ThumbsUp, Trash2, X } from "lucide-react";
+import { ArrowRight, CalendarHeart, Download, Lock, Network, PenLine, Sparkles, ThumbsDown, ThumbsUp, Trash2, X } from "lucide-react";
 import { PLAN_LIMITS } from "@/lib/billing/plans";
 import { SUPPORT_MODES, type SupportMode } from "@/lib/journal/reflection";
 import type { JournalEntryDTO, JournalError, JournalReflectionDTO, JournalResult, JournalState, WeeklyJournalDTO } from "@/lib/journal/types";
 import { useI18n } from "@/lib/i18n/client";
-import { parseKey } from "@/lib/dates";
+import { addDays, parseKey } from "@/lib/dates";
+import { MOOD_COPY, MOOD_LABELS, weekMoods } from "@/lib/journal/moods";
 import { useAiConsent } from "../AiConsent";
 import {
   deleteAllJournalAction, deleteJournalEntryAction, exportJournalAction, getJournalAction,
@@ -21,6 +22,9 @@ import InsightsSection from "./InsightsSection";
 import JournalEditor from "./JournalEditor";
 import { SafetyCard, SafetyLink } from "../safety/SafetyCard";
 import { crisisSignal } from "@/lib/safety/crisis";
+import { THOUGHT_COPY } from "@/lib/thought/copy";
+import ThoughtDissector from "../thought/ThoughtDissector";
+import { MoodPicker, MoodSticker } from "./MoodSticker";
 
 /** How Berripop should help with this entry: listen, think it through together, or a practical idea (per request). */
 export function SupportModePicker({ value, onChange }: { value: SupportMode; onChange: (m: SupportMode) => void }) {
@@ -149,6 +153,8 @@ export default function JournalScreen({ account, today, notify, starter, onJourn
   const [mode, setMode] = useState<SupportMode>("reflect");
   // Entries the AI flagged as a possible crisis in this session (never stored).
   const [aiSafety, setAiSafety] = useState<string[]>([]);
+  // The Gondolatboncoló overlay; `source` when it starts from an entry.
+  const [dissect, setDissect] = useState<{ source: { entryId: string; body: string } | null } | null>(null);
   const goals = account.goals.filter(g => g.status === "active");
 
   const load = useCallback(async () => {
@@ -251,6 +257,9 @@ export default function JournalScreen({ account, today, notify, starter, onJourn
   const thisMonth = today.slice(0, 7);
   const open = openEntry ? state.entries.find(e => e.id === openEntry) : undefined;
   const openReflections = open ? state.reflections.filter(r => r.entryId === open.id) : [];
+  const isSunday = parseKey(today).getDay() === 0;
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(today, i - 6));
+  const week = state.moodsEnabled ? weekMoods(state.entries, weekDays) : [];
 
   return (
     <div className="stack journal">
@@ -271,6 +280,24 @@ export default function JournalScreen({ account, today, notify, starter, onJourn
         </div>
       </section>
 
+      {state.weeklyJournal && isSunday && !weekly && (
+        <section className="card weekly-tile" aria-label={j.weekly.title}>
+          <span className="weekly-tile-icon" aria-hidden><CalendarHeart size={22} /></span>
+          <span className="weekly-tile-text"><strong>{j.weekly.title}</strong><small>{j.weekly.body}</small></span>
+          <button className="btn btn--primary btn--sm" disabled={weeklyBusy || !state.aiConfigured || state.usage.reached} onClick={() => { void runWeekly(); document.getElementById("journal-weekly")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>
+            {weeklyBusy ? j.weekly.working : j.weekly.cta}
+          </button>
+        </section>
+      )}
+
+      {state.thoughtEnabled && (
+        <button type="button" className="card thought-entry" onClick={() => setDissect({ source: null })}>
+          <BerripopMascot mood="thinking" size={46} motion="none" />
+          <span><strong>{THOUGHT_COPY[locale].name}</strong><small>{THOUGHT_COPY[locale].short}</small></span>
+          <ArrowRight size={18} aria-hidden />
+        </button>
+      )}
+
       {open && (
         <section className="card journal-open" aria-label={relativeDay(open.entryDate, today)}>
           <div className="section-head">
@@ -278,11 +305,15 @@ export default function JournalScreen({ account, today, notify, starter, onJourn
             <button className="icon-btn" onClick={() => setOpenEntry(null)} aria-label={j.close}><X size={18} /></button>
           </div>
           <p className="journal-body-text">{open.body}</p>
+          {open.status === "saved" && state.moodsEnabled && <MoodPicker key={open.id} entryId={open.id} value={open.mood ?? null} onResult={apply} />}
           {(crisisSignal(open.body) || aiSafety.includes(open.id)) && <SafetyCard />}
           <div className="row-gap">
             <button className="btn btn--ghost btn--sm" onClick={() => setEditing(open)}><PenLine size={14} /> {j.edit}</button>
             {open.status === "saved" && state.aiConfigured && !state.usage.reached && (
               <button className="btn btn--ghost btn--sm" disabled={reflecting === open.id} onClick={() => reflect(open.id)}><Sparkles size={14} /> {reflecting === open.id ? j.reflecting : j.askReflection}</button>
+            )}
+            {open.status === "saved" && state.thoughtEnabled && (
+              <button className="btn btn--ghost btn--sm" onClick={() => setDissect({ source: { entryId: open.id, body: open.body } })}><Network size={14} /> {THOUGHT_COPY[locale].entryCta}</button>
             )}
             <Confirm label={j.delete} icon={<Trash2 size={13} />} question={j.deleteConfirm} yes={j.deleteYes} onConfirm={async () => { if (apply(await deleteJournalEntryAction(open.id))) { setOpenEntry(null); notify(j.deleted); } }} />
           </div>
@@ -295,6 +326,24 @@ export default function JournalScreen({ account, today, notify, starter, onJourn
           {reflecting === open.id && <p className="muted" aria-live="polite">{j.reflecting}</p>}
           {openReflections.map(r => <ReflectionCard key={r.id} r={r} goals={goals} onResult={apply} notify={notify} />)}
           {state.usage.reached && account.entitlements.plan === "free" && <UpgradePrompt kind="journal" vars={{ n: PLAN_LIMITS.premium.journalAiPerPeriod }} />}
+        </section>
+      )}
+
+      {week.some(Boolean) && (
+        <section className="card journal-week-moods" aria-labelledby="journal-week-moods">
+          <h2 id="journal-week-moods">{MOOD_COPY[locale].week}</h2>
+          <ol>
+            {week.map((m, i) => {
+              const day = parseKey(weekDays[i]);
+              const name = day.toLocaleDateString(loc, { weekday: "short" }).replace(".", "");
+              return (
+                <li key={weekDays[i]} aria-label={`${name}: ${m ? MOOD_LABELS[locale][m] : MOOD_COPY[locale].noMood}`}>
+                  {m ? <MoodSticker mood={m} size={38} tilt={i % 2 ? 6 : -6} /> : <span className="journal-week-empty" aria-hidden />}
+                  <small aria-hidden>{name}</small>
+                </li>
+              );
+            })}
+          </ol>
         </section>
       )}
 
@@ -313,6 +362,7 @@ export default function JournalScreen({ account, today, notify, starter, onJourn
                       <small>{locale === "hu" ? day.toLocaleDateString(loc, { weekday: "long" }).slice(0, 3) : day.toLocaleDateString(loc, { weekday: "short" })}</small>
                       <strong>{day.getDate()}</strong>
                       {e.entryDate.slice(0, 7) !== thisMonth && <small>{day.toLocaleDateString(loc, { month: "short" }).replace(".", "")}</small>}
+                      {e.mood && <span className="journal-date-mood"><MoodSticker mood={e.mood} size={30} tilt={-6} /></span>}
                     </span>
                     <span className="journal-item-main">
                       <span className="sr-only">{relativeDay(e.entryDate, today)}: </span>
@@ -332,7 +382,7 @@ export default function JournalScreen({ account, today, notify, starter, onJourn
       </section>
 
       {state.weeklyJournal ? (
-        <section className="card summary-card">
+        <section className="card summary-card" id="journal-weekly">
           <h2><Sparkles size={18} /> {j.weekly.title}</h2>
           <p className="muted">{j.weekly.body}</p>
           {!weekly && canUseInsights && <UseInsightsToggle id="use-insights-weekly" checked={useInsights} onChange={setUseInsights} />}
@@ -375,6 +425,10 @@ export default function JournalScreen({ account, today, notify, starter, onJourn
         </div>
         <small className="muted">{j.data.retention}</small>
       </section>
+
+      {dissect && (
+        <ThoughtDissector source={dissect.source} notify={notify} onClose={() => setDissect(null)} onJournalChanged={() => void load()} />
+      )}
 
       {editing && (
         <JournalEditor

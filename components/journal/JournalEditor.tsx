@@ -6,6 +6,7 @@ import type { JournalEntryDTO, JournalState } from "@/lib/journal/types";
 import { createEntrySaver, MIN_ENTRY_CHARS, saveStatusText, type SaveStatus } from "@/lib/journal/editor-save";
 import { useI18n } from "@/lib/i18n/client";
 import { saveJournalEntryAction, trackAction } from "@/lib/server/actions";
+import { MoodPicker } from "./MoodSticker";
 
 /**
  * Distraction-free writer. Drafts autosave shortly after typing stops; only
@@ -142,6 +143,9 @@ export default function JournalEditor({
         <div className="journal-editor-body journal-after" role="status">
           <h2>{j.afterSaveTitle}</h2>
           <p className="muted">{j.afterSaveBody}</p>
+          {state.moodsEnabled && saver.id && (
+            <MoodPicker entryId={saver.id} value={state.entries.find(e => e.id === saver.id)?.mood ?? null} onResult={res => { if (res.ok) onState(res.state); return res.ok; }} />
+          )}
           {canReflect && (
             <>
               {insightToggle}

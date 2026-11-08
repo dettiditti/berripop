@@ -78,6 +78,20 @@
       "when": 1793974327146,
       "tag": "0010_app_waitlist",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794161117677,
+      "tag": "0011_thought_dissector",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1794162929565,
+      "tag": "0012_journal_moods",
+      "breakpoints": true
     }
   ]
 }

@@ -7,7 +7,7 @@ import type { AchievementDef as BadgeDef } from "@/lib/domain/rules";
 import type { BadgeId } from "@/lib/progress";
 
 /** Original badge illustrations, drawn on a 32×32 grid in the current colour. */
-const art: Record<BadgeId, ReactNode> = {
+export const BADGE_ART: Record<BadgeId, ReactNode> = {
   // A tiny grape taking its first step.
   "first-tiny-step": (
     <>
@@ -88,7 +88,7 @@ export default function AchievementBadge({ def, unlocked, current = 0, justUnloc
     <div className={`achievement achievement--${size} tone-${def.tone} ${unlocked ? "is-unlocked" : "is-locked"} ${justUnlocked ? "just-unlocked" : ""}`}>
       <div className="achievement-medal">
         <svg viewBox="0 0 32 32" width={size === "sm" ? 26 : 32} height={size === "sm" ? 26 : 32} fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" aria-hidden>
-          {art[def.id]}
+          {BADGE_ART[def.id]}
         </svg>
         {!unlocked && <span className="achievement-lock"><Lock size={11} strokeWidth={3} /></span>}
       </div>

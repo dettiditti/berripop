@@ -40,7 +40,11 @@ function PlanRows({ rows, highlight = false }: { rows: Row[]; highlight?: boolea
  * New subscriptions go through Stripe Checkout; a member who already pays
  * switches plans in the Stripe Customer Portal.
  */
-export default function PricingPage({ from, testMode, sales }: { from?: string; testMode: boolean; sales: PublicSalesInfo }) {
+export default function PricingPage({ from, testMode, sales, thoughtEnabled = false }: {
+  from?: string; testMode: boolean; sales: PublicSalesInfo;
+  /** Gondolatboncoló rows only while the feature is on, so a plan never lists what members can't use. */
+  thoughtEnabled?: boolean;
+}) {
   const { d, t, num, money } = useI18n();
   const b = d.billing;
   const { isLoaded, isSignedIn } = useAuth();
@@ -86,6 +90,12 @@ export default function PricingPage({ from, testMode, sales }: { from?: string; 
       { label: c.weeklyJournal, value: l.weeklyJournal },
       { label: c.insights, value: l.insightContext },
       { label: c.circles, hint: c.circlesHint, value: num(l.ownedCircles) },
+      { label: c.assessment, value: num(l.assessmentAiPerPeriod) },
+      ...(thoughtEnabled ? [
+        { label: c.thought, hint: c.thoughtHint, value: num(l.thoughtSessionsPerMonth) },
+        { label: c.thoughtViewpoints, value: num(l.thoughtViewpoints) },
+        { label: c.thoughtDeep, hint: c.thoughtDeepHint, value: l.thoughtDeep },
+      ] : []),
     ];
   }
 

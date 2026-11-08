@@ -28,6 +28,15 @@ sets `user_id` to null, so counts stay but the person is gone.
 | `journal_editor_closed_with_draft` | Editor closed with the text kept as an unfinished draft | – |
 | `journal_ai_reflection_requested` | The member asked for an AI reflection on an entry | – |
 | `journal_question_selected` | Berripop's AI follow-up question was chosen in the answer flow (once per question; choosing never asks the AI again) | `daily`, `journey` or `goal` |
+| `thought_dissector_opened` | The Gondolatboncoló screen was opened | `thought` |
+| `thought_dissector_started` | A session started: Berri's first reply arrived and one monthly session was used | `thought` |
+| `thought_dissector_viewpoint_completed` | One viewpoint was finished (answered or skipped) | `thought` |
+| `thought_dissector_message_sent` | The member sent an answer (never its text) | `thought` |
+| `thought_dissector_completed` | The summary and thought map were made | `thought` |
+| `thought_dissector_abandoned` | The member paused a session before the summary (it stays resumable) | `thought` |
+| `thought_dissector_saved_to_journal` | The member saved the result into the journal | `thought` |
+| `thought_dissector_quota_exhausted` | A start was refused because the monthly sessions were used up | `thought` |
+| `thought_dissector_premium_clicked` | The Premium button in the Gondolatboncoló was pressed | `thought` |
 | `pricing_viewed`, `upgrade_prompt_*`, `checkout_*`, `subscription_canceled`, `plan_changed`, `ai_allowance_reached`, `premium_feature_requested` | Subscription funnel | where it came from |
 
 Server-side events are written only after the underlying record was newly

@@ -16,7 +16,11 @@ import * as checkin from "./checkin";
 import type { CheckinInput } from "../checkin/checkin";
 import * as growth from "./growth";
 import * as journal from "./journal";
+import * as thought from "./thought";
+import type { ThoughtResult, ThoughtSessionDTO, ThoughtState } from "../thought/types";
 import * as legal from "./legal";
+import { loadMilestoneCounts } from "./milestones";
+import type { MilestoneCounts } from "../milestones";
 import type { JournalResult } from "../journal/types";
 import * as goalJourney from "./goalJourney";
 import * as personal from "./personal";
@@ -315,6 +319,69 @@ export async function previewInviteAction(code: string): Promise<{ ok: true; nam
   return service.previewInvite(userId, code);
 }
 
+/* ---------- Gondolatboncoló (owner-only; off unless THOUGHT_DISSECTOR_ENABLED=1) ---------- */
+
+const noThoughtUser = { ok: false, error: "unauthorized" } as const;
+
+export async function getThoughtStateAction(): Promise<{ ok: true; state: ThoughtState } | typeof noThoughtUser> {
+  const userId = await requireUserId();
+  if (!userId) return noThoughtUser;
+  return { ok: true, state: await thought.loadThoughtState(userId) };
+}
+
+export async function startThoughtAction(input: { startKey: string; problem: string; journalEntryId?: string | null }): Promise<ThoughtResult<ThoughtSessionDTO>> {
+  const userId = await requireUserId();
+  if (!userId) return noThoughtUser;
+  return thought.startThought(userId, input, await locale());
+}
+
+export async function replyThoughtAction(id: string, input: { answer?: string; skip?: boolean }): Promise<ThoughtResult<ThoughtSessionDTO>> {
+  const userId = await requireUserId();
+  if (!userId) return noThoughtUser;
+  return thought.replyThought(userId, id, input, await locale());
+}
+
+export async function summarizeThoughtAction(id: string): Promise<ThoughtResult<ThoughtSessionDTO>> {
+  const userId = await requireUserId();
+  if (!userId) return noThoughtUser;
+  return thought.summarizeThought(userId, id, await locale());
+}
+
+export async function continueThoughtAction(id: string): Promise<ThoughtResult<ThoughtSessionDTO>> {
+  const userId = await requireUserId();
+  if (!userId) return noThoughtUser;
+  return thought.continueThought(userId, id);
+}
+
+export async function getThoughtAction(id: string): Promise<ThoughtResult<ThoughtSessionDTO>> {
+  const userId = await requireUserId();
+  if (!userId) return noThoughtUser;
+  return thought.getThought(userId, id);
+}
+
+export async function deleteThoughtAction(id: string): Promise<ThoughtResult> {
+  const userId = await requireUserId();
+  if (!userId) return noThoughtUser;
+  return thought.deleteThought(userId, id);
+}
+
+export async function saveThoughtToJournalAction(id: string, parts: { summary?: boolean; map?: boolean; transcript?: boolean }): Promise<ThoughtResult<{ entryId: string }>> {
+  const userId = await requireUserId();
+  if (!userId) return noThoughtUser;
+  return thought.saveThoughtToJournal(userId, id, parts, await locale());
+}
+
+export async function thoughtPatternsAction(optIn: boolean): Promise<ThoughtResult<string[]>> {
+  const userId = await requireUserId();
+  if (!userId) return noThoughtUser;
+  return thought.thoughtPatterns(userId, optIn, await locale());
+}
+
+export async function thoughtEventAction(event: string): Promise<void> {
+  const userId = await requireUserId();
+  if (userId) await thought.thoughtClientEvent(userId, event);
+}
+
 /* ---------- Daily journal (owner-only) ---------- */
 
 const noUser = { ok: false, error: "unauthorized" } as const;
@@ -329,6 +396,19 @@ export async function saveJournalEntryAction(input: { id?: string | null; body: 
   const userId = await requireUserId();
   if (!userId) return noUser;
   return journal.saveEntry(userId, input);
+}
+
+/** Counts for the member's own milestones on Profile (numbers only). */
+export async function getMilestonesAction(): Promise<MilestoneCounts | null> {
+  const userId = await requireUserId();
+  if (!userId) return null;
+  return loadMilestoneCounts(userId);
+}
+
+export async function setEntryMoodAction(entryId: string, mood: string | null): Promise<JournalResult> {
+  const userId = await requireUserId();
+  if (!userId) return noUser;
+  return journal.setEntryMood(userId, entryId, mood);
 }
 
 export async function deleteJournalEntryAction(entryId: string): Promise<JournalResult> {

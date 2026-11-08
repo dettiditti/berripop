@@ -1,3 +1,4 @@
+import type { Mood } from "./moods";
 import type { InsightKind, ParsedWeekly, SupportMode } from "./reflection";
 
 /** Journal data is loaded separately from circle data and only ever for its owner. */
@@ -9,6 +10,8 @@ export type JournalEntryDTO = {
   entryDate: string;
   createdAt: string;
   updatedAt: string;
+  /** The feeling sticker the owner pinned, if any. */
+  mood?: Mood | null;
 };
 
 export type JournalReflectionDTO = {
@@ -45,6 +48,10 @@ export type JournalState = {
   /** The plan allows saved insights in reflections; each request still needs the owner's opt-in. */
   insightContext: boolean;
   aiConfigured: boolean;
+  /** The Gondolatboncoló is switched on (THOUGHT_DISSECTOR_ENABLED). */
+  thoughtEnabled?: boolean;
+  /** Feeling stickers can be stored (the journal_moods table exists). */
+  moodsEnabled?: boolean;
 };
 
 export type JournalError = "unauthorized" | "not_found" | "invalid" | "limit_ai" | "ai_unavailable" | "ai_consent_required" | "premium_required";

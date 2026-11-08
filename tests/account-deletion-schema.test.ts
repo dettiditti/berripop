@@ -15,9 +15,9 @@ const CASCADE = [
   "achievements.user_id", "ai_calls.user_id", "ai_usage.user_id", "answer_reactions.user_id", "answers.user_id",
   "circle_members.user_id", "circle_questions.added_by", "custom_questions.author_id", "daily_checkins.user_id",
   "goal_journeys.user_id", "growth_goals.user_id", "growth_insights.user_id", "growth_steps.user_id",
-  "journal_entries.user_id", "journal_reflections.user_id", "legal_records.user_id", "participations.user_id",
+  "journal_entries.user_id", "journal_moods.user_id", "journal_reflections.user_id", "legal_records.user_id", "participations.user_id",
   "path_assessments.user_id", "personal_daily_quests.user_id", "push_devices.user_id", "saved_questions.user_id",
-  "subscriptions.user_id", "user_achievements.user_id", "user_activity.user_id", "user_prefs.user_id",
+  "subscriptions.user_id", "thought_sessions.user_id", "user_achievements.user_id", "user_activity.user_id", "user_prefs.user_id",
   "user_xp_events.user_id", "world_moments.user_id", "xp_events.user_id",
 ];
 /** Kept without the link: no content (funnel and circle events) or kept for accounting (invoices). */

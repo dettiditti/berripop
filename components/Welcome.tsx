@@ -8,6 +8,7 @@ import { localeLabels, locales } from "@/lib/i18n/config";
 import { setLocale, useI18n } from "@/lib/i18n/client";
 import BerripopMascot from "./berripop/BerripopMascot";
 import AppWaitlist, { PhoneMock } from "./landing/AppWaitlist";
+import { MOOD_COLORS, moodImage, type Mood } from "@/lib/journal/moods";
 
 /*
  * Signed-out landing page. Rendered on the server for signed-out visitors (see
@@ -82,6 +83,13 @@ function Header() {
   );
 }
 
+/** Decorative Berri feeling stickers floating around the phone in the hero. */
+const HERO_STICKERS: { mood: Mood; size: number; tilt: number }[] = [
+  { mood: "boldog", size: 64, tilt: -8 },
+  { mood: "nyugodt", size: 54, tilt: 6 },
+  { mood: "meglepett", size: 48, tilt: -4 },
+];
+
 function Hero() {
   const { d } = useI18n();
   const l = d.landing;
@@ -104,6 +112,14 @@ function Hero() {
 
         <div className="lp-hero-stage lp-hero-stage--phone">
           <div className="lp-stage-disc" aria-hidden />
+          <div className="lp-stickers" aria-hidden>
+            {HERO_STICKERS.map(x => (
+              <span key={x.mood} className={`mood-sticker lp-sticker lp-sticker--${x.mood}`} style={{ "--s": `${x.size}px`, "--t": `${x.tilt}deg`, "--c": MOOD_COLORS[x.mood] } as React.CSSProperties}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <span className="mood-sticker-disc"><img src={moodImage(x.mood)} alt="" width={x.size} height={x.size} decoding="async" /></span>
+              </span>
+            ))}
+          </div>
           <a className="lp-phone-tag" href="#app-waitlist"><Smartphone size={15} aria-hidden /> {l.appWaitlist.phoneTag}</a>
           <PhoneMock />
           <div className="lp-stage-card" aria-hidden>
@@ -389,7 +405,7 @@ function Privacy() {
   );
 }
 
-function Pricing() {
+function Pricing({ thoughtEnabled }: { thoughtEnabled: boolean }) {
   const { d, t, money } = useI18n();
   const l = d.landing;
   const p = l.pricing;
@@ -414,7 +430,9 @@ function Pricing() {
             <h3>{p.premiumName}</h3>
             <p className="lp-plan-price">{t(p.premiumFrom, { price: money(PRICES.monthly.amount, PRICES.monthly.currency) })}</p>
             <p className="lp-plan-note">{p.premiumNote}</p>
-            <ul className="lp-checks">{p.premiumPoints.map(x => <li key={x}><Check size={18} strokeWidth={3} aria-hidden /> {x}</li>)}</ul>
+            <ul className="lp-checks">
+              {[...p.premiumPoints, ...(thoughtEnabled ? [t(p.premiumThoughtPoint, { n: PLAN_LIMITS.premium.thoughtSessionsPerMonth })] : [])].map(x => <li key={x}><Check size={18} strokeWidth={3} aria-hidden /> {x}</li>)}
+            </ul>
             <Link className="btn btn--ghost btn--lg btn--block" href="/pricing">{p.compare}</Link>
           </article>
         </div>
@@ -424,7 +442,7 @@ function Pricing() {
 }
 
 /** Signed-out landing page. */
-export default function Welcome() {
+export default function Welcome({ thoughtEnabled = false }: { thoughtEnabled?: boolean }) {
   const { d, locale } = useI18n();
   const l = d.landing;
 
@@ -444,7 +462,7 @@ export default function Welcome() {
         <HowItWorks />
         <Paths />
         <Privacy />
-        <Pricing />
+        <Pricing thoughtEnabled={thoughtEnabled} />
 
         <section className="lp-section" aria-labelledby="lp-final-title">
           <div className="lp-container">

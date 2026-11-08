@@ -15,9 +15,10 @@ import LanguageSelector from "../LanguageSelector";
 import LevelBadge from "../LevelBadge";
 import StreakIndicator from "../StreakIndicator";
 import XPProgress from "../XPProgress";
+import MilestonesSection from "../profile/MilestonesSection";
 import type { ScreenProps } from "./types";
 
-export default function ProfileScreen({ view, run, notify, go }: ScreenProps) {
+export default function ProfileScreen({ view, run, notify, go, milestoneCounts }: ScreenProps) {
   const { d, t, num } = useI18n();
   const { signOut } = useClerk();
   const pr = d.profile;
@@ -48,6 +49,7 @@ export default function ProfileScreen({ view, run, notify, go }: ScreenProps) {
 
       <div className="card card--tight"><XPProgress xp={view.xp} /></div>
       <StreakIndicator streak={view.streak} variant="card" />
+      <MilestonesSection counts={milestoneCounts} bestStreak={view.streak.best} />
 
       <section className="stack-sm">
         <div className="section-head">

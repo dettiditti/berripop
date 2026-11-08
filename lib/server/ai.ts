@@ -56,14 +56,29 @@ export const defaultAiModel = () => process.env.AI_GATEWAY_MODEL || DEFAULT_AI_M
  * weekly reset.
  */
 export async function runMeteredAi<T>(userId: string, bucket: AiBucket, req: Omit<AiRequest<T>, "model"> & { model?: string }): Promise<AiOutcome<T>> {
+  const now = new Date();
+  return runSlottedAi(userId, req, {
+    reserve: () => consumeAiAllowance(userId, now, bucket),
+    release: () => refundAiAllowance(userId, now, bucket),
+  });
+}
+
+/**
+ * Same as runMeteredAi, but the caller supplies the allowance (e.g. a per-session
+ * turn cap). Configuration and consent are checked the same way.
+ */
+export async function runSlottedAi<T>(
+  userId: string,
+  req: Omit<AiRequest<T>, "model"> & { model?: string },
+  slot: { reserve: () => Promise<boolean>; release: () => Promise<void> },
+): Promise<AiOutcome<T>> {
   if (!aiConfigured()) return { ok: false, error: "ai_unavailable", reason: "error" };
   // Nothing reaches the AI provider without the member's current consent (when required).
   if (!(await aiAllowedFor(userId))) return { ok: false, error: "ai_consent_required", reason: "error" };
-  const now = new Date();
   return runAiCall({ ...req, model: req.model ?? defaultAiModel() }, {
     generate: testGenerator ?? gatewayGenerate,
-    reserve: () => consumeAiAllowance(userId, now, bucket),
-    release: () => refundAiAllowance(userId, now, bucket),
+    reserve: slot.reserve,
+    release: slot.release,
     priceVersion: CURRENT_PRICE_LIST.version,
     record: async r => {
       await getDb().insert(aiCalls).values({

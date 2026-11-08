@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { boolean, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { encryptedJson, encryptedText } from "./encryption";
+import type { ThoughtMap, ThoughtMessage, ThoughtSummary, ViewpointId } from "../thought/types";
 
 /**
  * Berripop data model. Privacy rule: answer text is only ever read by its author,
@@ -271,6 +272,18 @@ export const journalReflections = pgTable("journal_reflections", {
 }, t => [index("journal_reflections_entry_idx").on(t.entryId)]);
 
 /**
+ * The feeling sticker a member pinned to an entry (optional, one per entry).
+ * A separate table, so journal_entries stays exactly as it is and the journal
+ * keeps working before this migration has run. Private like the entry itself.
+ */
+export const journalMoods = pgTable("journal_moods", {
+  entryId: uuid("entry_id").primaryKey().references(() => journalEntries.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  mood: text("mood").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [index("journal_moods_user_idx").on(t.userId)]);
+
+/**
  * Growth insights the user explicitly approved (or wrote). Kept separate from
  * journal entries; only these may personalize later AI suggestions.
  */
@@ -286,6 +299,45 @@ export const growthInsights = pgTable("growth_insights", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, t => [index("growth_insights_user_idx").on(t.userId)]);
 
+
+/* ---------- Gondolatboncoló (thought dissector) ---------- */
+
+/**
+ * One guided self-reflection session. Private: only ever read by its owner.
+ * Problem, messages, summary and map are encrypted at rest. `start_key` makes
+ * starting idempotent (a double click or a retried request finds the same
+ * session); `ai_turns` caps the AI calls per session; `locked_until` lets only
+ * one turn run at a time. Saving to the journal happens only on request.
+ */
+export const thoughtSessions = pgTable("thought_sessions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  /** The journal entry it started from, if any (kept when the entry is deleted, without the link). */
+  journalEntryId: uuid("journal_entry_id").references(() => journalEntries.id, { onDelete: "set null" }),
+  /** The journal entry the member saved the result into, if they did. */
+  savedEntryId: uuid("saved_entry_id").references(() => journalEntries.id, { onDelete: "set null" }),
+  startKey: text("start_key").notNull(),
+  status: text("status", { enum: ["draft", "starting", "active", "completed", "safety_stop"] }).notNull().default("draft"),
+  problem: encryptedText("problem").notNull(),
+  messages: encryptedJson<ThoughtMessage[]>()("messages").notNull().default([]),
+  viewpoints: jsonb("viewpoints").$type<ViewpointId[]>().notNull().default([]),
+  done: jsonb("done").$type<ViewpointId[]>().notNull().default([]),
+  summary: encryptedJson<ThoughtSummary | null>()("summary"),
+  map: encryptedJson<ThoughtMap | null>()("map"),
+  /** The plan when the session started; limits stay as they were for this session. */
+  plan: text("plan").notNull(),
+  aiTurns: integer("ai_turns").notNull().default(0),
+  turnLimit: integer("turn_limit").notNull(),
+  /** The monthly period whose allowance this session used (null while it is a draft). */
+  quotaPeriod: text("quota_period"),
+  lockedUntil: timestamp("locked_until", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [
+  uniqueIndex("thought_sessions_start_key_idx").on(t.userId, t.startKey),
+  index("thought_sessions_user_idx").on(t.userId, t.updatedAt),
+  index("thought_sessions_entry_idx").on(t.journalEntryId),
+]);
 
 /* ---------- My Path: initial assessment and steps ---------- */
 

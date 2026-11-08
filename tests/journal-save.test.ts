@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { journalEntries } from "../lib/db/schema";
+import { journalEntries, journalMoods } from "../lib/db/schema";
 
 /*
  * Server side of saving a journal entry: XP and the "finished" event only for
@@ -21,7 +21,9 @@ vi.mock("../lib/db", () => ({
           const own = table === journalEntries ? rows : [];
           // select({ id }) is the "any saved entry yet?" check; select() reads the entry itself.
           const hit = fields ? own.filter(r => r.status === "saved") : own;
-          return { limit: async () => hit.slice(0, 1), orderBy: async () => own };
+          const q = { limit: async () => hit.slice(0, 1), orderBy: async () => own };
+          // The feeling-sticker read awaits the query itself.
+          return table === journalMoods ? Object.assign(Promise.resolve([]), q) : q;
         },
       }),
     }),

@@ -30,14 +30,27 @@ export type PlanLimits = {
   insightContext: boolean;
   /** AI calls for the My Path assessment per allowance period (each assessment is also capped at MAX_AI_CALLS). */
   assessmentAiPerPeriod: number;
+  /** Gondolatboncoló sessions a member can start per calendar month (Europe/Budapest). Continuing one never counts. */
+  thoughtSessionsPerMonth: number;
+  /** Viewpoints Berri works through in one session (at most 6). */
+  thoughtViewpoints: number;
+  /** AI turns per session, the summary included (cost cap). */
+  thoughtTurnsPerSession: number;
+  /** Output token cap for one conversation turn; the summary gets twice this. */
+  thoughtMaxOutputTokens: number;
+  /** Premium: continue a finished session and look for patterns across sessions (opt-in per request). */
+  thoughtDeep: boolean;
 };
 
 export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
-  free: { activeGoals: 1, aiPerPeriod: 5, ownedCircles: 1, weeklySummary: false, journalAiPerPeriod: 3, weeklyJournal: false, insightContext: false, assessmentAiPerPeriod: 6 },
-  premium: { activeGoals: 5, aiPerPeriod: 60, ownedCircles: 5, weeklySummary: true, journalAiPerPeriod: 40, weeklyJournal: true, insightContext: true, assessmentAiPerPeriod: 12 },
+  free: { activeGoals: 1, aiPerPeriod: 5, ownedCircles: 1, weeklySummary: false, journalAiPerPeriod: 3, weeklyJournal: false, insightContext: false, assessmentAiPerPeriod: 6,
+    thoughtSessionsPerMonth: 2, thoughtViewpoints: 4, thoughtTurnsPerSession: 9, thoughtMaxOutputTokens: 500, thoughtDeep: false },
+  premium: { activeGoals: 5, aiPerPeriod: 60, ownedCircles: 5, weeklySummary: true, journalAiPerPeriod: 40, weeklyJournal: true, insightContext: true, assessmentAiPerPeriod: 12,
+    thoughtSessionsPerMonth: 30, thoughtViewpoints: 6, thoughtTurnsPerSession: 18, thoughtMaxOutputTokens: 700, thoughtDeep: true },
   // Higher, still capped weekly limits (fair use and cost protection, never "unlimited").
   // Worst case at gpt-5-mini prices is about USD 1.9 per month per member (Premium: about USD 1).
-  premium_plus: { activeGoals: 10, aiPerPeriod: 120, ownedCircles: 10, weeklySummary: true, journalAiPerPeriod: 80, weeklyJournal: true, insightContext: true, assessmentAiPerPeriod: 20 },
+  premium_plus: { activeGoals: 10, aiPerPeriod: 120, ownedCircles: 10, weeklySummary: true, journalAiPerPeriod: 80, weeklyJournal: true, insightContext: true, assessmentAiPerPeriod: 20,
+    thoughtSessionsPerMonth: 60, thoughtViewpoints: 6, thoughtTurnsPerSession: 24, thoughtMaxOutputTokens: 700, thoughtDeep: true },
 };
 
 export const PAID_PLANS: readonly PaidPlanId[] = ["premium", "premium_plus"];
@@ -106,6 +119,18 @@ export function aiPeriodResets(now = new Date()): string {
   const [y, m, d] = aiPeriodKey(now).split("-").map(Number);
   const next = new Date(y, m - 1, d + 7);
   return `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}-${String(next.getDate()).padStart(2, "0")}`;
+}
+
+/** The Gondolatboncoló allowance period: the calendar month in Europe/Budapest, e.g. "2026-11". */
+export function thoughtPeriodKey(now = new Date()): string {
+  const local = new Date(now.toLocaleString("en-US", { timeZone: AI_ALLOWANCE_TIME_ZONE }));
+  return `${local.getFullYear()}-${String(local.getMonth() + 1).padStart(2, "0")}`;
+}
+
+/** The first day (YYYY-MM-DD) of the next Gondolatboncoló period. */
+export function thoughtPeriodResets(now = new Date()): string {
+  const [y, m] = thoughtPeriodKey(now).split("-").map(Number);
+  return m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, "0")}-01`;
 }
 
 /** Default AI model (an exact AI Gateway id); override with AI_GATEWAY_MODEL. */

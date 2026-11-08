@@ -15,7 +15,7 @@ import { termsPrompt, type LegalStatus } from "@/lib/legal/records";
 import type { AssessmentState } from "@/lib/assessment/types";
 import type { JournalState } from "@/lib/journal/types";
 import {
-  aiFollowUpAction, appOpenedAction, buildGoalJourneyAction, getAssessmentAction, getJournalAction, getLegalStatusAction, getSnapshotAction, importMomentsAction, saveAnswerAction,
+  aiFollowUpAction, appOpenedAction, buildGoalJourneyAction, getAssessmentAction, getJournalAction, getLegalStatusAction, getMilestonesAction, getSnapshotAction, importMomentsAction, saveAnswerAction,
   savePersonalAnswerAction, shareAnswerAction,
 } from "@/lib/server/actions";
 import { clearDeviceMoments, readDeviceMoments } from "@/lib/store";
@@ -43,6 +43,11 @@ import CircleSetup from "./CircleSetup";
 import GoalsScreen from "./screens/GoalsScreen";
 import type { JourneyMode } from "./screens/types";
 import { useRun } from "./useRun";
+import Celebration, { type CelebrationItem } from "./Celebration";
+import { celebratedKey, freshlyReached, readCelebrated, writeCelebrated, type CelebrationKind } from "@/lib/celebrate";
+import { achievementDefs } from "@/lib/domain/rules";
+import { milestonesFrom, type MilestoneCounts, type MilestoneId } from "@/lib/milestones";
+import type { BadgeId } from "@/lib/progress";
 
 function Splash({ label }: { label: string }) {
   return (
@@ -166,6 +171,50 @@ function AppShell({ snapshot, setSnapshot }: { snapshot: Snapshot; setSnapshot: 
   }, []);
   const run = useRun(setSnapshot, notify);
   const withAiConsent = useAiConsent();
+
+  // Personal milestone counts: read-only, reloaded whenever something may have moved them.
+  const [milestoneCounts, setMilestoneCounts] = useState<MilestoneCounts | null | undefined>(undefined);
+  const journalCount = journal?.entries.length ?? -1;
+  useEffect(() => {
+    let live = true;
+    getMilestonesAction().then(r => { if (live) setMilestoneCounts(cur => r ?? (cur === undefined ? null : cur)); }).catch(() => { if (live) setMilestoneCounts(cur => (cur === undefined ? null : cur)); });
+    return () => { live = false; };
+  }, [view.xp, journalCount, tab]);
+
+  // One-time full-screen celebrations for newly reached badges and milestones (remembered per device).
+  const [celebrations, setCelebrations] = useState<CelebrationItem[]>([]);
+  const rewardBadges = useRef<Set<string>>(new Set());
+  const badgeIds = useMemo(() => achievementDefs.filter(a => view.achievementIds.has(a.id)).map(a => a.id), [view.achievementIds]);
+  const reachedMilestones = useMemo(
+    () => (milestoneCounts ? milestonesFrom(milestoneCounts, view.streak.best).filter(m => m.done).map(m => m.id) : null),
+    [milestoneCounts, view.streak.best],
+  );
+  const meId = view.me.id;
+  useEffect(() => {
+    const check = (kind: CelebrationKind, ids: string[]) => {
+      const key = celebratedKey(meId, kind);
+      const { fresh, next } = freshlyReached(readCelebrated(key), ids);
+      writeCelebrated(key, next);
+      return fresh;
+    };
+    const fresh: CelebrationItem[] = [
+      ...check("badge", badgeIds).map(id => ({ kind: "badge" as const, id: id as BadgeId })),
+      ...(reachedMilestones ? check("milestone", reachedMilestones).map(id => ({ kind: "milestone" as const, id: id as MilestoneId })) : []),
+    ];
+    if (fresh.length) setCelebrations(q => [...q, ...fresh]);
+  }, [meId, badgeIds, reachedMilestones]);
+  // Badges the answer celebration already shows are not shown a second time.
+  useEffect(() => { reward?.newAchievements.forEach(id => rewardBadges.current.add(id)); }, [reward]);
+  const nextCelebration = celebrations.find(c => !(c.kind === "badge" && rewardBadges.current.has(c.id)));
+  useEffect(() => {
+    if (celebrations.length && !nextCelebration) setCelebrations([]);
+  }, [celebrations, nextCelebration]);
+  const finishCelebration = useCallback(() => {
+    setCelebrations(q => {
+      const i = q.findIndex(c => !(c.kind === "badge" && rewardBadges.current.has(c.id)));
+      return i < 0 ? [] : q.filter((_, j) => j !== i);
+    });
+  }, []);
 
   const refresh = useCallback(async () => {
     const r = await getSnapshotAction().catch(() => null);
@@ -313,7 +362,7 @@ function AppShell({ snapshot, setSnapshot }: { snapshot: Snapshot; setSnapshot: 
     view, run, notify, go, startQuest, openQuestion: setDetail, onInvite: () => setInviteOpen(true),
     journeyMode, openJourney, buildJourney: () => buildJourney(), journeyBuilding,
     assessmentStatus: assessment?.assessment?.status ?? null, openAssessment: () => setAssessing(true),
-    writeInJournal,
+    writeInJournal, milestoneCounts,
     covered: !!quest || !!reward || !!detail,
   };
   const questQuestion = quest ? view.question(quest.ref) : null;
@@ -413,6 +462,7 @@ function AppShell({ snapshot, setSnapshot }: { snapshot: Snapshot; setSnapshot: 
       )}
       {askReminder && <ReminderPrompt notify={notify} onClose={() => setAskReminder(false)} />}
       {toast && <Toast key={toast.id} message={toast.message} />}
+      {nextCelebration && !quest && !reward && <Celebration key={`${nextCelebration.kind}:${nextCelebration.id}`} item={nextCelebration} onDone={finishCelebration} />}
     </div>
   );
 }

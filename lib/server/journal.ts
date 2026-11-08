@@ -2,7 +2,8 @@ import "server-only";
 import { crisisSignal } from "../safety/crisis";
 import { and, desc, eq, gte, inArray } from "drizzle-orm";
 import { getDb } from "../db";
-import { dailyCheckins, growthGoals, growthInsights, journalEntries, journalReflections } from "../db/schema";
+import { dailyCheckins, growthGoals, growthInsights, journalEntries, journalMoods, journalReflections } from "../db/schema";
+import { isMood, type Mood } from "../journal/moods";
 import { checkinWeekLine, summarizeCheckins } from "../checkin/checkin";
 import { grantGrowthXp } from "./progress";
 import { circleToday } from "../domain/rules";
@@ -25,23 +26,48 @@ const fail = (error: JournalError) => ({ ok: false as const, error });
 
 export { aiConfigured };
 
+/** Postgres "undefined table": the journal_moods migration has not run yet. */
+const missingTable = (err: unknown) => {
+  const e = err as { code?: unknown; cause?: { code?: unknown } } | null;
+  return e?.code === "42P01" || e?.cause?.code === "42P01";
+};
+
+/**
+ * The owner's feeling stickers, by entry. `enabled` is false until the
+ * journal_moods table exists, so the journal works the same before the migration.
+ */
+async function loadMoods(userId: string): Promise<{ enabled: boolean; moods: Record<string, Mood> }> {
+  try {
+    const rows = await getDb().select({ entryId: journalMoods.entryId, mood: journalMoods.mood }).from(journalMoods).where(eq(journalMoods.userId, userId));
+    const moods: Record<string, Mood> = {};
+    for (const r of rows) if (isMood(r.mood)) moods[r.entryId] = r.mood;
+    return { enabled: true, moods };
+  } catch (err) {
+    if (missingTable(err)) return { enabled: false, moods: {} };
+    throw err;
+  }
+}
+
 export async function loadJournal(userId: string): Promise<JournalState> {
   const db = getDb();
-  const [entries, reflections, insights, usage, ent] = await Promise.all([
+  const [entries, reflections, insights, usage, ent, moods] = await Promise.all([
     db.select().from(journalEntries).where(eq(journalEntries.userId, userId)).orderBy(desc(journalEntries.entryDate), desc(journalEntries.createdAt)),
     db.select().from(journalReflections).where(eq(journalReflections.userId, userId)).orderBy(desc(journalReflections.createdAt)),
     db.select().from(growthInsights).where(eq(growthInsights.userId, userId)).orderBy(desc(growthInsights.updatedAt)),
     getAiUsage(userId, new Date(), "journal"),
     getUserEntitlements(userId),
+    loadMoods(userId),
   ]);
   return {
-    entries: entries.map(e => ({ id: e.id, body: e.body, status: e.status, entryDate: e.entryDate, createdAt: e.createdAt.toISOString(), updatedAt: e.updatedAt.toISOString() })),
+    entries: entries.map(e => ({ id: e.id, body: e.body, status: e.status, entryDate: e.entryDate, createdAt: e.createdAt.toISOString(), updatedAt: e.updatedAt.toISOString(), mood: moods.moods[e.id] ?? null })),
+    moodsEnabled: moods.enabled,
     reflections: reflections.map(toReflectionDTO),
     insights: insights.map(i => ({ id: i.id, kind: i.kind, text: i.text, goalId: i.goalId, sourceEntryId: i.sourceEntryId, origin: i.origin, updatedAt: i.updatedAt.toISOString() })),
     usage,
     weeklyJournal: ent.limits.weeklyJournal,
     insightContext: ent.limits.insightContext,
     aiConfigured: aiConfigured(),
+    thoughtEnabled: process.env.THOUGHT_DISSECTOR_ENABLED === "1",
   };
 }
 
@@ -106,6 +132,21 @@ export async function saveEntry(userId: string, input: { id?: string | null; bod
   // XP for saving (once per entry, within the daily cap). The text is never read for it.
   if (status === "saved") await grantGrowthXp(userId, "journal", row.id);
   return ok(userId, row.id);
+}
+
+/** Pins (or with null removes) a feeling sticker on the owner's entry. Never sent to AI or analytics. */
+export async function setEntryMood(userId: string, entryId: string, mood: unknown): Promise<JournalResult> {
+  if (mood !== null && !isMood(mood)) return fail("invalid");
+  if (!(await ownEntry(userId, entryId))) return fail("not_found");
+  const db = getDb();
+  try {
+    if (mood === null) await db.delete(journalMoods).where(and(eq(journalMoods.entryId, entryId), eq(journalMoods.userId, userId)));
+    else await db.insert(journalMoods).values({ entryId, userId, mood }).onConflictDoUpdate({ target: journalMoods.entryId, set: { mood, updatedAt: new Date() } });
+  } catch (err) {
+    if (missingTable(err)) return fail("invalid");
+    throw err;
+  }
+  return ok(userId);
 }
 
 export async function deleteEntry(userId: string, entryId: string): Promise<JournalResult> {
