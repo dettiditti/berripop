@@ -20,6 +20,9 @@ const ICON = { question: Sparkles, checkin: HeartHandshake, moment: Star } as co
 const SEEN = "berripop.berriBites";
 /** About as long as the "eat" clip (a star drops in and Berri munches it). */
 const FEED_MS = 4200;
+/** Once Berri is fed, a short happy clip now and then, so Berri never freezes on one frame. */
+const IDLE: BerriClip[] = ["joy", "wonder", "joy2"];
+const IDLE_MS = 11000;
 
 /** How many bites the member has already watched Berri eat today (this phone only). */
 function seenBites(today: string): number {
@@ -76,6 +79,8 @@ export default function BerriHome({ view, onWorld, onFeed, fullMessage, covered 
   const [replay, setReplay] = useState(0);
   // After eating, Berri stays on the eating clip's happy last frame instead of starting another clip.
   const [ate, setAte] = useState(false);
+  // Which happy clip Berri plays while resting after a meal (-1: still the meal itself).
+  const [idle, setIdle] = useState(-1);
   useEffect(() => {
     if (covered) return;
     const seen = seenBites(view.today);
@@ -83,10 +88,17 @@ export default function BerriHome({ view, onWorld, onFeed, fullMessage, covered 
     if (bites <= seen) return;
     setFeeding(true);
     setAte(true);
+    setIdle(-1);
     setReplay(r => r + 1);
     hapticSuccess();
   }, [covered, bites, view.today]);
-  const clip: BerriClip = ate ? "eat" : CLIP[appetite.hunger];
+  const resting = ate || appetite.hunger === "full";
+  useEffect(() => {
+    if (!resting || feeding || covered) return;
+    const t = window.setInterval(() => setIdle(i => i + 1), IDLE_MS);
+    return () => window.clearInterval(t);
+  }, [resting, feeding, covered]);
+  const clip: BerriClip = resting && idle >= 0 ? IDLE[idle % IDLE.length] : ate ? "eat" : CLIP[appetite.hunger];
   useEffect(() => {
     if (!feeding) return;
     const t = window.setTimeout(() => setFeeding(false), FEED_MS);
@@ -96,7 +108,7 @@ export default function BerriHome({ view, onWorld, onFeed, fullMessage, covered 
   return (
     <section className={`card berri-home is-${appetite.hunger} ${feeding ? "is-feeding" : ""}`} aria-labelledby="berri-home-title">
       <button type="button" className="berri-home-world" onClick={onWorld} aria-label={b.open}>
-        <WorldScene world={world} label={d.innerWorld.homeBody} compact mood={MOOD[appetite.hunger]} berri={<BerriVideo key={`${clip}-${replay}`} clip={clip} className="world-berri-video" />} />
+        <WorldScene world={world} label={d.innerWorld.homeBody} compact mood={MOOD[appetite.hunger]} berri={<BerriVideo key={`${clip}-${replay}-${idle}`} clip={clip} className="world-berri-video" />} />
         <span className="berri-home-open pill">{b.open} <ArrowRight size={14} aria-hidden /></span>
       </button>
       <h2 id="berri-home-title" className="sr-only">{b.eyebrow}</h2>

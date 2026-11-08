@@ -1898,6 +1898,10 @@ html[data-app] body:has(.berri-stage)::before { content: none; }
 .weekly-recap-mood small { font-size: 11px; font-weight: 800; color: var(--muted); text-transform: capitalize; }
 /* Berri as a video inside the little world on Today. */
 .world-scene .world-berri-video { position: absolute; left: 50%; bottom: -4%; transform: translateX(-50%); width: auto; height: 82%; }
+/* Berri breathes softly, so a clip resting on its last frame never looks frozen. */
+.world-scene .berri-video--clear > :is(video, canvas, img) { transform-origin: 50% 92%; animation: berri-idle-breathe 3.8s ease-in-out infinite; }
+@keyframes berri-idle-breathe { 50% { transform: translateY(-1.5%) scale(1.02, 0.985); } }
+@media (prefers-reduced-motion: reduce) { .world-scene .berri-video--clear > :is(video, canvas, img) { animation: none; } }
 .berri-home-intro { margin: 0 6px; font-weight: 700; font-size: 15px; line-height: 1.45; color: var(--ink-2); }
 .berri-home-how { margin: 0 6px; }
 .berri-home-how summary { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 800; font-size: 14px; color: var(--purple-dark); list-style: none; min-height: 32px; }
