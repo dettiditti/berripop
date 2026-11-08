@@ -6,6 +6,7 @@ import { PLAN_LIMITS } from "@/lib/billing/plans";
 import { SUPPORT_MODES, type SupportMode } from "@/lib/journal/reflection";
 import type { JournalEntryDTO, JournalError, JournalReflectionDTO, JournalResult, JournalState, WeeklyJournalDTO } from "@/lib/journal/types";
 import { useI18n } from "@/lib/i18n/client";
+import { parseKey } from "@/lib/dates";
 import { useAiConsent } from "../AiConsent";
 import {
   deleteAllJournalAction, deleteJournalEntryAction, exportJournalAction, getJournalAction,
@@ -131,7 +132,7 @@ export default function JournalScreen({ account, today, notify, starter, onJourn
   /** Asks for a reflection on this entry, as if its "ask Berripop" button was pressed (changing `id` asks again). */
   reflectRequest?: { entryId: string; id: number } | null;
 }) {
-  const { d, t, plural, relativeDay, date } = useI18n();
+  const { d, t, plural, relativeDay, date, locale } = useI18n();
   const withAiConsent = useAiConsent();
   const j = d.journal;
   const [state, setState] = useState<JournalState | null>(null);
@@ -246,8 +247,8 @@ export default function JournalScreen({ account, today, notify, starter, onJourn
   if (!state) return <p className="muted" aria-busy="true">{d.common.loading}</p>;
 
   const draft = state.entries.find(e => e.status === "draft");
-  const byDate = new Map<string, JournalEntryDTO[]>();
-  for (const e of state.entries) byDate.set(e.entryDate, [...(byDate.get(e.entryDate) ?? []), e]);
+  const loc = locale === "hu" ? "hu-HU" : "en-GB";
+  const thisMonth = today.slice(0, 7);
   const open = openEntry ? state.entries.find(e => e.id === openEntry) : undefined;
   const openReflections = open ? state.reflections.filter(r => r.entryId === open.id) : [];
 
@@ -300,28 +301,33 @@ export default function JournalScreen({ account, today, notify, starter, onJourn
       <section className="stack-sm">
         <h2>{j.historyTitle}</h2>
         {state.entries.length === 0 ? <p className="muted">{j.historyEmpty}</p> : (
-          [...byDate.entries()].map(([day, entries]) => (
-            <div key={day} className="journal-day">
-              <span className="eyebrow">{relativeDay(day, today)}</span>
-              <ul className="journal-list">
-                {entries.map(e => {
-                  const hasReflection = state.reflections.some(r => r.entryId === e.id);
-                  return (
-                    <li key={e.id}>
-                      <button className={`card journal-item ${openEntry === e.id ? "is-open" : ""}`} onClick={() => setOpenEntry(e.id)}>
-                        <span className="journal-preview">{e.body.slice(0, 160) || "…"}</span>
-                        <small className="muted">
-                          {plural(j.words, e.body.trim() ? e.body.trim().split(/\s+/).length : 0)}
-                          {e.status === "draft" && ` · ${j.draftTag}`}
-                          {hasReflection && ` · ${j.reflectedTag}`}
-                        </small>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ))
+          <ul className="journal-list">
+            {state.entries.map(e => {
+              const hasReflection = state.reflections.some(r => r.entryId === e.id);
+              const day = parseKey(e.entryDate);
+              const words = e.body.trim() ? e.body.trim().split(/\s+/).length : 0;
+              return (
+                <li key={e.id}>
+                  <button className={`journal-item ${openEntry === e.id ? "is-open" : ""}`} onClick={() => setOpenEntry(e.id)}>
+                    <span className="journal-date" aria-hidden>
+                      <small>{locale === "hu" ? day.toLocaleDateString(loc, { weekday: "long" }).slice(0, 3) : day.toLocaleDateString(loc, { weekday: "short" })}</small>
+                      <strong>{day.getDate()}</strong>
+                      {e.entryDate.slice(0, 7) !== thisMonth && <small>{day.toLocaleDateString(loc, { month: "short" }).replace(".", "")}</small>}
+                    </span>
+                    <span className="journal-item-main">
+                      <span className="sr-only">{relativeDay(e.entryDate, today)}: </span>
+                      <span className="journal-preview">{e.body.slice(0, 220) || "…"}</span>
+                      <span className="journal-item-foot">
+                        {e.status === "draft" && <span className="journal-tag is-draft">{j.draftTag}</span>}
+                        {hasReflection && <span className="journal-tag"><Sparkles size={11} aria-hidden /> {j.reflectedTag}</span>}
+                        <small className="journal-words">{plural(j.words, words)}</small>
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
         )}
       </section>
 
