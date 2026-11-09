@@ -9,7 +9,7 @@ import type { BuyerRegion, PublicSalesInfo } from "@/lib/billing/sales";
 import type { AccountDTO } from "@/lib/domain/types";
 import { useI18n } from "@/lib/i18n/client";
 import { LEGAL_VERSIONS } from "@/lib/legal/records";
-import { changePlanAction, getSnapshotAction, startCheckoutAction, trackAction } from "@/lib/server/actions";
+import { changePlanAction, getSnapshotAction, startCheckoutAction, startTrialAction, trackAction, trackPlanSelectedAction } from "@/lib/server/actions";
 import BerripopMascot from "../berripop/BerripopMascot";
 import TermsGate from "../TermsGate";
 
@@ -35,6 +35,37 @@ function PlanRows({ rows, highlight = false }: { rows: Row[]; highlight?: boolea
 }
 
 /**
+ * The one-time 7-day trial on the Free card: what it gives (with its limits),
+ * that no card is needed and nothing renews, and its state once started.
+ */
+function TrialBox({ account, signedIn, busy, note, onStart, thoughtEnabled }: {
+  account: AccountDTO | null; signedIn: boolean; busy: boolean; note: string | null; onStart: () => void; thoughtEnabled: boolean;
+}) {
+  const { d, t, date } = useI18n();
+  const tr = d.billing.trial;
+  const ent = account?.entitlements;
+  if (ent && isPaidPlan(ent.plan)) return null;
+  const l = PLAN_LIMITS.trial;
+  return (
+    <div className="plan-trial">
+      <strong>{tr.title}</strong>
+      {ent?.trial.status === "active" && ent.trial.endsAt ? <p>{t(tr.active, { date: date(ent.trial.endsAt.slice(0, 10), "long") })}</p>
+        : ent?.trial.status === "used" ? <p className="muted">{tr.alreadyUsed}</p>
+          : (
+            <>
+              <p>{tr.body}</p>
+              <p className="muted">{t(tr.limits, { journal: l.journalAiPerPeriod, ai: l.aiPerPeriod, goals: l.activeGoals })}{thoughtEnabled ? ` ${tr.limitsThought}` : ""}</p>
+              {!signedIn ? <p className="muted">{tr.signedOut}</p> : (
+                <button type="button" className="btn btn--primary btn--block" disabled={busy || !account} onClick={onStart}>{busy ? tr.starting : tr.cta}</button>
+              )}
+            </>
+          )}
+      {note && <p className="field-hint" role="status">{note}</p>}
+    </div>
+  );
+}
+
+/**
  * Free, Premium and Premium Plus side by side. Prices and limits come from
  * lib/billing/plans.ts, so the cards only show what the server enforces.
  * New subscriptions go through Stripe Checkout; a member who already pays
@@ -45,15 +76,17 @@ export default function PricingPage({ from, testMode, sales, thoughtEnabled = fa
   /** Gondolatboncoló rows only while the feature is on, so a plan never lists what members can't use. */
   thoughtEnabled?: boolean;
 }) {
-  const { d, t, num, money } = useI18n();
+  const { d, t, num, money, date } = useI18n();
   const b = d.billing;
   const { isLoaded, isSignedIn } = useAuth();
   const [interval, setInterval] = useState<BillingInterval>("month");
   const [account, setAccount] = useState<AccountDTO | null>(null);
   const [busy, setBusy] = useState<PaidPlanId | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // The plan whose checkout waits for Terms acceptance; checkout resumes once it is recorded.
-  const [termsFor, setTermsFor] = useState<PaidPlanId | null>(null);
+  // What waits for Terms acceptance (a plan's checkout, or the trial); it resumes once recorded.
+  const [termsFor, setTermsFor] = useState<PaidPlanId | "trial" | null>(null);
+  const [trialBusy, setTrialBusy] = useState(false);
+  const [trialNote, setTrialNote] = useState<string | null>(null);
   // Only asked when sales abroad are on; without it every sale is the Hungarian one.
   const [region, setRegion] = useState<BuyerRegion | null>(null);
   const chosenRegion: BuyerRegion | null = sales.abroad ? region : "home";
@@ -82,6 +115,7 @@ export default function PricingPage({ from, testMode, sales, thoughtEnabled = fa
   /** Same rows in the same order on every card, so the plans compare line by line. */
   function rows(plan: PlanId): Row[] {
     const l = PLAN_LIMITS[plan];
+    const thought = t(l.thoughtWindow === "once" ? c.thoughtOnce : c.thoughtMonthly, { n: num(l.thoughtSessions) });
     return [
       { label: c.goals, value: num(l.activeGoals) },
       { label: c.ai, hint: c.aiHint, value: num(l.aiPerPeriod) },
@@ -92,15 +126,36 @@ export default function PricingPage({ from, testMode, sales, thoughtEnabled = fa
       { label: c.circles, hint: c.circlesHint, value: num(l.ownedCircles) },
       { label: c.assessment, value: num(l.assessmentAiPerPeriod) },
       ...(thoughtEnabled ? [
-        { label: c.thought, hint: c.thoughtHint, value: num(l.thoughtSessionsPerMonth) },
+        { label: c.thought, hint: c.thoughtHint, value: thought },
         { label: c.thoughtViewpoints, value: num(l.thoughtViewpoints) },
         { label: c.thoughtDeep, hint: c.thoughtDeepHint, value: l.thoughtDeep },
       ] : []),
     ];
   }
 
+  async function startTrial() {
+    setTrialBusy(true);
+    setTrialNote(null);
+    try {
+      const r = await startTrialAction();
+      if (r.ok) {
+        setTrialNote(t(b.trial.started, { date: date(r.endsAt.slice(0, 10), "long") }));
+        const s = await getSnapshotAction();
+        if (s.ok) setAccount(s.snapshot.account);
+      } else if (r.error === "terms_required") {
+        setTermsFor("trial");
+      } else {
+        setTrialNote(r.error === "already_used" ? b.trial.alreadyUsed : r.error === "already_premium" ? b.alreadyPremium : b.trial.failed);
+      }
+    } catch {
+      setTrialNote(b.trial.failed);
+    }
+    setTrialBusy(false);
+  }
+
   async function subscribe(plan: PaidPlanId) {
     if (!chosenRegion) return;
+    void trackPlanSelectedAction(plan, priceOf(plan).interval, "pricing");
     setBusy(plan);
     setError(null);
     try {
@@ -148,6 +203,7 @@ export default function PricingPage({ from, testMode, sales, thoughtEnabled = fa
           {isCurrent ? <span className="tag tag--sun">{b.currentPlan}</span> : plan === "premium" && !paying ? <span className="tag tag--purple">{b.recommended}</span> : null}
         </div>
         <p className="muted">{plan === "premium" ? b.premiumTagline : b.plusTagline}</p>
+        {plan === "premium_plus" && <p className="plan-note">{b.plusNow}</p>}
         <p className="plan-price">{priceText(plan)}</p>
         <p className="plan-note">
           {price.interval === "year"
@@ -228,6 +284,7 @@ export default function PricingPage({ from, testMode, sales, thoughtEnabled = fa
           <p className="plan-price">{b.freePrice}</p>
           <p className="plan-note">{b.freePriceNote}</p>
           <PlanRows rows={rows("free")} />
+          <TrialBox account={account} signedIn={!!isSignedIn} busy={trialBusy} note={trialNote} onStart={startTrial} thoughtEnabled={thoughtEnabled} />
           <Link className="btn btn--ghost btn--block plan-cta" href="/">{b.continueFree}</Link>
         </section>
         {paidCard("premium")}
@@ -241,7 +298,7 @@ export default function PricingPage({ from, testMode, sales, thoughtEnabled = fa
 
       {!sales.available && <p className="field-hint">{b.salesPaused}</p>}
       {error && <p className="field-hint" role="alert">{error}</p>}
-      {termsFor && <TermsGate version={LEGAL_VERSIONS.terms} context="checkout" onAccepted={() => { const plan = termsFor; setTermsFor(null); void subscribe(plan); }} onCancel={() => setTermsFor(null)} />}
+      {termsFor && <TermsGate version={LEGAL_VERSIONS.terms} context="checkout" onAccepted={() => { const next = termsFor; setTermsFor(null); void (next === "trial" ? startTrial() : subscribe(next)); }} onCancel={() => setTermsFor(null)} />}
       {testMode && <p className="prototype-note"><Info size={14} /> {b.testMode}</p>}
 
       <section className="pricing-terms">

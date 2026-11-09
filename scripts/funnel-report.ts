@@ -15,6 +15,11 @@ const STEPS = [
   "signup_completed", "path_chosen", "app_opened", "today_step_started", "daily_answered",
   "journey_day_completed", "first_goal_created", "first_entry_saved", "pricing_viewed", "checkout_started", "checkout_completed",
 ] as const;
+/** Anonymous sign-up page steps (each once per browser tab), then real accounts created. */
+const SIGNUP_STEPS = [
+  "signup_page_viewed", "signup_form_started", "signup_social_clicked", "signup_submitted",
+  "signup_error_shown", "signup_verify_viewed", "signup_completed",
+] as const;
 
 async function main() {
   const url = process.env.DATABASE_URL;
@@ -27,7 +32,7 @@ async function main() {
   const members = sql`select id, row_number() over (order by created_at) as n, created_at from users
     where id not like 'test\\_%' and (${days} = 0 or created_at >= now() - make_interval(days => ${days}))`;
 
-  const [overview, funnel, journeys, retention] = await sql.transaction([
+  const [overview, funnel, journeys, retention, signup] = await sql.transaction([
     sql`with m as (${members}) select count(distinct m.id)::int as members, count(e.id)::int as events,
       min(m.created_at at time zone ${TZ})::date::text as first_joined, max(e.created_at at time zone ${TZ})::text as last_event
       from m left join funnel_events e on e.user_id = m.id`,
@@ -50,6 +55,13 @@ async function main() {
         count(*) filter (where d0 <= current_date - 30)::int as d30_eligible,
         count(*) filter (where d0 <= current_date - 30 and exists (select 1 from opens o where o.user_id = c.user_id and o.d = c.d0 + 30))::int as d30
       from cohort c`,
+    // Before sign-up there is no member, so these rows have no user id; signup_completed counts real members only.
+    sql`select s.step, count(e.id)::int as tabs
+      from unnest(${SIGNUP_STEPS as unknown as string[]}::text[]) with ordinality s(step, ord)
+      left join funnel_events e on e.event = s.step
+        and e.created_at >= now() - make_interval(days => ${days || 30})
+        and (case when s.step = 'signup_completed' then e.user_id not like 'test\\_%' else e.user_id is null end)
+      group by s.step, s.ord order by s.ord`,
   ], { readOnly: true });
 
   console.log(days ? `Members who joined in the last ${days} days` : "All real members");
@@ -60,6 +72,8 @@ async function main() {
   console.table(journeys);
   console.log("Retention (app_opened on cohort day + N; only cohorts old enough count)");
   console.table(retention);
+  console.log(`Sign-up page, last ${days || 30} days (browser tabs that reached each step; the last row is accounts created)`);
+  console.table(signup);
 }
 
 main().catch(err => {

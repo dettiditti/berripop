@@ -159,8 +159,8 @@ export async function deleteEntry(userId: string, entryId: string): Promise<Jour
 /* ---------- AI reflection ---------- */
 
 /** One metered AI call on the "journal" allowance; an unparseable response is refunded (see lib/server/ai.ts). */
-async function runAi<T>(userId: string, feature: string, instructions: string, prompt: string, maxOutputTokens: number, parse: (text: string) => T | null) {
-  const out = await runMeteredAi(userId, "journal", { feature, instructions, prompt, maxOutputTokens, parse });
+async function runAi<T>(userId: string, feature: string, instructions: string, prompt: string, maxOutputTokens: number, parse: (text: string) => T | null, idempotencyKey?: string) {
+  const out = await runMeteredAi(userId, "journal", { feature, instructions, prompt, maxOutputTokens, parse, idempotencyKey });
   if (!out.ok && out.reason === "limit") await track(userId, "ai_allowance_reached", { context: "journal" });
   return out;
 }
@@ -190,7 +190,7 @@ export async function reflectOnEntry(userId: string, entryId: string, localeInpu
   ].filter(Boolean).join("\n\n");
 
   const ai = dictionaries[locale].journal.ai;
-  const out = await runAi(userId, "journal_reflection", `${ai.reflectInstructions} ${ai.modes[mode]}`, prompt, 1000, text => parseReflection(text, goals.map(g => g.id)));
+  const out = await runAi(userId, "journal_reflection", `${ai.reflectInstructions} ${ai.modes[mode]}`, prompt, 1000, text => parseReflection(text, goals.map(g => g.id)), `reflect:${entry.id}:${mode}`);
   if (!out.ok) return fail(out.error);
   const parsed = out.value;
   const firstReflection = (await db.select({ id: journalReflections.id }).from(journalReflections).where(eq(journalReflections.userId, userId)).limit(1)).length === 0;
@@ -284,7 +284,7 @@ export async function weeklyJournal(userId: string, localeInput: string, useInsi
     checkinWeekLine(summarizeCheckins(checkins)),
     entries.map(e => `[${e.date}]\n${e.body.slice(0, 3000)}`).join("\n\n"),
   ].filter(Boolean).join("\n\n");
-  const out = await runAi(userId, "journal_weekly", dictionaries[locale].journal.ai.weeklyInstructions, prompt, 1300, parseWeekly);
+  const out = await runAi(userId, "journal_weekly", dictionaries[locale].journal.ai.weeklyInstructions, prompt, 1300, parseWeekly, "weekly");
   if (!out.ok) return fail(out.error);
   return { ok: true, weekly: out.value, state: await loadJournal(userId) };
 }

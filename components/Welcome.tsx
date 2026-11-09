@@ -431,7 +431,7 @@ function Pricing({ thoughtEnabled }: { thoughtEnabled: boolean }) {
             <p className="lp-plan-price">{t(p.premiumFrom, { price: money(PRICES.monthly.amount, PRICES.monthly.currency) })}</p>
             <p className="lp-plan-note">{p.premiumNote}</p>
             <ul className="lp-checks">
-              {[...p.premiumPoints, ...(thoughtEnabled ? [t(p.premiumThoughtPoint, { n: PLAN_LIMITS.premium.thoughtSessionsPerMonth })] : [])].map(x => <li key={x}><Check size={18} strokeWidth={3} aria-hidden /> {x}</li>)}
+              {[...p.premiumPoints, ...(thoughtEnabled ? [t(p.premiumThoughtPoint, { n: PLAN_LIMITS.premium.thoughtSessions })] : [])].map(x => <li key={x}><Check size={18} strokeWidth={3} aria-hidden /> {x}</li>)}
             </ul>
             <Link className="btn btn--ghost btn--lg btn--block" href="/pricing">{p.compare}</Link>
           </article>

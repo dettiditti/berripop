@@ -146,7 +146,7 @@ describe("first-request provisioning (for writing endpoints)", () => {
   it("creates the user row once, named from Clerk, and records signup once", async () => {
     expect(await (await provisioned({ authorization: `Bearer ${A}` })).json()).toEqual({ userId: "user_a" });
     await provisioned({ authorization: `Bearer ${A}` });
-    expect([...userRows.values()]).toEqual([{ id: "user_a", displayName: "Anna" }]);
+    expect([...userRows.values()]).toEqual([{ id: "user_a", displayName: "Anna", signupSource: "web" }]);
     expect(getUser).toHaveBeenCalledTimes(1);
     expect(tracked).toEqual([["user_a", "signup_completed"]]);
   });

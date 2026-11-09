@@ -37,10 +37,27 @@ sets `user_id` to null, so counts stay but the person is gone.
 | `thought_dissector_saved_to_journal` | The member saved the result into the journal | `thought` |
 | `thought_dissector_quota_exhausted` | A start was refused because the monthly sessions were used up | `thought` |
 | `thought_dissector_premium_clicked` | The Premium button in the Gondolatboncoló was pressed | `thought` |
+| `signup_page_viewed` / `signup_form_started` / `signup_submitted` / `signup_verify_viewed` / `signup_error_shown` | Sign-up page, **before an account exists, so without a member id**; each once per browser tab (`components/auth/SignUpTracker.tsx`) | `app` in the iPhone app, else – |
+| `signup_social_clicked` | A Google or Apple button was tapped on the sign-up page (anonymous, once per tab) | `google`, `apple` or `social` |
 | `pricing_viewed`, `upgrade_prompt_*`, `checkout_*`, `subscription_canceled`, `plan_changed`, `ai_allowance_reached`, `premium_feature_requested` | Subscription funnel | where it came from |
+| `trial_started` | Server: the member started the one-time 7-day trial (once per account) | – |
+| `trial_completed` | Daily job: a trial ended (once per account); plan is the plan at that moment | `converted` or `not_converted` |
+| `feature_paywall_viewed` | An upgrade prompt was shown at a limit or a locked feature (once per kind and visit) | the feature (`journal`, `ai`, `goals`, …) |
+| `plan_selected` | A plan was picked (pricing page or App Store list), before any payment; with plan and interval | `pricing` or `app` |
+| `free_quota_exhausted` | Server: a Free member's AI request was refused because the allowance was used up | `ai`, `journal`, `assessment` |
+| `ai_cost_cap_reached` | Server: the monthly AI cost safety net stopped a request (should not happen in normal use) | – |
 
 Server-side events are written only after the underlying record was newly
 created (the same idempotent insert that grants XP), so retries never double count.
+
+## Sign-up page
+
+The `signup_*` steps above (all but `signup_completed`) are sent by the sign-up page
+before anyone is signed in, so they carry no member id and never anything typed.
+They show where visitors stop: viewed → started typing (or tapped Google/Apple) →
+submitted → email-code step → `signup_completed`. `npm run funnel` prints them for the
+last 30 days (or the given number of days). They are counted per browser tab, not per
+person, and the reports that count members leave them out because they have no member.
 
 ## Quick report
 
@@ -48,6 +65,16 @@ created (the same idempotent insert that grants XP), so retries never double cou
 prints the funnel, a line per member and D1/D7/D30 retention. It counts real members
 only: rows without a member (left by the deleted `verify:*` test users) and `test_` ids
 are left out. It runs in a read-only transaction and prints no ids, names or content.
+
+## Pricing report
+
+`npm run pricing-report` (or `npm run pricing-report -- 90`) prints, for real members:
+who is on which plan now (Free, trial, Premium and Plus by interval), Free → Premium and
+Premium → Plus conversion, trial → paid conversion, churn (cancellations against paying
+members), the share of annual plans, ARPPU and MRR at list price, the pricing and paywall
+events, and the estimated AI cost per member from `ai_calls`. Set `EXCLUDE_USERS` to a
+comma-separated list of ids (e.g. the owner's own accounts) to leave them out. Read-only,
+no ids, names or content. It needs the `entitlement_grants` table (migration 0014).
 
 ## Retention method
 

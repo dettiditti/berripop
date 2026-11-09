@@ -33,7 +33,12 @@ vi.mock("../lib/db", () => ({
 vi.mock("../lib/server/legal", () => ({ aiAllowedFor: async () => consent }));
 vi.mock("../lib/server/analytics", () => ({ track: vi.fn() }));
 vi.mock("../lib/server/snapshot", () => ({ loadSnapshot: async () => ({ progress: {} }) }));
-vi.mock("../lib/server/entitlements", () => ({ consumeAiAllowance: allowance, refundAiAllowance: async () => {} }));
+vi.mock("../lib/server/entitlements", () => ({
+  reserveAi: async (...a: unknown[]) => ((await (allowance as (...x: unknown[]) => Promise<boolean>)(...a)) ? { ok: true, reservation: { id: "q1", period: "week:2026-11-09" } } : { ok: false, reason: "limit" }),
+  releaseQuota: async () => {},
+  settleQuota: async () => {},
+  getUserEntitlements: async () => ({ tier: "free", limits: { insightContext: false, weeklyJournal: false, aiMonthlyCostCapMicroUsd: 1_000_000 } }),
+}));
 
 const { thinkTogether } = await import("../lib/server/checkin");
 const { setAiGeneratorForTesting } = await import("../lib/server/ai");
@@ -61,7 +66,7 @@ describe("think it through together", () => {
     expect(sent!.prompt).toContain("Feszülten");
     expect(sent!.prompt).toContain("Magabiztosabb fellépés");
     expect(sent!.prompt).not.toMatch(/Journal entry|Insights/);
-    expect(allowance).toHaveBeenCalledWith("u", expect.any(Date), "journal");
+    expect(allowance).toHaveBeenCalledWith("u", "journal", expect.objectContaining({ idempotencyKey: expect.stringMatching(/^checkin:/) }));
     expect(updates).toEqual([{ aiReply: { heard: reply.heard, question: reply.question, idea: reply.idea } }]);
     if (r.ok) expect(r.data?.safety).toBe(false);
   });

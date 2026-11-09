@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { PLAN_LIMITS, thoughtPeriodKey, thoughtPeriodResets, type PlanId } from "../lib/billing/plans";
+import { PLAN_LIMITS, thoughtPeriodKey, thoughtPeriodResets, type Tier } from "../lib/billing/plans";
+import { memoryQuota } from "./helpers/memory-quota";
 import { runAiCall, type GenerateFn } from "../lib/ai/run";
 import { buildMap, chooseViewpoints, parseStart, parseSummary, parseTurn } from "../lib/thought/ai";
 import { THOUGHT_COPY } from "../lib/thought/copy";
@@ -38,7 +39,6 @@ function fakeAi() {
 
 function memoryStore() {
   const rows = new Map<string, ThoughtRow & { locked: boolean }>();
-  const usage = new Map<string, number>();
   let n = 0;
   const own = (userId: string, id: string) => { const r = rows.get(id); return r && r.userId === userId ? r : null; };
   const store: ThoughtStore = {
@@ -61,34 +61,40 @@ function memoryStore() {
     async remove(userId, id) { return !!own(userId, id) && rows.delete(id); },
     async list(userId) { return [...rows.values()].filter(r => r.userId === userId && r.status !== "draft"); },
     async recentSummaries(userId) { return [...rows.values()].filter(r => r.userId === userId && r.status === "completed" && r.summary).map(r => r.summary!); },
-    async consumeMonthly(userId, period, limit) { const k = `${userId}|${period}`; const c = usage.get(k) ?? 0; if (c >= limit) return false; usage.set(k, c + 1); return true; },
-    async refundMonthly(userId, period) { const k = `${userId}|${period}`; usage.set(k, Math.max(0, (usage.get(k) ?? 0) - 1)); },
-    async usedMonthly(userId, period) { return usage.get(`${userId}|${period}`) ?? 0; },
   };
-  return { store, rows, usage };
+  return { store, rows };
 }
 
-function setup(opts: { plan?: PlanId; consent?: boolean; now?: Date } = {}) {
+function setup(opts: { plan?: Tier; consent?: boolean; now?: Date } = {}) {
   const { ai, generate } = fakeAi();
   const mem = memoryStore();
   const events: { userId: string; event: ThoughtEvent }[] = [];
   const entries = new Map<string, { id: string; userId: string; body: string }>([["e-1", { id: "e-1", userId: "u1", body: "Mai bejegyzés a barátaimról." }]]);
   const created: { userId: string; body: string }[] = [];
   const clock = { now: opts.now ?? new Date("2026-11-08T10:00:00Z") };
-  const plans: Record<string, PlanId> = { u1: opts.plan ?? "free", u2: "free" };
+  const plans: Record<string, Tier> = { u1: opts.plan ?? "free", u2: "free" };
+  const quota = memoryQuota(userId => plans[userId] ?? "free", () => clock.now);
   const deps: ThoughtDeps = {
     store: mem.store,
-    plan: async userId => ({ plan: plans[userId] ?? "free", limits: PLAN_LIMITS[plans[userId] ?? "free"] }),
+    plan: async userId => { const tier = plans[userId] ?? "free"; return { plan: tier === "trial" ? "free" : tier, limits: PLAN_LIMITS[tier] }; },
     aiReady: async () => (opts.consent === false ? "ai_consent_required" : "ok"),
     ai: (_userId, req, slot) => runAiCall({ ...req, model: "openai/gpt-5-mini" }, { generate, reserve: slot.reserve, release: slot.release, record: async () => {}, sleep: async () => {} }),
     allowanceSlot: () => ({ reserve: async () => true, release: async () => {} }),
     track: async (userId, event) => { events.push({ userId, event }); },
     ownEntry: async (userId, id) => { const e = entries.get(id); return e && e.userId === userId ? { id: e.id, body: e.body } : null; },
     createEntry: async (userId, body) => { created.push({ userId, body }); return `entry-${created.length}`; },
-    period: thoughtPeriodKey,
+    sessionQuota: {
+      async reserve(userId, sessionId) {
+        const key = `session:${sessionId}`;
+        const r = quota.reserve(userId, "thought", key);
+        const held = r.ok ? r.reservation : r.reason === "duplicate" ? quota.find(userId, "thought", key) : null;
+        return held ? { ok: true, period: held.period, release: async () => quota.release(userId, held.id) } : { ok: false };
+      },
+      async usage(userId) { const u = quota.usage(userId, "thought"); return { used: u.used, limit: u.limit, remaining: u.remaining, resets: u.resets }; },
+    },
     now: () => clock.now,
   };
-  return { deps, ai, mem, events, created, clock, plans };
+  return { deps, ai, mem, events, created, clock, plans, quota };
 }
 
 const labels = THOUGHT_COPY.hu.save.labels;
@@ -103,34 +109,68 @@ async function finish(deps: ThoughtDeps, id: string) {
   }
 }
 
-describe("monthly allowance (Free: 2 per calendar month)", () => {
-  it("1–2: the first and second sessions start and each uses one", async () => {
+describe("allowance (Free: one session for the account's lifetime; trial week: one more; paid: monthly)", () => {
+  it("1: Free starts the first session, then has none left, with no monthly reset", async () => {
     const t = setup();
+    expect(await core.quota(t.deps, "u1")).toEqual({ used: 0, limit: 1, remaining: 1, resets: null });
     expect((await start(t.deps, "key_aaaaaaaa1")).ok).toBe(true);
-    expect((await core.quota(t.deps, "u1")).remaining).toBe(1);
-    expect((await start(t.deps, "key_aaaaaaaa2")).ok).toBe(true);
-    expect(await core.quota(t.deps, "u1")).toEqual({ used: 2, limit: 2, remaining: 0 });
+    expect(await core.quota(t.deps, "u1")).toEqual({ used: 1, limit: 1, remaining: 0, resets: null });
   });
 
-  it("3: the third is refused before any AI call, and quota_exhausted is tracked", async () => {
+  it("2: the free session never comes back: not next month, not next year", async () => {
     const t = setup();
     await start(t.deps, "key_aaaaaaaa1");
-    await start(t.deps, "key_aaaaaaaa2");
+    for (const at of ["2026-12-01T08:00:00Z", "2027-06-01T08:00:00Z"]) {
+      t.clock.now = new Date(at);
+      expect(await start(t.deps, `key_${at.slice(0, 7).replace("-", "")}x`)).toEqual({ ok: false, error: "quota_exhausted" });
+    }
+  });
+
+  it("3: refused before any AI call, and quota_exhausted is tracked", async () => {
+    const t = setup();
+    await start(t.deps, "key_aaaaaaaa1");
     const calls = t.ai.calls.length;
-    const r = await start(t.deps, "key_aaaaaaaa3");
-    expect(r).toEqual({ ok: false, error: "quota_exhausted" });
+    expect(await start(t.deps, "key_aaaaaaaa2")).toEqual({ ok: false, error: "quota_exhausted" });
     expect(t.ai.calls.length).toBe(calls);
     expect(t.events.map(e => e.event)).toContain("thought_dissector_quota_exhausted");
   });
 
-  it("4: a new calendar month (Budapest time) opens two new sessions", async () => {
-    const t = setup({ now: new Date("2026-11-30T23:30:00Z") }); // 00:30 on 1 December in Budapest (UTC+1)
-    expect(thoughtPeriodKey(t.clock.now)).toBe("2026-12");
+  it("4a: the trial week gives exactly one more session on top of the first, charged to separate one-time pools", async () => {
+    const t = setup({ plan: "trial" });
+    expect((await start(t.deps, "key_aaaaaaaa1")).ok).toBe(true);
+    expect((await start(t.deps, "key_aaaaaaaa2")).ok).toBe(true);
+    expect(await start(t.deps, "key_aaaaaaaa3")).toEqual({ ok: false, error: "quota_exhausted" });
+    expect(t.quota.rows.map(r => r.period).sort()).toEqual(["once:first", "once:trial"]);
+    // After the trial: back on Free, the first session is used, nothing new.
+    t.plans.u1 = "free";
+    expect(await core.quota(t.deps, "u1")).toMatchObject({ remaining: 0 });
+    expect(await start(t.deps, "key_aaaaaaaa4")).toEqual({ ok: false, error: "quota_exhausted" });
+  });
+
+  it("4b: a free session used before the trial leaves exactly the trial's one", async () => {
+    const t = setup();
     await start(t.deps, "key_aaaaaaaa1");
-    await start(t.deps, "key_aaaaaaaa2");
-    expect((await start(t.deps, "key_aaaaaaaa3")).ok).toBe(false);
+    t.plans.u1 = "trial";
+    expect(await core.quota(t.deps, "u1")).toMatchObject({ used: 1, limit: 2, remaining: 1 });
+    expect((await start(t.deps, "key_aaaaaaaa2")).ok).toBe(true);
+    expect(await start(t.deps, "key_aaaaaaaa3")).toEqual({ ok: false, error: "quota_exhausted" });
+  });
+
+  it("4c: a trial week left unused keeps the first free session for later", async () => {
+    const t = setup({ plan: "trial" });
+    t.plans.u1 = "free";
+    expect((await start(t.deps, "key_aaaaaaaa1")).ok).toBe(true);
+    expect(await start(t.deps, "key_aaaaaaaa2")).toEqual({ ok: false, error: "quota_exhausted" });
+  });
+
+  it("4d: paid plans get a monthly number that opens again in a new calendar month (Budapest time)", async () => {
+    const t = setup({ plan: "premium", now: new Date("2026-11-30T23:30:00Z") }); // 00:30 on 1 December in Budapest
+    expect(thoughtPeriodKey(t.clock.now)).toBe("2026-12");
+    const limit = PLAN_LIMITS.premium.thoughtSessions;
+    for (let i = 0; i < limit; i++) expect((await start(t.deps, `key_month${String(i).padStart(4, "0")}`)).ok).toBe(true);
+    expect(await start(t.deps, "key_aaaaaaaa9")).toEqual({ ok: false, error: "quota_exhausted" });
     t.clock.now = new Date("2027-01-01T08:00:00Z");
-    expect((await start(t.deps, "key_aaaaaaaa4")).ok).toBe(true);
+    expect((await start(t.deps, "key_bbbbbbbb1")).ok).toBe(true);
     expect(thoughtPeriodResets(new Date("2026-12-15T12:00:00Z"))).toBe("2027-01-01");
   });
 
@@ -138,7 +178,9 @@ describe("monthly allowance (Free: 2 per calendar month)", () => {
     const t = setup({ plan: "premium" });
     const r = await start(t.deps);
     expect(r.ok && r.data.viewpoints).toEqual(["own", "other", "facts", "beneath", "alternatives", "next"]);
-    expect(PLAN_LIMITS.premium.thoughtSessionsPerMonth).toBeGreaterThan(PLAN_LIMITS.free.thoughtSessionsPerMonth);
+    expect(PLAN_LIMITS.premium.thoughtSessions).toBeGreaterThan(PLAN_LIMITS.free.thoughtSessions);
+    expect(PLAN_LIMITS.premium.thoughtWindow).toBe("month");
+    expect(PLAN_LIMITS.free.thoughtWindow).toBe("once");
     expect(PLAN_LIMITS.free.thoughtViewpoints).toBeLessThanOrEqual(4);
   });
 });

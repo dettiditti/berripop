@@ -15,8 +15,8 @@ const product = (plan: string | null, patch: Partial<Product> = {}): Product => 
 /** What Stripe returns per lookup key; the real catalog by default (scripts/stripe-setup.ts). */
 let catalog: Record<string, { id: string; lookup_key: string; product: Product | string }[]> = {};
 const realCatalog = () => ({
-  kozos_premium_monthly_huf: [{ id: "price_pm", lookup_key: "kozos_premium_monthly_huf", product: product("premium") }],
-  kozos_premium_annual_huf: [{ id: "price_pa", lookup_key: "kozos_premium_annual_huf", product: product("premium") }],
+  kozos_premium_monthly_huf_2490: [{ id: "price_pm", lookup_key: "kozos_premium_monthly_huf_2490", product: product("premium") }],
+  kozos_premium_annual_huf_19990: [{ id: "price_pa", lookup_key: "kozos_premium_annual_huf_19990", product: product("premium") }],
   kozos_premium_plus_monthly_huf: [{ id: "price_xm", lookup_key: "kozos_premium_plus_monthly_huf", product: product("premium_plus") }],
   kozos_premium_plus_annual_huf: [{ id: "price_xa", lookup_key: "kozos_premium_plus_annual_huf", product: product("premium_plus") }],
 });
@@ -129,16 +129,16 @@ describe("only the two Berripop products are sold", () => {
   });
 
   const broken: [string, () => void][] = [
-    ["no kozos_plan metadata", () => { catalog.kozos_premium_monthly_huf[0].product = product(null); }],
-    ["metadata of the other plan (Premium Plus product)", () => { catalog.kozos_premium_monthly_huf[0].product = product("premium_plus"); }],
-    ["an unknown metadata value", () => { catalog.kozos_premium_monthly_huf[0].product = product("premium_monthly"); }],
-    ["metadata with different case", () => { catalog.kozos_premium_monthly_huf[0].product = product("Premium"); }],
-    ["another product entirely, with the lookup key moved to it", () => { catalog.kozos_premium_monthly_huf[0].product = { id: "prod_ebook", active: true, metadata: { kind: "ebook" } }; }],
-    ["an archived product", () => { catalog.kozos_premium_monthly_huf[0].product = product("premium", { active: false }); }],
-    ["a deleted product", () => { catalog.kozos_premium_monthly_huf[0].product = { id: "prod_x", deleted: true }; }],
-    ["the product not expanded (only its id)", () => { catalog.kozos_premium_monthly_huf[0].product = "prod_premium"; }],
-    ["a price whose lookup key isn't ours", () => { catalog.kozos_premium_monthly_huf[0].lookup_key = "someone_elses_key"; }],
-    ["no price for the lookup key", () => { catalog.kozos_premium_monthly_huf = []; }],
+    ["no kozos_plan metadata", () => { catalog.kozos_premium_monthly_huf_2490[0].product = product(null); }],
+    ["metadata of the other plan (Premium Plus product)", () => { catalog.kozos_premium_monthly_huf_2490[0].product = product("premium_plus"); }],
+    ["an unknown metadata value", () => { catalog.kozos_premium_monthly_huf_2490[0].product = product("premium_monthly"); }],
+    ["metadata with different case", () => { catalog.kozos_premium_monthly_huf_2490[0].product = product("Premium"); }],
+    ["another product entirely, with the lookup key moved to it", () => { catalog.kozos_premium_monthly_huf_2490[0].product = { id: "prod_ebook", active: true, metadata: { kind: "ebook" } }; }],
+    ["an archived product", () => { catalog.kozos_premium_monthly_huf_2490[0].product = product("premium", { active: false }); }],
+    ["a deleted product", () => { catalog.kozos_premium_monthly_huf_2490[0].product = { id: "prod_x", deleted: true }; }],
+    ["the product not expanded (only its id)", () => { catalog.kozos_premium_monthly_huf_2490[0].product = "prod_premium"; }],
+    ["a price whose lookup key isn't ours", () => { catalog.kozos_premium_monthly_huf_2490[0].lookup_key = "someone_elses_key"; }],
+    ["no price for the lookup key", () => { catalog.kozos_premium_monthly_huf_2490 = []; }],
   ];
 
   it.each(broken)("fails closed for %s: no Managed Payments session is created", async (_, breakIt) => {

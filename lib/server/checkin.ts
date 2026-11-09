@@ -76,7 +76,7 @@ export async function thinkTogether(userId: string, localeInput: string): Promis
     row.note ? `- in their words: ${row.note}` : "",
   ].filter(Boolean).join("\n");
 
-  const out = await runMeteredAi(userId, "journal", { feature: "checkin_together", instructions: c.ai.instructions, prompt, maxOutputTokens: 500, parse: parseCheckinReply });
+  const out = await runMeteredAi(userId, "journal", { feature: "checkin_together", idempotencyKey: `checkin:${row.id}`, instructions: c.ai.instructions, prompt, maxOutputTokens: 500, parse: parseCheckinReply });
   if (!out.ok) {
     if (out.reason === "limit") await track(userId, "ai_allowance_reached", { context: "checkin" });
     return fail(out.error);

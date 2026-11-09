@@ -22,9 +22,11 @@
     "verify:goal-journey": "dotenv -e .env.local -- tsx --conditions=react-server scripts/verify-goal-journey.ts",
     "invoices": "dotenv -e .env.local -- tsx --conditions=react-server scripts/invoices.ts",
     "funnel": "dotenv -e .env.local -- tsx scripts/funnel-report.ts",
+    "pricing-report": "dotenv -e .env.local -- tsx scripts/pricing-report.ts",
     "encrypt:content": "dotenv -e .env.local -- tsx --conditions=react-server scripts/encrypt-content.ts"
   },
   "dependencies": {
+    "@apple/app-store-server-library": "3.1.0",
     "@clerk/localizations": "^4.24.1",
     "@clerk/nextjs": "^7.9.20",
     "@neondatabase/serverless": "^1.2.0",

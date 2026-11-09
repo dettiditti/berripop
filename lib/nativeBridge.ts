@@ -15,7 +15,26 @@ type Bridge = {
       register: () => Promise<void>;
       addListener: (event: "registration" | "registrationError", cb: (v: { value?: string; error?: string }) => void) => Promise<Listener>;
     };
+    BerripopStore?: StorePlugin;
+    BerripopAuth?: AuthPlugin;
   };
+};
+
+export type StoreProduct = { id: string; title: string; description: string; price: string; period?: { unit: "day" | "week" | "month" | "year"; value: number } };
+export type PurchaseOutcome = { status: "purchased"; jws: string } | { status: "cancelled" | "pending" | "unknown" };
+type StorePlugin = {
+  products: (o: { ids: string[] }) => Promise<{ products: StoreProduct[] }>;
+  purchase: (o: { id: string; token: string }) => Promise<PurchaseOutcome>;
+  current: () => Promise<{ transactions: string[] }>;
+  restore: () => Promise<{ transactions: string[] }>;
+  manage: () => Promise<void>;
+  addListener: (event: "transaction", cb: (v: { jws: string }) => void) => Promise<Listener>;
+};
+
+/** Native sign-in: each returns an ID token for Clerk to verify; it rejects with "cancelled" when the member closes the sheet. */
+type AuthPlugin = {
+  apple: () => Promise<{ idToken: string; firstName?: string; lastName?: string }>;
+  google: (o: { clientId: string; audience: string }) => Promise<{ idToken: string }>;
 };
 
 function plugins() {
@@ -71,4 +90,14 @@ export async function pushToken(): Promise<string | "denied" | null> {
   } catch {
     return null;
   }
+}
+
+/** The App Store, when this page runs inside the iPhone app with the store plugin; otherwise null. */
+export function appStore(): StorePlugin | null {
+  return plugins()?.BerripopStore ?? null;
+}
+
+/** Sign in with Apple / Google, when this page runs inside an iPhone app version that has them; otherwise null. */
+export function nativeAuth(): AuthPlugin | null {
+  return plugins()?.BerripopAuth ?? null;
 }

@@ -69,12 +69,15 @@ export type ThoughtListItem = {
   updatedAt: string;
 };
 
-export type ThoughtQuota = { used: number; limit: number; remaining: number; resets: string };
+/** `resets` is null for a one-time allowance (Free: the first session; the trial week: one more). */
+export type ThoughtQuota = { used: number; limit: number; remaining: number; resets: string | null };
 
 export type ThoughtState = {
   enabled: boolean;
   aiConfigured: boolean;
   plan: "free" | "premium" | "premium_plus";
+  /** The limits in use: the plan, or "trial" during a Free member's trial week. */
+  tier: "free" | "trial" | "premium" | "premium_plus";
   deep: boolean;
   viewpointCount: number;
   quota: ThoughtQuota;

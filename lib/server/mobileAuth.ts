@@ -1,5 +1,6 @@
 import "server-only";
 import { clerkClient } from "@clerk/nextjs/server";
+import { isNativeApp } from "../native";
 import { ensureUserRow } from "./session";
 
 /*
@@ -58,7 +59,7 @@ export async function bearerMember(req: Request): Promise<string | null> {
         return "";
       }
       return u.firstName || u.username || "";
-    });
+    }, isNativeApp(req.headers.get("user-agent")) ? "appstore" : "web");
   } catch (e) {
     if (e instanceof LoginGone) return null;
     throw e;

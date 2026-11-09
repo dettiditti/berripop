@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PLAN_LIMITS, PRICES } from "../lib/billing/plans";
+import { PLAN_LIMITS, PRICES, TRIAL_DAYS } from "../lib/billing/plans";
 import { legal } from "../lib/legal/content";
 
 /** Every string a legal page shows, per language. */
@@ -36,6 +36,8 @@ describe("public legal texts", () => {
     }
     const f = PLAN_LIMITS.free;
     expect(hu).toContain(`${f.activeGoals} aktív cél, ${f.ownedCircles} saját kör, hetente ${f.aiPerPeriod} AI-segítség és ${f.journalAiPerPeriod} napló-reflexió`);
-    expect(en).toContain(`${f.activeGoals} active goal, ${f.ownedCircles} circle of your own, ${f.aiPerPeriod} AI assists and ${f.journalAiPerPeriod} journal reflections a week`);
+    expect(hu).toContain(`${TRIAL_DAYS} napos ismerkedő hetet`);
+    expect(en).toContain(`${TRIAL_DAYS}-day trial week`);
+    expect(en).toContain(`${f.activeGoals} active goal, ${f.ownedCircles} circle of your own, ${f.aiPerPeriod} AI assists and ${f.journalAiPerPeriod} journal reflection a week`);
   });
 });

@@ -26,7 +26,13 @@ vi.mock("../lib/db", () => ({
   }),
 }));
 const consumed = vi.fn(async () => true);
-vi.mock("../lib/server/entitlements", () => ({ consumeAiAllowance: consumed, refundAiAllowance: vi.fn() }));
+vi.mock("../lib/server/entitlements", () => ({
+  reserveAi: async (...a: unknown[]) => ((await (consumed as (...x: unknown[]) => Promise<boolean>)(...a)) ? { ok: true, reservation: { id: "q1", period: "week:2026-11-09" } } : { ok: false, reason: "limit" }),
+  releaseQuota: async () => {},
+  settleQuota: async () => {},
+  getUserEntitlements: async () => ({ tier: "free", limits: { insightContext: false, weeklyJournal: false, aiMonthlyCostCapMicroUsd: 1_000_000 } }),
+}));
+vi.mock("../lib/server/analytics", () => ({ track: vi.fn() }));
 
 const legal = await import("../lib/server/legal");
 const { runMeteredAi, setAiGeneratorForTesting } = await import("../lib/server/ai");

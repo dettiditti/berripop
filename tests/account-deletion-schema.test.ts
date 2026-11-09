@@ -12,7 +12,7 @@ import * as schema from "../lib/db/schema";
 
 /** Deleted with the member. */
 const CASCADE = [
-  "achievements.user_id", "ai_calls.user_id", "ai_usage.user_id", "answer_reactions.user_id", "answers.user_id",
+  "achievements.user_id", "ai_calls.user_id", "apple_subscriptions.user_id", "ai_usage.user_id", "quota_uses.user_id", "entitlement_grants.user_id", "answer_reactions.user_id", "answers.user_id",
   "circle_members.user_id", "circle_questions.added_by", "custom_questions.author_id", "daily_checkins.user_id",
   "goal_journeys.user_id", "growth_goals.user_id", "growth_insights.user_id", "growth_steps.user_id",
   "journal_entries.user_id", "journal_moods.user_id", "journal_reflections.user_id", "legal_records.user_id", "participations.user_id",

@@ -11,6 +11,9 @@ type Copy = {
   cta: string;
   quota: (n: number) => string;
   quotaEmpty: string;
+  /** One-time allowance (Free, trial week): no monthly reset. */
+  quotaOnce: (n: number) => string;
+  quotaOnceEmpty: string;
   premiumBadge: string;
   viewpointsTitle: string;
   freeViewpointsNote: string;
@@ -25,7 +28,7 @@ type Copy = {
   sections: SaveLabels["sections"];
   branches: Record<MapBranchId, string>;
   save: { button: string; saved: string; title: string; body: string; summary: string; map: string; transcript: string; confirm: string; cancel: string; done: string; labels: SaveLabels };
-  paywall: { title: string; body: string; cta: string; later: string; resets: (date: string) => string };
+  paywall: { title: string; body: string; cta: string; later: string; resets: (date: string) => string; once: string };
   patterns: { title: string; lockedBody: string; optIn: string; optInHint: string; run: string; running: string; notEnough: string; disclaimer: string };
   safety: { title: string; body: string; back: string };
   entryCta: string;
@@ -42,6 +45,8 @@ const hu: Copy = {
   cta: "Kezdjük",
   quota: n => `Ebben a hónapban még ${n} gondolatboncolásod van.`,
   quotaEmpty: "Ebben a hónapban elfogytak az ingyenes gondolatboncolásaid.",
+  quotaOnce: n => (n === 1 ? "Egy ingyenes gondolatboncolásod van." : `Még ${n} ingyenes gondolatboncolásod van.`),
+  quotaOnceEmpty: "Az ingyenes gondolatboncolásodat már felhasználtad.",
   premiumBadge: "Premium",
   viewpointsTitle: "Ezekből a nézőpontokból nézünk rá",
   freeViewpointsNote: "Ingyenesen Berri a problémádhoz leginkább illő 3–4 nézőpontot választja ki.",
@@ -107,6 +112,7 @@ const hu: Copy = {
     title: "Van még mit kibontanunk? 💜",
     body: "A Premium segítségével mélyebbre áshatsz, összekapcsolhatod korábbi gondolataidat, és részletesebb felismerésekhez juthatsz.",
     cta: "Megnézem a Premiumot", later: "Most nem", resets: date => `A következő ingyenes alkalmak ${date}-án/-én nyílnak meg.`,
+    once: "Az ingyenes alkalom egyszer jár. A Premiummal havonta több gondolatboncolásod lehet.",
   },
   patterns: {
     title: "Visszatérő minták",
@@ -145,6 +151,8 @@ const en: Copy = {
   cta: "Let's start",
   quota: n => `You have ${n} thought ${n === 1 ? "session" : "sessions"} left this month.`,
   quotaEmpty: "You've used this month's free sessions.",
+  quotaOnce: n => (n === 1 ? "You have one free thought session." : `You have ${n} free thought sessions left.`),
+  quotaOnceEmpty: "You've used your free thought session.",
   premiumBadge: "Premium",
   viewpointsTitle: "The viewpoints we'll use",
   freeViewpointsNote: "On the free plan Berri picks the 3–4 viewpoints that fit your problem best.",
@@ -201,6 +209,7 @@ const en: Copy = {
     title: "Still more to unpack? 💜",
     body: "With Premium you can dig deeper, connect your earlier thoughts and reach more detailed insights.",
     cta: "See Premium", later: "Not now", resets: date => `Your next free sessions open on ${date}.`,
+    once: "The free session is a one-off. With Premium you get several sessions every month.",
   },
   patterns: {
     title: "Recurring patterns",

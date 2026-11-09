@@ -38,6 +38,7 @@ export async function buildGoalJourney(userId: string, localeInput: string): Pro
   const a = assessment ? sanitizeAnswers(assessment.answers) : {};
   const build = () => runMeteredAi(userId, "assessment", {
     feature: "goal_journey",
+    idempotencyKey: "goal_journey",
     instructions: goalJourneyInstructions(locale),
     prompt: describeGoals({
       goals, area: areasOf(a).map(x => AREA_EN[x]).join(", ") || undefined, time: a.time ? TIME_EN[a.time] : undefined,

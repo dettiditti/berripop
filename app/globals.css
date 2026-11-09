@@ -1095,6 +1095,12 @@ button.avatar:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ton
 .plan-rows--premium .plan-row dd { color: var(--purple-dark); }
 .plan-checkout { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 16px; background: var(--lavender); font-size: 13px; color: var(--ink-2); font-weight: 600; }
 .plan-checkout strong { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--ink); }
+/* The one-time 7-day trial on the Free card: no card, nothing renews. */
+.plan-trial { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 16px; background: var(--lavender); font-size: 13px; color: var(--ink-2); font-weight: 600; }
+.plan-trial strong { font-size: 14px; color: var(--ink); }
+.plan-trial p { margin: 0; }
+.plan-trial .btn { margin-top: 4px; }
+.sub-trial { padding: 10px 12px; border-radius: 14px; background: var(--lavender); color: var(--ink-2); font-weight: 700; font-size: 14px; }
 .plan-cta { margin-top: auto; }
 .plan-both { display: flex; flex-direction: column; gap: 10px; }
 .plan-both h2 { font-size: 18px; }
@@ -1117,6 +1123,18 @@ button.avatar:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ton
 .sub-facts dd { margin: 0; font-weight: 800; }
 .sub-warning { display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 14px; background: var(--sun-soft); color: #7a4f00; font-weight: 800; font-size: 14px; }
 .ai-meter { display: flex; flex-direction: column; gap: 4px; }
+/* App Store plans inside the iPhone app (prices and titles come from Apple). */
+.app-store { display: flex; flex-direction: column; gap: 10px; }
+.app-store-title { font-size: 16px; }
+.app-store-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.app-store-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 16px; background: var(--lavender); border: 2px solid var(--lavender-line); }
+.app-store-item.is-current { background: var(--sun-soft); border-color: transparent; }
+.app-store-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.app-store-copy small { color: var(--ink-2); font-size: 13px; }
+.app-store-price { font-weight: 800; color: var(--purple-dark); font-size: 14px; }
+.app-store-disclosure { margin: 0; font-size: 12px; line-height: 1.45; color: var(--muted); }
+.app-store-links { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; font-weight: 800; }
+.app-store-links a { color: var(--purple-dark); }
 .summary-text { white-space: pre-wrap; font-weight: 600; line-height: 1.55; }
 .goal-list { display: flex; flex-direction: column; gap: 8px; }
 .goal-list li { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 16px; background: var(--cream); }
@@ -2103,10 +2121,10 @@ html[data-app] body:has(.berri-stage)::before { content: none; }
 .thought-entry strong { font-family: var(--font-display); font-size: 18px; font-weight: 600; }
 .thought-entry small { color: var(--muted); font-weight: 700; }
 
-/* ============ Soft Glass (signed-in app only) ============
- * Every rule is scoped under .app, so the landing, pricing and legal pages keep their look.
+/* ============ Soft Glass (the app, and Berri's intro questions before sign-up) ============
+ * Every rule is scoped under .app or .berri-stage, so the landing, pricing and legal pages keep their look.
  * Only surfaces change: layout, navigation and behaviour stay the same. */
-.app {
+.app, .berri-stage {
   --purple: #7654d9; --purple-dark: #5a3cb8; --purple-soft: #ece5fd; --lavender: #f3eefe; --lavender-line: #e4daf9;
   --cream: #fffaf5; --ink: #302943; --ink-2: #514868; --muted: #8a8199;
   --glass-strong: rgba(255, 252, 250, 0.86);
@@ -2127,7 +2145,7 @@ html[data-app] body:has(.berri-stage)::before { content: none; }
   --btn-press: scale(0.97);
 }
 /* Set on the button itself, so the shadow takes that button's own colour (--b-edge). */
-.app .btn {
+.app .btn, .berri-stage .btn {
   --btn-shadow: 0 8px 20px -10px color-mix(in srgb, var(--b-edge) 75%, transparent);
   --btn-shadow-pressed: 0 3px 10px -6px color-mix(in srgb, var(--b-edge) 75%, transparent);
 }
@@ -2145,7 +2163,7 @@ html[data-app] body:has(.berri-stage)::before { content: none; }
 
 /* Buttons lose the raised 3D edge (a soft shadow instead); the ghost/text variants and every
  * component's own colours keep working, because only the base rules' variables change. */
-.app .btn:disabled { --btn-shadow: none; }
+.app .btn:disabled, .berri-stage .btn:disabled { --btn-shadow: none; }
 .app .chip.is-active { border-color: transparent; }
 .app .account-menu-btn { box-shadow: 0 8px 18px -8px var(--purple-dark); }
 
@@ -2485,3 +2503,62 @@ html[data-app] body:has(.berri-stage)::before { content: none; }
 .journal-open-mood { display: inline-flex; align-self: flex-start; }
 .celebrate-close { margin-top: 14px; min-height: 44px; padding: 10px 22px; border-radius: 999px; font-size: 14px; font-weight: 800; color: #fff; background: var(--purple, #7654d9); box-shadow: 0 8px 18px -10px rgba(84, 60, 150, 0.6); }
 .celebrate-close:focus-visible { outline: 3px solid var(--purple-soft, #e9e1fb); outline-offset: 2px; }
+
+/* ============ Soft Glass: Berri's intro and the first questions ============
+ * The question cards float as milky glass over Berri's lavender scene; the answer
+ * chips, the back button and the name field get the same soft glass as in the app. */
+.berri-intro-card, .app-welcome-copy {
+  background: rgba(255, 255, 255, 0.74); border: 1px solid var(--glass-edge);
+  box-shadow: 0 20px 44px -18px rgba(70, 48, 130, 0.35), 0 2px 6px rgba(84, 60, 150, 0.06);
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+}
+/* The tail shows only its upper half, so the see-through card and tail never overlap into a darker patch. */
+.berri-intro-card::before, .app-welcome-copy::before {
+  background: rgba(255, 255, 255, 0.74); clip-path: polygon(0 0, 100% 0, 0 100%);
+  border-top: 1px solid var(--glass-edge); border-left: 1px solid var(--glass-edge);
+}
+.berri-stage .input { background: rgba(255, 255, 255, 0.8); border: 1px solid #e6ddef; box-shadow: inset 0 1px 2px rgba(84, 60, 150, 0.05); }
+.berri-stage .input:focus { background: #fff; border-color: rgba(118, 84, 217, 0.6); box-shadow: 0 0 0 3px rgba(118, 84, 217, 0.14); }
+.app-start-back { background: rgba(255, 255, 255, 0.72); border: 1px solid var(--glass-edge); box-shadow: 0 6px 14px -8px rgba(84, 60, 150, 0.35); }
+.app-start-progress { background: rgba(118, 84, 217, 0.12); }
+
+/* Answer chips: in the intro questions and in the app's own assessment. */
+.berri-stage .assessment-option, .app .assessment-option {
+  background: rgba(255, 255, 255, 0.72); border: 1px solid var(--glass-edge);
+  box-shadow: 0 6px 16px -10px rgba(84, 60, 150, 0.3);
+}
+.berri-stage .assessment-option:hover, .app .assessment-option:hover { border-color: rgba(118, 84, 217, 0.35); }
+.berri-stage .assessment-option.is-selected, .app .assessment-option.is-selected {
+  background: #fff; border-color: rgba(118, 84, 217, 0.6); color: var(--purple-dark);
+  box-shadow: 0 0 0 3px rgba(118, 84, 217, 0.14), 0 10px 22px -12px var(--purple-dark);
+}
+.berri-stage .assessment-option:disabled, .app .assessment-option:disabled { opacity: 0.5; box-shadow: none; }
+.app .assessment-followup { background: rgba(255, 255, 255, 0.6); border: 1px solid var(--glass-edge); }
+.app .assessment-understood { background: rgba(243, 238, 254, 0.75); }
+
+/* Choosing the way (personal or shared) right after sign-up. */
+.app .onboarding-option--primary {
+  border: 1px solid rgba(118, 84, 217, 0.45); background: linear-gradient(180deg, rgba(255, 255, 255, 0.82) 55%, rgba(243, 238, 254, 0.85));
+  box-shadow: 0 0 0 3px rgba(118, 84, 217, 0.1), 0 20px 40px -26px rgba(90, 60, 184, 0.5);
+}
+
+/* Berri on a transparent clip (the iPhone app and Apple browsers): the intro uses the
+ * app's soft ambient light instead of the clip's flat lavender, so it matches the app. */
+.berri-stage:has(.berri-video--clear) {
+  background:
+    radial-gradient(42vmax 42vmax at -6% -10%, rgba(228, 217, 253, 0.85), transparent 70%),
+    radial-gradient(30vmax 30vmax at 104% 12%, rgba(251, 224, 212, 0.75), transparent 70%),
+    radial-gradient(30vmax 30vmax at 40% 108%, rgba(214, 241, 230, 0.7), transparent 70%),
+    radial-gradient(24vmax 24vmax at 88% 84%, rgba(235, 226, 254, 0.7), transparent 70%),
+    #fffaf5;
+}
+html[data-app]:has(.berri-video--clear), html[data-app] body:has(.berri-video--clear) { background: #fffaf5; }
+.berri-stage:has(.berri-video--clear) .berri-intro-card,
+.berri-stage:has(.berri-video--clear) .app-welcome-copy { box-shadow: var(--glass-shadow-lg); }
+
+/* Sign in with Apple / Google inside the iPhone app: Clerk's own buttons in the card,
+ * shown only when the app can run them natively (NativeSignIn sets the classes on <html>). */
+html:not(.native-auth) .in-app-social, html:not(.native-auth) .in-app-divider { display: none !important; }
+html:not(.native-google) .in-app-social .cl-socialButtonsBlockButton__google { display: none !important; }
+html.native-busy .in-app-social { opacity: 0.6; pointer-events: none; }
+.native-sign-in-error { max-width: 400px; margin: 10px auto 0; text-align: center; }

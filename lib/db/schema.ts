@@ -13,6 +13,8 @@ import type { ThoughtMap, ThoughtMessage, ThoughtSummary, ViewpointId } from "..
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
   displayName: text("display_name").notNull().default(""),
+  /** Where the account was created: "web" (the website) or "appstore" (the iPhone app). Set once, never changed. */
+  signupSource: text("signup_source", { enum: ["web", "appstore"] }).notNull().default("web"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -175,6 +177,37 @@ export const subscriptions = pgTable("subscriptions", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, t => [uniqueIndex("subscriptions_customer_idx").on(t.stripeCustomerId)]);
 
+/**
+ * App Store (in-app purchase) subscriptions, one row per subscription
+ * (Apple's original transaction id). Written only from transactions and
+ * notifications whose Apple signature was verified on the server. The Stripe
+ * table above is separate; entitlements combine the two.
+ */
+export const appleSubscriptions = pgTable("apple_subscriptions", {
+  originalTransactionId: text("original_transaction_id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  productId: text("product_id").notNull(),
+  planId: text("plan_id").notNull(),
+  interval: text("interval"),
+  /** active | grace (billing grace period) | billing_retry | expired | revoked */
+  status: text("status").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  autoRenew: boolean("auto_renew").notNull().default(true),
+  /** "Production" or "Sandbox" (TestFlight and test purchases). */
+  environment: text("environment").notNull(),
+  /** Apple's signedDate of the newest data applied, so an older notification never overwrites a newer state. */
+  signedAt: timestamp("signed_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [index("apple_subscriptions_user_idx").on(t.userId)]);
+
+/** Processed App Store Server Notifications, for idempotency. */
+export const appleNotifications = pgTable("apple_notifications", {
+  id: text("id").primaryKey(),
+  type: text("type").notNull(),
+  processedAt: timestamp("processed_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 /** Processed Stripe webhook events, for idempotency. */
 export const stripeEvents = pgTable("stripe_events", {
   id: text("id").primaryKey(),
@@ -188,6 +221,45 @@ export const aiUsage = pgTable("ai_usage", {
   period: text("period").notNull(),
   count: integer("count").notNull().default(0),
 }, t => [primaryKey({ columns: [t.userId, t.period] })]);
+
+/**
+ * One row per use of an AI allowance (replaces counting in ai_usage). `quota`
+ * is the allowance (assist, journal, assessment, thought), `period` the pool
+ * it was charged to: a week ("week:2026-11-09"), a month ("month:2026-11") or
+ * a one-time pool ("once:first"). The count of rows in a period is the usage.
+ *
+ * `idem_key` makes a charge idempotent: the same key is never charged twice
+ * (a repeated or parallel request finds the row). It is cleared once an AI
+ * request has finished, so a deliberate new request can be charged again;
+ * one-time pools keep theirs (a session is charged once, ever). Refunding a
+ * failed call deletes exactly its row. Never holds content.
+ */
+export const quotaUses = pgTable("quota_uses", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  quota: text("quota").notNull(),
+  period: text("period").notNull(),
+  idemKey: text("idem_key"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [
+  index("quota_uses_user_period_idx").on(t.userId, t.quota, t.period),
+  uniqueIndex("quota_uses_idem_idx").on(t.userId, t.idemKey),
+]);
+
+/**
+ * One-time grants per account, e.g. the 7-day Premium trial ("premium_trial").
+ * The primary key makes each grant startable once per account; it does not
+ * come back after signing out or reinstalling. No card, no renewal: when
+ * `ends_at` passes the member is simply on Free again. `completed_at` marks
+ * that the end was recorded for analytics.
+ */
+export const entitlementGrants = pgTable("entitlement_grants", {
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  kind: text("kind").notNull(),
+  startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+  endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+}, t => [primaryKey({ columns: [t.userId, t.kind] })]);
 
 /**
  * AI cost tracking: token counts, estimated cost and outcome only, never

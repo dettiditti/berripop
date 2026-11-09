@@ -92,6 +92,20 @@
       "when": 1794162929565,
       "tag": "0012_journal_moods",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1794206332205,
+      "tag": "0013_apple_purchases",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1794243973807,
+      "tag": "0014_quotas_and_trial",
+      "breakpoints": true
     }
   ]
 }

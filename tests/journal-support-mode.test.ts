@@ -37,10 +37,11 @@ vi.mock("../lib/server/legal", () => ({ aiAllowedFor: async () => true }));
 vi.mock("../lib/server/analytics", () => ({ track: vi.fn() }));
 vi.mock("../lib/server/progress", () => ({ grantGrowthXp: vi.fn() }));
 vi.mock("../lib/server/entitlements", () => ({
-  consumeAiAllowance: async () => true,
-  refundAiAllowance: async () => {},
   getAiUsage: async () => ({ used: 0, limit: 3, remaining: 3, reached: false, resets: "2026-11-02" }),
-  getUserEntitlements: async () => ({ limits: { insightContext: false, weeklyJournal: false } }),
+  reserveAi: async (...a: unknown[]) => ((await ((async () => true) as (...x: unknown[]) => Promise<boolean>)(...a)) ? { ok: true, reservation: { id: "q1", period: "week:2026-11-09" } } : { ok: false, reason: "limit" }),
+  releaseQuota: async () => {},
+  settleQuota: async () => {},
+  getUserEntitlements: async () => ({ tier: "free", limits: { insightContext: false, weeklyJournal: false, aiMonthlyCostCapMicroUsd: 1_000_000 } }),
   canAccessWeeklyJournal: async () => false,
 }));
 

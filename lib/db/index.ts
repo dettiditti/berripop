@@ -16,3 +16,15 @@ export function getDb() {
   if (!db) db = createDb();
   return db;
 }
+
+let rawSql: ReturnType<typeof neon> | null = null;
+
+/** The raw driver, for statements that must run in one transaction (sql.transaction). */
+export function getSql() {
+  if (!rawSql) {
+    const url = process.env.DATABASE_URL;
+    if (!url) throw new Error("DATABASE_URL is not set. Run `vercel env pull .env.local`.");
+    rawSql = neon(url);
+  }
+  return rawSql;
+}

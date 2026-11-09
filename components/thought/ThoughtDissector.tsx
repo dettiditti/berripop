@@ -376,7 +376,7 @@ export default function ThoughtDissector({ source, onClose, notify, onJournalCha
             <BerripopMascot mood="happy" size={90} />
             <h2 id="thought-pay-title">{c.paywall.title}</h2>
             <p>{c.paywall.body}</p>
-            <p className="muted">{c.paywall.resets(date(state.quota.resets))}</p>
+            <p className="muted">{state.quota.resets ? c.paywall.resets(date(state.quota.resets)) : c.paywall.once}</p>
             {!inApp && <Link className="btn btn--primary btn--block" href="/pricing?from=thought" onClick={premium}><Gem size={17} /> {c.paywall.cta}</Link>}
             <button className="btn btn--ghost btn--block" onClick={() => setPaywall(false)}>{c.paywall.later}</button>
           </div>
@@ -390,9 +390,10 @@ type C = (typeof THOUGHT_COPY)["hu"];
 
 function Quota({ state, c }: { state: ThoughtState; c: C }) {
   if (state.plan !== "free") return null;
+  const once = state.quota.resets === null;
   return (
     <span className={`thought-quota ${state.quota.remaining === 0 ? "is-empty" : ""}`}>
-      <Sparkles size={15} aria-hidden /> {state.quota.remaining > 0 ? c.quota(state.quota.remaining) : c.quotaEmpty}
+      <Sparkles size={15} aria-hidden /> {state.quota.remaining > 0 ? (once ? c.quotaOnce : c.quota)(state.quota.remaining) : once ? c.quotaOnceEmpty : c.quotaEmpty}
     </span>
   );
 }

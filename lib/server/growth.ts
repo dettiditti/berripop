@@ -82,8 +82,8 @@ const languageName = (locale: Locale) => (locale === "hu" ? "Hungarian" : "Engli
 type AiError = "limit_ai" | "ai_unavailable" | "ai_consent_required";
 
 /** One metered AI call on the "assist" allowance; see lib/server/ai.ts. An empty response counts as unusable. */
-async function metered(userId: string, feature: string, instructions: string, prompt: string, maxOutputTokens: number): Promise<{ ok: true; text: string } | { ok: false; error: AiError }> {
-  const out = await runMeteredAi(userId, "assist", { feature, instructions, prompt, maxOutputTokens, parse: text => text.trim() || null });
+async function metered(userId: string, feature: string, instructions: string, prompt: string, maxOutputTokens: number, idempotencyKey: string): Promise<{ ok: true; text: string } | { ok: false; error: AiError }> {
+  const out = await runMeteredAi(userId, "assist", { feature, instructions, prompt, maxOutputTokens, idempotencyKey, parse: text => text.trim() || null });
   if (out.ok) return { ok: true, text: out.value };
   if (out.reason === "limit") await track(userId, "ai_allowance_reached", { context: feature === "weekly_summary" ? "summary" : "ai" });
   return { ok: false, error: out.error };
@@ -109,7 +109,7 @@ export async function aiFollowUp(
   ].join(" ");
   const answer = input.answerText.trim().slice(0, 2000);
   const prompt = `Question: ${questionText(q, dictionaries[locale])}\nTheir answer so far: ${answer || "(not written yet)"}`;
-  const out = await metered(userId, "follow_up", instructions, prompt, 250);
+  const out = await metered(userId, "follow_up", instructions, prompt, 250, `follow_up:${input.circleId ?? "personal"}:${input.questionRef}`);
   if (!out.ok) return out;
   return { ok: true, question: out.text.replace(/^["„“]|["”]$/g, ""), snapshot: await loadSnapshot(userId, input.circleId) };
 }
@@ -146,7 +146,7 @@ export async function weeklySummary(
     "Write a short weekly reflection (at most 120 words) based only on their own answers: name recurring themes in their own words, then offer 1-2 small next steps framed as optional ideas.",
     "Never diagnose, label their personality, or claim to know how they feel. No headings.",
   ].join(" ");
-  const out = await metered(userId, "weekly_summary", instructions, material, 700);
+  const out = await metered(userId, "weekly_summary", instructions, material, 700, `weekly_summary:${input.circleId ?? "all"}`);
   if (!out.ok) return out;
   return { ok: true, summary: out.text, snapshot: await loadSnapshot(userId, input.circleId) };
 }

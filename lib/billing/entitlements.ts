@@ -1,6 +1,6 @@
-import { isPaidPlan, PLAN_LIMITS, type BillingInterval, type PlanId, type PlanLimits } from "./plans";
+import { isPaidPlan, PLAN_LIMITS, TRIAL_DAYS, type BillingInterval, type PlanId, type PlanLimits, type Tier } from "./plans";
 
-/** The subscription facts we persist from Stripe. */
+/** The subscription facts we persist from Stripe (App Store subscriptions are mapped to the same shape). */
 export type SubscriptionRecord = {
   status: string;
   planId: string;
@@ -20,8 +20,35 @@ export type Entitlements = {
   paymentIssue: boolean;
   /** The subscription ended (canceled, unpaid or expired); the user is back on Free. */
   ended: boolean;
+  /** Which limits apply: the plan, or "trial" while a Free member's 7-day trial runs. */
+  tier: Tier;
+  /** The one-time 7-day trial: not started yet, running (until endsAt), or used. */
+  trial: TrialState;
   limits: PlanLimits;
+  /** Where the paid plan is bought and managed: the website (Stripe) or the App Store. Null on Free. */
+  source: "stripe" | "apple" | null;
 };
+
+export type TrialState = { status: "available" | "active" | "used"; endsAt: string | null };
+
+/** The trial grant as stored (entitlement_grants, kind "premium_trial"). */
+export type TrialGrant = { startedAt: Date; endsAt: Date };
+
+export const PREMIUM_TRIAL = "premium_trial";
+
+/** When a trial started now would end. */
+export const trialEndsAt = (now: Date) => new Date(now.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
+
+/**
+ * Applies the trial: only a member on Free gets the trial limits while it
+ * runs. A paying member keeps their plan's limits; billing never changes.
+ */
+export function withTrial(ent: Entitlements, grant: TrialGrant | null, now: Date): Entitlements {
+  const trial: TrialState = !grant ? { status: "available", endsAt: null }
+    : { status: grant.endsAt.getTime() > now.getTime() ? "active" : "used", endsAt: grant.endsAt.toISOString() };
+  const tier: Tier = trial.status === "active" && ent.plan === "free" ? "trial" : ent.plan;
+  return { ...ent, trial, tier, limits: PLAN_LIMITS[tier] };
+}
 
 /**
  * The stored paid plan (Premium or Premium Plus) while Stripe reports an active
@@ -45,7 +72,10 @@ export function entitlementsFrom(sub: SubscriptionRecord | null): Entitlements {
     cancelAtPeriodEnd: !!sub?.cancelAtPeriodEnd && paid,
     paymentIssue: status === "past_due",
     ended: ENDED_STATUSES.has(status),
+    tier: plan,
+    trial: { status: "available", endsAt: null },
     limits: PLAN_LIMITS[plan],
+    source: paid ? "stripe" : null,
   };
 }
 

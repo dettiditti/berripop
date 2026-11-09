@@ -1,11 +1,14 @@
 import "server-only";
 import { generateText } from "ai";
+import { sql } from "drizzle-orm";
 import { getDb } from "../db";
 import { aiCalls } from "../db/schema";
-import { DEFAULT_AI_MODEL } from "../billing/plans";
+import { AI_ALLOWANCE_TIME_ZONE, DEFAULT_AI_MODEL } from "../billing/plans";
+import type { Reservation } from "../billing/quota";
 import { CURRENT_PRICE_LIST } from "../ai/prices";
 import { reasoningFor, runAiCall, type AiOutcome, type AiRequest, type GenerateFn } from "../ai/run";
-import { consumeAiAllowance, refundAiAllowance, type AiBucket } from "./entitlements";
+import { getUserEntitlements, releaseQuota, reserveAi, settleQuota, type AiBucket } from "./entitlements";
+import { track } from "./analytics";
 import { aiAllowedFor } from "./legal";
 
 /*
@@ -50,17 +53,48 @@ export function aiConfigured() {
 /** The configured default model (AI_GATEWAY_MODEL overrides it). */
 export const defaultAiModel = () => process.env.AI_GATEWAY_MODEL || DEFAULT_AI_MODEL;
 
+const TRACK_CONTEXT: Record<AiBucket, string> = { assist: "ai", journal: "journal", assessment: "assessment" };
+
 /**
- * Runs one AI request against the user's allowance bucket. The allowance is
- * reserved and refunded for the same period, even if the call crosses the
- * weekly reset.
+ * Runs one AI request against the user's allowance bucket. The use is
+ * reserved before the call and given back exactly once if the call fails.
+ *
+ * `idempotencyKey` names the operation (e.g. a reflection on one entry): while
+ * it runs, the same operation again is refused as "duplicate" instead of being
+ * charged and sent twice. Once it has finished the key is free again.
  */
-export async function runMeteredAi<T>(userId: string, bucket: AiBucket, req: Omit<AiRequest<T>, "model"> & { model?: string }): Promise<AiOutcome<T>> {
+export async function runMeteredAi<T>(userId: string, bucket: AiBucket, req: Omit<AiRequest<T>, "model"> & { model?: string; idempotencyKey?: string }): Promise<AiOutcome<T>> {
   const now = new Date();
-  return runSlottedAi(userId, req, {
-    reserve: () => consumeAiAllowance(userId, now, bucket),
-    release: () => refundAiAllowance(userId, now, bucket),
+  let held: Reservation | null = null;
+  const { idempotencyKey, ...rest } = req;
+  const out = await runSlottedAi(userId, rest, {
+    reserve: async () => {
+      const r = await reserveAi(userId, bucket, { idempotencyKey, now });
+      if (r.ok) held = r.reservation;
+      return r.ok ? true : r.reason === "duplicate" ? "duplicate" : false;
+    },
+    release: async () => { if (held) await releaseQuota(userId, held); },
+    commit: async () => { if (held) await settleQuota(userId, held); },
   });
+  if (!out.ok && out.reason === "limit") {
+    const ent = await getUserEntitlements(userId);
+    if (ent.tier === "free") await track(userId, "free_quota_exhausted", { context: TRACK_CONTEXT[bucket] });
+  }
+  return out;
+}
+
+/** Estimated AI cost of the member's calls this calendar month (Budapest), in micro-USD. */
+export async function monthlyAiCost(userId: string): Promise<number> {
+  try {
+    const res = await getDb().execute(sql`
+      select coalesce(sum(cost_micro_usd), 0)::bigint as total from ai_calls
+      where user_id = ${userId}
+        and created_at >= (date_trunc('month', now() at time zone ${AI_ALLOWANCE_TIME_ZONE}) at time zone ${AI_ALLOWANCE_TIME_ZONE})`);
+    return Number((res.rows[0] as { total?: unknown } | undefined)?.total ?? 0);
+  } catch {
+    // The safety net never takes AI down; the allowances still apply.
+    return 0;
+  }
 }
 
 /**
@@ -70,15 +104,22 @@ export async function runMeteredAi<T>(userId: string, bucket: AiBucket, req: Omi
 export async function runSlottedAi<T>(
   userId: string,
   req: Omit<AiRequest<T>, "model"> & { model?: string },
-  slot: { reserve: () => Promise<boolean>; release: () => Promise<void> },
+  slot: { reserve: () => Promise<boolean | "duplicate">; release: () => Promise<void>; commit?: () => Promise<void> },
 ): Promise<AiOutcome<T>> {
   if (!aiConfigured()) return { ok: false, error: "ai_unavailable", reason: "error" };
   // Nothing reaches the AI provider without the member's current consent (when required).
   if (!(await aiAllowedFor(userId))) return { ok: false, error: "ai_consent_required", reason: "error" };
+  // Safety net above every allowance: an anomaly (a bug, a price change) can't run up costs.
+  const cap = (await getUserEntitlements(userId)).limits.aiMonthlyCostCapMicroUsd;
+  if ((await monthlyAiCost(userId)) >= cap) {
+    await track(userId, "ai_cost_cap_reached");
+    return { ok: false, error: "limit_ai", reason: "cost_cap" };
+  }
   return runAiCall({ ...req, model: req.model ?? defaultAiModel() }, {
     generate: testGenerator ?? gatewayGenerate,
     reserve: slot.reserve,
     release: slot.release,
+    commit: slot.commit,
     priceVersion: CURRENT_PRICE_LIST.version,
     record: async r => {
       await getDb().insert(aiCalls).values({

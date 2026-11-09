@@ -1,17 +1,55 @@
 import "server-only";
 import { and, eq, sql } from "drizzle-orm";
 import { getDb } from "../db";
-import { aiUsage, circleMembers, growthGoals, subscriptions } from "../db/schema";
-import { allowance, entitlementsFrom, type Entitlements } from "../billing/entitlements";
-import { aiPeriodKey, aiPeriodResets } from "../billing/plans";
+import { appleSubscriptions, circleMembers, entitlementGrants, growthGoals, subscriptions } from "../db/schema";
+import { combinedEntitlements, type AppleRow } from "../billing/apple";
+import { allowance, PREMIUM_TRIAL, type Entitlements, type TrialGrant } from "../billing/entitlements";
+import { aiPeriodResets, type QuotaKey } from "../billing/plans";
+import { poolPeriod, poolsFor, type ReserveResult } from "../billing/quota";
+import { quotaUsage, releaseQuota, reserveQuota, settleQuota } from "./quota";
 
 /**
  * The single place that decides what a user may do. Reads only trusted,
  * server-side subscription state. UI checks are convenience; these are authority.
  */
 export async function getUserEntitlements(userId: string): Promise<Entitlements> {
-  const [row] = await getDb().select().from(subscriptions).where(eq(subscriptions.userId, userId)).limit(1);
-  return entitlementsFrom(row ?? null);
+  const [[row], apple, trial] = await Promise.all([
+    getDb().select().from(subscriptions).where(eq(subscriptions.userId, userId)).limit(1),
+    appleRows(userId),
+    trialGrant(userId),
+  ]);
+  return combinedEntitlements(row ?? null, apple, new Date(), trial);
+}
+
+/** Before a migration has run its table does not exist (42P01): treated as empty. */
+const missingTable = (err: unknown) => {
+  const e = err as { code?: unknown; cause?: { code?: unknown } };
+  return e?.code === "42P01" || e?.cause?.code === "42P01";
+};
+
+/** The member's 7-day trial, if it was ever started; none before the entitlement_grants migration has run. */
+async function trialGrant(userId: string): Promise<TrialGrant | null> {
+  try {
+    const [g] = await getDb().select({ startedAt: entitlementGrants.startedAt, endsAt: entitlementGrants.endsAt }).from(entitlementGrants)
+      .where(and(eq(entitlementGrants.userId, userId), eq(entitlementGrants.kind, PREMIUM_TRIAL))).limit(1);
+    return g ?? null;
+  } catch (err) {
+    if (missingTable(err)) return null;
+    throw err;
+  }
+}
+
+/** The member's App Store subscriptions; none before the apple_subscriptions migration has run. */
+async function appleRows(userId: string): Promise<AppleRow[]> {
+  try {
+    return await getDb().select({
+      planId: appleSubscriptions.planId, interval: appleSubscriptions.interval, status: appleSubscriptions.status,
+      expiresAt: appleSubscriptions.expiresAt, autoRenew: appleSubscriptions.autoRenew,
+    }).from(appleSubscriptions).where(eq(appleSubscriptions.userId, userId));
+  } catch (err) {
+    if (missingTable(err)) return [];
+    throw err;
+  }
 }
 
 export async function canCreateGrowthGoal(userId: string): Promise<boolean> {
@@ -31,45 +69,46 @@ export async function canAccessWeeklySummary(userId: string): Promise<boolean> {
 }
 
 /**
- * Two separate weekly allowances: "assist" (follow-up questions, weekly summary)
- * and "journal" (journal reflections). Same reset policy.
+ * The AI allowances (PLAN_QUOTAS in lib/billing/plans.ts): "assist" (follow-up
+ * questions, weekly summary), "journal" (journal reflections, check-ins,
+ * Gondolatboncoló patterns), "assessment" (My Path, goal journeys) and
+ * "thought" (Gondolatboncoló sessions, see lib/server/thought.ts).
  */
-export type AiBucket = "assist" | "journal" | "assessment";
-const periodFor = (bucket: AiBucket, now: Date) => (bucket === "assist" ? aiPeriodKey(now) : `${bucket}:${aiPeriodKey(now)}`);
-const limitFor = (ent: Entitlements, bucket: AiBucket) =>
-  bucket === "journal" ? ent.limits.journalAiPerPeriod : bucket === "assessment" ? ent.limits.assessmentAiPerPeriod : ent.limits.aiPerPeriod;
+export type AiBucket = Exclude<QuotaKey, "thought">;
 
 export async function getAiUsage(userId: string, now = new Date(), bucket: AiBucket = "assist") {
   const ent = await getUserEntitlements(userId);
-  const period = periodFor(bucket, now);
-  const [row] = await getDb().select({ count: aiUsage.count }).from(aiUsage).where(and(eq(aiUsage.userId, userId), eq(aiUsage.period, period))).limit(1);
-  return { ...allowance(row?.count ?? 0, limitFor(ent, bucket)), resets: aiPeriodResets(now) };
+  const u = await quotaUsage(userId, ent.tier, bucket, now);
+  return { ...allowance(u.used, u.limit), resets: u.resets ?? aiPeriodResets(now) };
 }
 
 /**
- * Atomically reserves one AI interaction. A single conditional upsert means
- * concurrent requests can never push the count past the limit.
- * Returns false when the allowance is used up.
+ * Reserves one use of the member's allowance for their current tier.
+ * Concurrent requests can never push usage past the limit (one transaction
+ * per member, see lib/billing/quota.ts). Pass an idempotency key to make a
+ * repeated request "duplicate" instead of a second charge.
  */
-export async function consumeAiAllowance(userId: string, now = new Date(), bucket: AiBucket = "assist"): Promise<boolean> {
+export async function reserveAi(userId: string, bucket: QuotaKey, opts: { idempotencyKey?: string; now?: Date } = {}): Promise<ReserveResult> {
   const ent = await getUserEntitlements(userId);
-  const limit = limitFor(ent, bucket);
-  if (limit <= 0) return false;
-  const period = periodFor(bucket, now);
-  const result = await getDb().execute(sql`
-    insert into ai_usage (user_id, period, count) values (${userId}, ${period}, 1)
-    on conflict (user_id, period) do update set count = ai_usage.count + 1
-    where ai_usage.count < ${limit}
-    returning count`);
-  return result.rows.length > 0;
+  return reserveQuota(userId, ent.tier, bucket, opts);
 }
 
-/** Gives a reserved interaction back when the AI call itself failed. */
-export async function refundAiAllowance(userId: string, now = new Date(), bucket: AiBucket = "assist"): Promise<void> {
-  await getDb().execute(sql`
-    update ai_usage set count = count - 1
-    where user_id = ${userId} and period = ${periodFor(bucket, now)} and count > 0`);
+/** For scripts and simple callers: reserves one use without a key; false when used up. */
+export async function consumeAiAllowance(userId: string, now = new Date(), bucket: AiBucket = "assist"): Promise<boolean> {
+  return (await reserveAi(userId, bucket, { now })).ok;
 }
+
+/** For scripts: gives back the newest use of this allowance in its current windows. */
+export async function refundAiAllowance(userId: string, now = new Date(), bucket: AiBucket = "assist"): Promise<void> {
+  const ent = await getUserEntitlements(userId);
+  const periods = poolsFor(ent.tier, bucket).map(p => poolPeriod(p, now));
+  await getDb().execute(sql`
+    delete from quota_uses where id = (
+      select id from quota_uses where user_id = ${userId} and quota = ${bucket} and period in (${sql.join(periods.map(p => sql`${p}`), sql`, `)})
+      order by created_at desc limit 1)`);
+}
+
+export { releaseQuota, settleQuota };
 
 export async function canAccessWeeklyJournal(userId: string): Promise<boolean> {
   return (await getUserEntitlements(userId)).limits.weeklyJournal;

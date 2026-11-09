@@ -57,10 +57,12 @@ export type AiCallRecord = TokenUsage & {
 
 export type AiDeps = {
   generate: GenerateFn;
-  /** Reserves one use of the allowance; false when it is used up. */
-  reserve: () => Promise<boolean>;
+  /** Reserves one use of the allowance; false when it is used up, "duplicate" when the same request is already charged. */
+  reserve: () => Promise<boolean | "duplicate">;
   /** Gives the reserved use back. Called at most once per call. */
   release: () => Promise<void>;
+  /** The request succeeded: the use stays charged (e.g. frees its idempotency key). Optional. */
+  commit?: () => Promise<void>;
   record: (r: AiCallRecord) => Promise<void>;
   priceVersion?: string;
   sleep?: (ms: number) => Promise<void>;
@@ -79,7 +81,8 @@ export type AiRequest<T> = {
   abortSignal?: AbortSignal;
 };
 
-export type AiFailureReason = "limit" | "error" | "timeout" | "aborted" | "parse_failed";
+/** "duplicate": the same request is already charged and running (or done); "cost_cap": the monthly cost safety net. */
+export type AiFailureReason = "limit" | "error" | "timeout" | "aborted" | "parse_failed" | "duplicate" | "cost_cap";
 
 export type AiOutcome<T> =
   | { ok: true; value: T }
@@ -110,7 +113,10 @@ export function classifyError(err: unknown, signal?: AbortSignal): { status: AiC
 }
 
 export async function runAiCall<T>(req: AiRequest<T>, deps: AiDeps): Promise<AiOutcome<T>> {
-  if (!(await deps.reserve())) return { ok: false, error: "limit_ai", reason: "limit" };
+  const reserved = await deps.reserve();
+  // A repeat of a request in progress: never a second charge, never a second AI call.
+  if (reserved === "duplicate") return { ok: false, error: "ai_unavailable", reason: "duplicate" };
+  if (!reserved) return { ok: false, error: "limit_ai", reason: "limit" };
 
   let released = false;
   const releaseOnce = async () => {
@@ -174,6 +180,11 @@ export async function runAiCall<T>(req: AiRequest<T>, deps: AiDeps): Promise<AiO
       return { ok: false, error: "ai_unavailable", reason: "parse_failed" };
     }
     await record({ ...usage, status: "ok", errorKind: null, costMicroUsd, attempts });
+    try {
+      await deps.commit?.();
+    } catch {
+      // The use stays charged either way; only its key stays taken a little longer.
+    }
     return { ok: true, value };
   }
 }

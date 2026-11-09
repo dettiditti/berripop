@@ -74,7 +74,7 @@ export default function SettingsPage() {
         await signOut({ redirectUrl: "/" });
         return;
       }
-      setDeleteError(r.error === "active_subscription" ? a.deleteSubBlock : a.deleteError);
+      setDeleteError(r.error === "active_subscription" ? (snapshot?.account.entitlements.source === "apple" ? a.deleteSubBlockApple : a.deleteSubBlock) : a.deleteError);
     } catch {
       setDeleteError(a.deleteError);
     }
@@ -152,7 +152,7 @@ export default function SettingsPage() {
             <section className="card stack-sm settings-danger" aria-labelledby="set-delete">
               <h2 id="set-delete">{a.deleteTitle}</h2>
               <p>{a.deleteBody}</p>
-              {blocked ? <p className="field-hint">{a.deleteSubBlock}</p> : (
+              {blocked ? <p className="field-hint">{account?.entitlements.source === "apple" ? a.deleteSubBlockApple : a.deleteSubBlock}</p> : (
                 <form className="stack-sm" onSubmit={e => { e.preventDefault(); void remove(); }}>
                   <label className="field-label" htmlFor="set-delete-confirm">{t(a.deleteConfirmLabel, { word: a.deleteWord })}</label>
                   <input id="set-delete-confirm" className="input" value={confirm} autoComplete="off" onChange={e => setConfirm(e.target.value)} />

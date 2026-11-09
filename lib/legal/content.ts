@@ -4,7 +4,8 @@ import type { Locale } from "../i18n/config";
  * Public legal texts (Hungarian and English), written from what the app
  * actually does (checked against the code on 2026-10-27): Clerk sign-in
  * (email or Google), Neon database (us-east-1), Vercel hosting, OpenAI via
- * Vercel, Stripe payments and Customer Portal, first-party product events
+ * Vercel, Stripe payments and Customer Portal, App Store in-app purchases
+ * (StoreKit 2, verified on the server; 2026-11-09), first-party product events
  * (`funnel_events`, unlinked on account deletion), cookieless Vercel Web
  * Analytics, Google Fonts, no analytics or advertising cookies.
  *
@@ -29,7 +30,7 @@ type LegalSet = {
 
 const hu: LegalSet = {
   back: "Vissza a Berripophoz",
-  updated: "Utolsó módosítás: 2026. november 6.",
+  updated: "Utolsó módosítás: 2026. november 9.",
   version: "Dokumentumverzió: {v}",
   nav: { privacy: "Adatkezelési tájékoztató", terms: "Felhasználási feltételek", cookies: "Cookie-tájékoztató", contact: "Kapcsolat" },
   docs: {
@@ -45,9 +46,12 @@ const hu: LegalSet = {
           "Haladás: teljesített utazásnapok és napi kérdések dátuma, XP, jelvények. Ezek nem tartalmaznak szöveget, csak azt, hogy mit és mikor teljesítettél.",
           "Körök: tagság és szerep, valamint a kör tevékenységnaplója (például ki csatlakozott vagy ki válaszolt), válaszszöveg nélkül. A köri válaszaidat a kör tagjai csak akkor látják, ha megosztod őket.",
           "Előfizetés: csomag, állapot, számlázási időszak vége és a Stripe-ügyfélazonosító. A bankkártya-adatokat kizárólag a Stripe kezeli, mi nem látjuk őket.",
+          "App Store-előfizetés (ha az iPhone-appban vásárolsz): a csomag, az Apple tranzakcióazonosítója, a lejárat és a megújulás állapota, valamint hogy éles vagy tesztvásárlás volt. A fizetést az Apple kezeli; a fizetési adataidat és az Apple ID-dat mi nem látjuk. Az appban vásárláskor az Apple-nek egy fiókodhoz kötött, véletlenszerűnek tűnő azonosítót adunk át (nem a neved vagy az e-mail-címed), hogy a vásárlás a te Berripop-fiókodhoz kerüljön.",
+          "Regisztráció helye: hogy a fiókodat a weboldalon vagy az iPhone-appban hoztad létre.",
           "Számlázási adatok: a fizetéskor a Stripe-nál megadott neved, számlázási címed és e-mail-címed, amelyekkel a számlát kiállítjuk. A saját adatbázisunkban a számlák azonosítóját, összegét, állapotát és sorszámát tároljuk.",
           "Nyilatkozatok: a Felhasználási feltételek elfogadása és az AI-feldolgozáshoz adott vagy visszavont hozzájárulás, a szöveg verziójával és az időponttal; valamint az, hogy a fizetés előtt melyik tájékoztató-változatot láttad.",
-          "AI-használat: funkció, modell, tokenszám, becsült költség és időpont. A kérések és válaszok szövegét ebben a naplóban nem tároljuk.",
+          "AI-használat: funkció, modell, tokenszám, becsült költség és időpont, valamint a keretek felhasználása (melyik keretből, mikor). A kérések és válaszok szövegét ezekben nem tároljuk.",
+          "Ismerkedő hét: a 7 napos próba kezdete és vége, hogy fiókonként egyszer legyen elindítható.",
           "Termékesemények: például regisztráció, első cél, az alkalmazás napi megnyitása vagy előfizetés indítása. Az esemény neve és időpontja, és ahol releváns, a csomag és az alkalmazásnak az a része, ahol történt. Tartalmat nem tárolunk benne.",
           "Mobilapp-értesítő: ha a honlapon feliratkozol, hogy szóljunk, amikor megjelenik a mobilapp, az e-mail-címed, a választott nyelv, a feliratkozás időpontja és annak a hozzájárulási szövegnek a verziója, amelyet elfogadtál. Ehhez nem kell fiók, és a címet nem kapcsoljuk fiókhoz.",
           "Technikai adatok: a tárhely- és bejelentkezési szolgáltatók a működéshez és a biztonsághoz naplózhatnak IP-címet, böngésző- és eszközadatokat.",
@@ -56,6 +60,7 @@ const hu: LegalSet = {
           "A fiók létrehozása és a szolgáltatás nyújtása (célok, napló, körök, felmérés). Jogalap: szerződés teljesítése (GDPR 6. cikk (1) b) pont).",
           "AI-funkciók, kizárólag a kifejezett kérésedre és a külön hozzájárulásod alapján. Jogalap: hozzájárulás (GDPR 6. cikk (1) a) pont, és ha a szöveg különleges adatot tartalmaz, 9. cikk (2) a) pont). A hozzájárulást az első AI-kérésednél kérjük, és bármikor visszavonhatod a Beállításokban.",
           "Előfizetés a Stripe-on keresztül és a számla kiállítása. Jogalap: szerződés teljesítése és jogi kötelezettség (GDPR 6. cikk (1) b) és c) pont).",
+          "Előfizetés az App Store-on keresztül: a vásárlás ellenőrzése és a fizetős funkciók bekapcsolása. Jogalap: szerződés teljesítése (GDPR 6. cikk (1) b) pont).",
           "A rendszer biztonsága, a hibák javítása és a termék fejlesztését segítő, tartalom nélküli mérés. Jogalap: jogos érdek (GDPR 6. cikk (1) f) pont). Ez ellen bármikor tiltakozhatsz.",
           "Értesítés a mobilapp megjelenéséről, ha feliratkozol rá. Jogalap: hozzájárulás (GDPR 6. cikk (1) a) pont). A címedet csak erre használjuk: hírlevelet és reklámot nem küldünk rá, és nem adjuk át senkinek marketingcélra.",
         ] },
@@ -70,15 +75,17 @@ const hu: LegalSet = {
           "Neon: adatbázis. Az adatok jelenleg az USA keleti régiójában (us-east-1) tárolódnak.",
           "Clerk: azonosítás és bejelentkezés, valamint a belépéshez szükséges e-mailek (például megerősítő kódok) küldése.",
           "Stripe: fizetés és előfizetés-kezelés.",
+          "Apple: az iPhone-appban indított vásárlásoknál a fizetést, a megújítást, a lemondást és a visszatérítést az Apple (az EU-ban az Apple Distribution International Ltd.) kezeli, a saját feltételei és adatkezelési tájékoztatója szerint. Tőle a vásárlás állapotát kapjuk meg.",
           "KBOSS.hu Kft. (Számlázz.hu; 1031 Budapest, Záhony utca 7.): a számlák kiállítása, megküldése és tárolása, valamint a számlaadatok jogszabály szerinti továbbítása a NAV-nak.",
           "OpenAI: AI-válaszok.",
           "Google: Google-bejelentkezés (ha ezt választod), valamint a betűtípusok betöltése a Google Fonts szolgáltatásból.",
         ] },
-        { heading: "Adattovábbítás az EGT-n kívülre", body: ["Több szolgáltató (Vercel, Neon, Clerk, Stripe, OpenAI, Google) az Egyesült Államokban is kezel adatot, és az adatbázisunk is ott található. A továbbítás az EU által elismert garanciák, az EU–USA adatvédelmi keretrendszer vagy az Európai Bizottság általános szerződési feltételei (SCC) alapján történik, az adott szolgáltató feltételei szerint."] },
+        { heading: "Adattovábbítás az EGT-n kívülre", body: ["Több szolgáltató (Vercel, Neon, Clerk, Stripe, Apple, OpenAI, Google) az Egyesült Államokban is kezel adatot, és az adatbázisunk is ott található. A továbbítás az EU által elismert garanciák, az EU–USA adatvédelmi keretrendszer vagy az Európai Bizottság általános szerződési feltételei (SCC) alapján történik, az adott szolgáltató feltételei szerint."] },
         { heading: "Meddig őrizzük az adatokat", body: [
           "A fiókodat és a tartalmaidat addig őrizzük, amíg nem törlöd őket vagy a fiókodat. A naplóbejegyzések egyenként és egyben is törölhetők.",
-          "Az AI-használati adatokat a fiók törléséig őrizzük. A termékeseményeket és a körök tevékenységnaplóját a fiók törlésekor leválasztjuk a fiókodról: ezután a fiókodhoz nem kapcsolva, összesített statisztikához maradnak meg.",
+          "Az AI-használati adatokat és az ismerkedő hét adatait a fiók törléséig őrizzük. A termékeseményeket és a körök tevékenységnaplóját a fiók törlésekor leválasztjuk a fiókodról: ezután a fiókodhoz nem kapcsolva, összesített statisztikához maradnak meg.",
           "A számlákat és a kiállításukhoz szükséges adatokat 8 évig őrizzük (ez lefedi az adójogszabályok szerinti elévülési időt), a fiók törlése után is, a fiókhoz nem kapcsolva. A Stripe a fizetési adatokat a saját feltételei és a jogszabályok szerint is tárolja; a Berripop-fiók törlése ezeket nem törli.",
+          "Az App Store-előfizetés adatait a fiók törléséig őrizzük. Az Apple a vásárlásaidat a saját feltételei szerint tárolja; a Berripop-fiók törlése ezeket nem törli, és az App Store-előfizetést sem mondja le.",
           "A Feltételek elfogadásáról és az AI-hozzájárulásról szóló nyilvántartást a fiók törléséig őrizzük.",
           "A panaszokat és az azokra adott válaszunkat három évig őrizzük (a fogyasztóvédelmi törvény 17/A. §-a szerint).",
           "A mobilapp-értesítő listáján szereplő e-mail-címet a megjelenésről szóló értesítés kiküldése után töröljük, vagy korábban, ha leiratkozol.",
@@ -86,7 +93,7 @@ const hu: LegalSet = {
         { heading: "A jogaid", list: [
           "Hozzáférés és adathordozhatóság: Beállítások → „Adataim letöltése” (JSON-fájl).",
           "Helyesbítés: a nevedet és a tartalmaidat az alkalmazásban szerkesztheted.",
-          "Törlés: Beállítások → „Fiók törlése”. Ez a bejelentkezési fiókodat és a tartalmaidat is véglegesen törli. Ha megújuló előfizetésed van, előbb azt kell lemondanod. A saját köreidet a legrégebbi másik tag kapja meg; ha nincs más tag, a kör is törlődik.",
+          "Törlés: Beállítások → „Fiók törlése”. Ez a bejelentkezési fiókodat és a tartalmaidat is véglegesen törli. Ha megújuló előfizetésed van, előbb azt kell lemondanod (az App Store-ban vásároltat az iPhone Beállítások → a neved → Előfizetések menüjében). A saját köreidet a legrégebbi másik tag kapja meg; ha nincs más tag, a kör is törlődik.",
           "Az adatkezelés korlátozása és tiltakozás: kérheted az adatkezelés korlátozását, és tiltakozhatsz a jogos érdeken alapuló adatkezelés ellen. Írj a novakbernadett94@gmail.com címre.",
           "Hozzájárulás visszavonása: ha egy adatkezelés hozzájáruláson alapul, azt bármikor visszavonhatod. Ez a korábbi, jogszerű adatkezelést nem érinti.",
           "Leiratkozás a mobilapp-értesítőről: írj a novakbernadett94@gmail.com címre, és töröljük a címedet a listáról.",
@@ -109,10 +116,10 @@ const hu: LegalSet = {
         { heading: "Fiók", body: ["A regisztrációhoz és a bejelentkezéshez a Clerk szolgáltatást használjuk. A fiókod biztonságáért te felelsz. A Berripop 16 éven aluliak számára nem használható.", "A feltételeket az alkalmazás első használata előtt fogadod el. A lényeges módosításokról előre, e-mailben vagy az alkalmazásban értesítünk; a folytatáshoz az új változatot is el kell fogadnod. Az elfogadás időpontját és a feltételek verzióját rögzítjük."] },
         { heading: "A tartalmaid", body: ["Az általad létrehozott tartalom a tiéd. A köri válaszaidat csak akkor látják a kör tagjai, ha megosztod őket. Ne ossz meg olyat, ami mások jogait sérti."] },
         { heading: "Csomagok és előfizetés", list: [
-          "Ingyenes csomag: 1 aktív cél, 1 saját kör, hetente 5 AI-segítség és 3 napló-reflexió.",
-          "Premium: 2 990 Ft/hó vagy 23 990 Ft/év. Premium Plus: 3 990 Ft/hó vagy 31 990 Ft/év. Mindkettő automatikusan megújul, amíg le nem mondod.",
+          "Ingyenes csomag: 1 aktív cél, 1 saját kör, hetente 2 AI-segítség és 1 napló-reflexió, valamint egy Gondolatboncoló-alkalom egyszer, a fiók teljes élettartama alatt (amikor a funkció elérhető).",
+          "Premium: 2 490 Ft/hó vagy 19 990 Ft/év. Premium Plus: 3 990 Ft/hó vagy 31 990 Ft/év. Mindkettő automatikusan megújul, amíg le nem mondod. Egy korábbi áron indult előfizetés a saját árán folytatódik, amíg nem váltasz csomagot.",
           "Csomagváltás (Premium és Premium Plus között): a számlázási portálon, ahol terhelés előtt látod az időarányos különbözetet.",
-          "A fizetős csomagok is heti AI-keretekkel működnek; egyik csomag sem korlátlan. Az aktuális keretek az Árak oldalon láthatók.",
+          "A fizetős csomagok is AI-keretekkel működnek (hetente, a Gondolatboncolónál havonta); egyik csomag sem korlátlan. Az aktuális keretek az Árak oldalon láthatók. Rendellenes használat ellen havi költségkorlát is véd; ez a keretek rendeltetésszerű használatánál nem lép működésbe.",
           "Lemondás: bármikor a számlázási portálon (Beállítások → Előfizetésem). A csomagod a kifizetett időszak végéig aktív marad.",
           "A fizetést a Stripe kezeli; a bankkártya-adataidat mi nem látjuk.",
           "A fizetéshez meg kell adnod a nevedet és a számlázási címedet; a számlát ezekkel az adatokkal állítjuk ki. Előfizetni jelenleg magyarországi számlázási címmel lehet.",
@@ -120,11 +127,25 @@ const hu: LegalSet = {
           "Minden fizetésről számlát állítunk ki a Számlázz.hu rendszerében, és e-mailben elküldjük. A Stripe fizetési visszaigazolása nem számla.",
           "A fizetős funkciók a sikeres fizetés után azonnal elérhetők.",
         ] },
+        { heading: "Ismerkedő hét (ingyenes próba)", list: [
+          "Fiókonként egyszer elindíthatsz egy 7 napos ismerkedő hetet. Ilyenkor a Premium funkcióit a próbahét kereteivel használhatod; ezek az Árak oldalon láthatók, és nem korlátlanok.",
+          "Az ismerkedő hét ingyenes: nem kell hozzá bankkártya vagy fizetési mód, és nem alakul át magától fizetős előfizetéssé. A hét végén az ingyenes csomagban folytatod; amit közben létrehoztál, megmarad.",
+          "Az ismerkedő hét alatt egy további Gondolatboncoló-alkalom is jár (amikor a funkció elérhető). Az ismerkedő hét nem indítható újra, kijelentkezés vagy az app újratelepítése után sem.",
+        ] },
+        { heading: "Vásárlás az iPhone-appban (App Store)", list: [
+          "Az iPhone-appban ugyanezeket a csomagokat az App Store-on keresztül, az Apple-fiókoddal fizetheted. Az árat az App Store mutatja vásárlás előtt; ez az Apple árszintjei miatt kis mértékben eltérhet a weboldalon látható ártól.",
+          "Az App Store-előfizetés automatikusan megújul ugyanilyen időtartamra, hacsak legalább 24 órával az időszak vége előtt le nem mondod. A megújítást, a csomagváltást és a lemondást az iPhone Beállítások → a neved → Előfizetések menüjében kezelheted; a csomagod a kifizetett időszak végéig aktív marad.",
+          "Az App Store-ban vásárolt előfizetés díját az Apple szedi be és kezeli. A vásárlásról az Apple küld visszaigazolást.",
+          "Visszatérítést az App Store-ban vásárolt előfizetésre az Apple-nél kérhetsz (reportaproblem.apple.com), az Apple feltételei szerint. A Berripop az App Store-ban vásárolt díjat nem tudja közvetlenül visszatéríteni.",
+          "Az iPhone-app használatára ezek a feltételek és az Apple általános licencszerződése (Licensed Application End User License Agreement) együtt vonatkoznak. Az appért és a tartalmáért a szolgáltató felel, nem az Apple.",
+          "Egy Berripop-fiókhoz egy előfizetés elég: ha a weboldalon már előfizettél, az appban nem kínálunk újabbat, és fordítva.",
+        ] },
         { heading: "Elállási jog és visszatérítés", body: [
           "Az előfizetés megkötésétől (az első sikeres fizetéstől) számított 14 napon belül indoklás nélkül elállhatsz a szerződéstől. Ilyenkor a teljes kifizetett díjat visszatérítjük, akkor is, ha a fizetős funkciókat már használtad.",
           "Az elálláshoz küldj egyértelmű nyilatkozatot e-mailben a novakbernadett94@gmail.com címre vagy postán a szolgáltató címére. Használhatod a lenti nyilatkozatmintát is, de nem kötelező. A határidő betartásához elég, ha a nyilatkozatot a határidő lejárta előtt elküldöd.",
           "A díjat haladéktalanul, de legkésőbb az elállásról való tudomásszerzésünktől számított 14 napon belül visszatérítjük, ugyanarra a fizetési módra, amellyel fizettél, többletköltség nélkül. Az elállással az előfizetés megszűnik, és a fiókod az ingyenes csomagra vált.",
           "Az automatikus megújulás nem új szerződés, ezért nem indít új elállási határidőt. A megújulást bármikor lemondhatod a kifizetett időszak végére.",
+          "Az App Store-ban vásárolt előfizetésnél az elállást és a visszatérítést az Apple-nél kérheted (reportaproblem.apple.com), mert a díjat az Apple kezeli.",
         ], list: [
           "Nyilatkozatminta – Címzett: Bujákné Novák Bernadett egyéni vállalkozó, 1151 Budapest, Sződliget utca 11., novakbernadett94@gmail.com",
           "Alulírott kijelentem, hogy gyakorlom elállási jogomat a Berripop-előfizetés (szolgáltatás nyújtása) iránti szerződés tekintetében.",
@@ -134,8 +155,8 @@ const hu: LegalSet = {
           "A fogyasztó aláírása (kizárólag papíron tett nyilatkozat esetén): …",
           "Kelt: …",
         ] },
-        { heading: "AI-funkciók", body: ["Az AI-válaszok tájékoztató jellegűek, és tévedhetnek. Az AI-funkciókra csomagonként eltérő heti keretek vonatkoznak."] },
-        { heading: "A fiók törlése", body: ["A fiókodat bármikor törölheted: Beállítások → „Fiók törlése”. Ha megújuló előfizetésed van, előbb azt kell lemondanod. A törlés végleges: a bejelentkezési fiókod és a tartalmaid törlődnek, és nem állíthatók vissza."] },
+        { heading: "AI-funkciók", body: ["Az AI-válaszok tájékoztató jellegűek, és tévedhetnek. Az AI-funkciókra csomagonként eltérő heti, havi vagy egyszeri keretek vonatkoznak."] },
+        { heading: "A fiók törlése", body: ["A fiókodat bármikor törölheted: Beállítások → „Fiók törlése”. Ha megújuló előfizetésed van, előbb azt kell lemondanod; az App Store-ban vásároltat az iPhone Beállításaiban, mert a fiók törlése magától nem mondja le. A törlés végleges: a bejelentkezési fiókod és a tartalmaid törlődnek, és nem állíthatók vissza."] },
         { heading: "Panaszkezelés", body: [
           "Panaszodat e-mailben a novakbernadett94@gmail.com címre, vagy postán a szolgáltató fenti címére küldheted. Írd meg, mire vonatkozik a panasz, és add meg a Berripop-fiókodhoz tartozó e-mail-címet, hogy beazonosíthassuk.",
           "Az írásbeli panaszra 30 napon belül írásban, érdemben válaszolunk. Ha a panaszt elutasítjuk, az álláspontunkat megindokoljuk, és megírjuk, melyik hatósághoz vagy békéltető testülethez fordulhatsz. A panaszt és a válaszunkat három évig megőrizzük.",
@@ -187,7 +208,7 @@ const hu: LegalSet = {
 
 const en: LegalSet = {
   back: "Back to Berripop",
-  updated: "Last updated: 6 November 2026",
+  updated: "Last updated: 9 November 2026",
   version: "Document version: {v}",
   nav: { privacy: "Privacy policy", terms: "Terms of service", cookies: "Cookie policy", contact: "Contact" },
   docs: {
@@ -203,9 +224,12 @@ const en: LegalSet = {
           "Progress: dates of completed journey days and daily questions, XP and badges. These contain no text, only what you completed and when.",
           "Circles: membership and role, and the circle's activity log (for example who joined or who answered), without answer text. Circle members only see your circle answers if you share them.",
           "Subscription: plan, status, end of the billing period and your Stripe customer ID. Card details are handled only by Stripe; we never see them.",
+          "App Store subscription (if you buy in the iPhone app): the plan, Apple's transaction ID, the expiry and renewal status, and whether it was a live or a test purchase. Apple handles the payment; we never see your payment details or your Apple ID. When you buy in the app we give Apple a random-looking identifier tied to your account (not your name or email address), so the purchase lands on your Berripop account.",
+          "Where you signed up: whether you created your account on the website or in the iPhone app.",
           "Billing details: the name, billing address and email address you give Stripe at checkout, which the invoice is issued with. Our own database stores each invoice's ID, amount, status and number.",
           "Statements: your acceptance of the Terms of Use and the consent to AI processing you gave or withdrew, with the text version and time; and which notice version you saw before paying.",
-          "AI usage: feature, model, token counts, estimated cost and time. This log doesn't store the text of requests or responses.",
+          "AI usage: feature, model, token counts, estimated cost and time, and how the allowances were used (which allowance, when). These don't store the text of requests or responses.",
+          "Trial week: when the 7-day trial started and ends, so it can be started once per account.",
           "Product events: for example sign-up, first goal, opening the app on a given day or starting a subscription. The event name and time and, where relevant, the plan and the part of the app where it happened. No content is stored in them.",
           "Phone-app notice: if you sign up on the website to hear when the phone app launches, your email address, the chosen language, the time you signed up and the version of the consent wording you agreed to. No account is needed, and the address is not linked to an account.",
           "Technical data: hosting and sign-in providers may log IP addresses, browser and device data for operation and security.",
@@ -214,6 +238,7 @@ const en: LegalSet = {
           "Creating your account and providing the service (goals, journal, circles, assessment). Legal basis: performance of a contract (GDPR Art. 6(1)(b)).",
           "AI features, only when you explicitly ask and based on your separate consent. Legal basis: consent (GDPR Art. 6(1)(a) and, where the text includes special category data, Art. 9(2)(a)). We ask for it the first time you use an AI feature, and you can withdraw it any time in Settings.",
           "Subscription via Stripe and issuing the invoice. Legal basis: contract and legal obligation (GDPR Art. 6(1)(b) and (c)).",
+          "Subscription via the App Store: verifying the purchase and turning on paid features. Legal basis: contract (GDPR Art. 6(1)(b)).",
           "System security, fixing errors and content-free measurement to improve the product. Legal basis: legitimate interest (GDPR Art. 6(1)(f)). You can object to this at any time.",
           "Letting you know when the phone app launches, if you sign up for it. Legal basis: consent (GDPR Art. 6(1)(a)). We use the address for this only: no newsletter or advertising, and we never pass it on to anyone for marketing.",
         ] },
@@ -228,15 +253,17 @@ const en: LegalSet = {
           "Neon: database. Data is currently stored in the US East region (us-east-1).",
           "Clerk: authentication and sign-in, including the emails needed to sign in (e.g. verification codes).",
           "Stripe: payments and subscription management.",
+          "Apple: for purchases started in the iPhone app, payment, renewal, cancellation and refunds are handled by Apple (in the EU, Apple Distribution International Ltd.) under its own terms and privacy policy. We receive the purchase's status from Apple.",
           "KBOSS.hu Kft. (Számlázz.hu; Záhony utca 7., 1031 Budapest): issuing, sending and storing invoices, and reporting invoice data to the Hungarian Tax Authority (NAV) as required by law.",
           "OpenAI: AI responses.",
           "Google: Google sign-in (if you choose it), and loading fonts from Google Fonts.",
         ] },
-        { heading: "Transfers outside the EEA", body: ["Several providers (Vercel, Neon, Clerk, Stripe, OpenAI, Google) also process data in the United States, where our database is also located. Transfers rely on safeguards recognised by the EU, the EU–US Data Privacy Framework or the European Commission's standard contractual clauses (SCC), under each provider's terms."] },
+        { heading: "Transfers outside the EEA", body: ["Several providers (Vercel, Neon, Clerk, Stripe, Apple, OpenAI, Google) also process data in the United States, where our database is also located. Transfers rely on safeguards recognised by the EU, the EU–US Data Privacy Framework or the European Commission's standard contractual clauses (SCC), under each provider's terms."] },
         { heading: "Retention", body: [
           "We keep your account and content until you delete them or your account. Journal entries can be deleted one by one or all at once.",
-          "AI usage data is kept until your account is deleted. When you delete your account, product events and circle activity entries are unlinked from it: they remain, no longer linked to your account, for aggregate statistics.",
+          "AI usage data and trial week data are kept until your account is deleted. When you delete your account, product events and circle activity entries are unlinked from it: they remain, no longer linked to your account, for aggregate statistics.",
           "Invoices and the data needed to issue them are kept for 8 years (which covers the limitation period under tax law), also after your account is deleted, no longer linked to it. Stripe also stores payment data under its own terms and the law; deleting your Berripop account doesn't delete it.",
+          "App Store subscription data is kept until your account is deleted. Apple keeps your purchases under its own terms; deleting your Berripop account doesn't delete them, and doesn't cancel the App Store subscription.",
           "Records of your acceptance of the Terms and of your AI consent are kept until your account is deleted.",
           "Complaints and our replies are kept for three years (as required by section 17/A of the Hungarian Consumer Protection Act).",
           "Email addresses on the phone-app notice list are deleted once the launch notice has been sent, or earlier if you unsubscribe.",
@@ -244,7 +271,7 @@ const en: LegalSet = {
         { heading: "Your rights", list: [
           "Access and portability: Settings → \"Download my data\" (JSON file).",
           "Rectification: you can edit your name and content in the app.",
-          "Erasure: Settings → \"Delete account\". This permanently deletes your sign-in account and your content. If you have a renewing subscription, cancel it first. Your own circles go to the longest-standing other member; a circle with no other member is deleted.",
+          "Erasure: Settings → \"Delete account\". This permanently deletes your sign-in account and your content. If you have a renewing subscription, cancel it first (one bought in the App Store under iPhone Settings → your name → Subscriptions). Your own circles go to the longest-standing other member; a circle with no other member is deleted.",
           "Restriction and objection: you can ask us to restrict processing and object to processing based on legitimate interest. Write to novakbernadett94@gmail.com.",
           "Withdrawing consent: where processing is based on consent, you can withdraw it any time. This doesn't affect earlier lawful processing.",
           "Unsubscribing from the phone-app notice: email novakbernadett94@gmail.com and we will remove your address from the list.",
@@ -267,10 +294,10 @@ const en: LegalSet = {
         { heading: "Account", body: ["Sign-up and sign-in use Clerk. You're responsible for keeping your account secure. Berripop is not for people under 16.", "You accept these terms before first using the app. We tell you about material changes in advance, by email or in the app; you need to accept the new version to continue. We record when you accepted and which version."] },
         { heading: "Your content", body: ["Content you create is yours. Circle members only see your circle answers if you share them. Don't share anything that infringes others' rights."] },
         { heading: "Plans and subscription", list: [
-          "Free plan: 1 active goal, 1 circle of your own, 5 AI assists and 3 journal reflections a week.",
-          "Premium: HUF 2,990 per month or HUF 23,990 per year. Premium Plus: HUF 3,990 per month or HUF 31,990 per year. Both renew automatically until you cancel.",
+          "Free plan: 1 active goal, 1 circle of your own, 2 AI assists and 1 journal reflection a week, plus one Thought Dissector session once for the lifetime of your account (when the feature is available).",
+          "Premium: HUF 2,490 per month or HUF 19,990 per year. Premium Plus: HUF 3,990 per month or HUF 31,990 per year. Both renew automatically until you cancel. A subscription started at an earlier price continues at that price until you switch plans.",
           "Switching plans (between Premium and Premium Plus): in the billing portal, where you see the prorated difference before anything is charged.",
-          "Paid plans also have weekly AI allowances; no plan is unlimited. The current allowances are shown on the Pricing page.",
+          "Paid plans also have AI allowances (weekly; monthly for the Thought Dissector); no plan is unlimited. The current allowances are shown on the Pricing page. A monthly cost limit also protects against abnormal use; it doesn't come into play when the allowances are used as intended.",
           "Cancellation: any time in the billing portal (Settings → My subscription). Your plan stays active until the end of the paid period.",
           "Payments are handled by Stripe; we never see your card details.",
           "To pay, you give your name and billing address; the invoice is issued with these details. For now, you can subscribe with a billing address in Hungary.",
@@ -278,11 +305,25 @@ const en: LegalSet = {
           "We issue an invoice for every payment in Számlázz.hu and email it to you. Stripe's payment confirmation is not an invoice.",
           "Paid features are available immediately after a successful payment.",
         ] },
+        { heading: "Trial week (free trial)", list: [
+          "Once per account you can start a 7-day trial week. During it you use Premium features within the trial week's allowances; these are shown on the Pricing page and are not unlimited.",
+          "The trial week is free: it needs no card or payment method, and it never turns into a paid subscription by itself. After the week you continue on Free; everything you created stays.",
+          "The trial week includes one more Thought Dissector session (when the feature is available). It can't be started again, not after signing out or reinstalling the app either.",
+        ] },
+        { heading: "Buying in the iPhone app (App Store)", list: [
+          "In the iPhone app you can pay for the same plans through the App Store, with your Apple account. The App Store shows the price before you buy; because of Apple's price tiers it can differ slightly from the price on the website.",
+          "An App Store subscription renews automatically for the same period unless you cancel at least 24 hours before the period ends. You manage renewal, plan changes and cancellation under iPhone Settings → your name → Subscriptions; your plan stays active until the end of the paid period.",
+          "The fee for a subscription bought in the App Store is collected and handled by Apple. Apple sends you the purchase confirmation.",
+          "Refunds for a subscription bought in the App Store are requested from Apple (reportaproblem.apple.com), under Apple's terms. Berripop cannot refund App Store payments directly.",
+          "Use of the iPhone app is governed by these terms together with Apple's standard Licensed Application End User License Agreement. The provider, not Apple, is responsible for the app and its content.",
+          "One subscription per Berripop account is enough: if you already subscribed on the website, the app doesn't offer another one, and vice versa.",
+        ] },
         { heading: "Right of withdrawal and refunds", body: [
           "You can withdraw from the contract without giving a reason within 14 days of taking out the subscription (your first successful payment). We then refund the full amount you paid, even if you've already used paid features.",
           "To withdraw, send a clear statement by email to novakbernadett94@gmail.com or by post to the provider's address. You can use the model form below, but you don't have to. You meet the deadline if you send your statement before it ends.",
           "We refund you without undue delay, and at the latest within 14 days of learning of your withdrawal, to the same payment method you used, at no extra cost. Withdrawal ends the subscription, and your account moves to the free plan.",
           "Automatic renewal isn't a new contract, so it doesn't start a new withdrawal period. You can cancel renewal any time, effective at the end of the paid period.",
+          "For a subscription bought in the App Store, request withdrawal and refunds from Apple (reportaproblem.apple.com), since Apple handles the fee.",
         ], list: [
           "Model withdrawal form – To: Bujákné Novák Bernadett, sole proprietor, Sződliget utca 11., 1151 Budapest, Hungary, novakbernadett94@gmail.com",
           "I hereby give notice that I withdraw from my contract for the Berripop subscription (provision of a service).",
@@ -292,8 +333,8 @@ const en: LegalSet = {
           "Signature of the consumer (only if this form is notified on paper): …",
           "Date: …",
         ] },
-        { heading: "AI features", body: ["AI responses are for information only and can be wrong. AI features have weekly allowances that depend on your plan."] },
-        { heading: "Deleting your account", body: ["You can delete your account any time: Settings → \"Delete account\". If you have a renewing subscription, cancel it first. Deletion is permanent: your sign-in account and your content are deleted and can't be restored."] },
+        { heading: "AI features", body: ["AI responses are for information only and can be wrong. AI features have weekly, monthly or one-time allowances that depend on your plan."] },
+        { heading: "Deleting your account", body: ["You can delete your account any time: Settings → \"Delete account\". If you have a renewing subscription, cancel it first; one bought in the App Store in your iPhone Settings, since deleting the account doesn't cancel it. Deletion is permanent: your sign-in account and your content are deleted and can't be restored."] },
         { heading: "Complaints", body: [
           "Send complaints by email to novakbernadett94@gmail.com, or by post to the provider's address above. Tell us what the complaint is about and give the email address of your Berripop account, so we can identify it.",
           "We reply to written complaints in writing, on the merits, within 30 days. If we reject a complaint, we explain why and tell you which authority or conciliation body you can turn to. We keep the complaint and our reply for three years.",

@@ -27,6 +27,10 @@ import * as personal from "./personal";
 import * as push from "./push";
 import * as service from "./service";
 import { requireUserId } from "./session";
+import { startPremiumTrial } from "./trial";
+import { recordApplePurchase, type AppleResult } from "./apple";
+import { APPLE_PRODUCT_IDS } from "../billing/apple";
+import { appAccountToken } from "../billing/apple-token";
 import { joinWaitlist } from "./waitlist";
 import { readWaitlist, type WaitlistError, type WaitlistInput } from "../waitlist";
 
@@ -89,6 +93,14 @@ export async function startCheckoutAction(interval: BillingInterval, plan: PaidP
   return billing.createCheckoutSession(userId, plan, interval, await origin(), { email: user?.primaryEmailAddress?.emailAddress, locale: await locale(), region });
 }
 
+/** Starts the one-time 7-day trial (no card, no renewal). */
+export async function startTrialAction() {
+  const userId = await requireUserId();
+  if (!userId) return { ok: false as const, error: "unauthorized" as const };
+  if ((await legal.getLegalStatus(userId)).terms !== "granted") return { ok: false as const, error: "terms_required" as const };
+  return startPremiumTrial(userId);
+}
+
 /** Premium ⇄ Premium Plus for a member who already pays (Stripe Customer Portal confirmation). */
 export async function changePlanAction(plan: PaidPlanId) {
   const userId = await requireUserId();
@@ -111,6 +123,22 @@ export async function openBillingPortalAction() {
   return billing.createPortalSession(userId, await origin(), await locale());
 }
 
+/* ---------- App Store purchases (inside the iPhone app) ---------- */
+
+/** What the in-app store needs: the product ids and this account's purchase token (no personal data in it). */
+export async function appleStoreSetupAction() {
+  const userId = await requireUserId();
+  if (!userId) return null;
+  return { token: appAccountToken(userId), products: APPLE_PRODUCT_IDS };
+}
+
+/** A purchase or restore from the app: Apple's signed transaction, verified on the server before anything is stored. */
+export async function recordApplePurchaseAction(signedTransaction: string): Promise<AppleResult | { ok: false; error: "unauthorized" }> {
+  const userId = await requireUserId();
+  if (!userId) return { ok: false, error: "unauthorized" };
+  return recordApplePurchase(userId, signedTransaction);
+}
+
 /** Client-side funnel events: a fixed allowlist, no free text. */
 const CLIENT_EVENTS = new Set<string>([
   "pricing_viewed", "upgrade_prompt_shown", "upgrade_prompt_dismissed", "checkout_canceled", "premium_feature_requested",
@@ -118,11 +146,22 @@ const CLIENT_EVENTS = new Set<string>([
   // Journal save flow; draft_started and final_save_succeeded are recorded by the server only.
   "journal_draft_autosaved", "journal_final_save_clicked", "journal_final_save_failed", "journal_editor_closed_with_draft", "journal_ai_reflection_requested",
   "journal_question_selected",
+  "apple_purchase_started", "apple_purchase_failed",
+  "feature_paywall_viewed",
+  // Sign-up page steps, sent before sign-in (so without a user id).
+  "signup_page_viewed", "signup_form_started", "signup_submitted", "signup_social_clicked", "signup_verify_viewed", "signup_error_shown",
 ]);
 export async function trackAction(event: string, context?: string): Promise<void> {
   if (!CLIENT_EVENTS.has(event)) return;
   const userId = await requireUserId();
   await track(userId, event as FunnelEvent, { context });
+}
+
+/** A plan picked on the pricing page or in the App Store list (before any payment). */
+export async function trackPlanSelectedAction(plan: string, interval: string, context?: string): Promise<void> {
+  if (!isPaidPlan(plan) || (interval !== "month" && interval !== "year")) return;
+  const userId = await requireUserId();
+  await track(userId, "plan_selected", { plan, interval, context });
 }
 
 /** Once per member per local day: the base of the retention numbers (docs/analytics.md). */

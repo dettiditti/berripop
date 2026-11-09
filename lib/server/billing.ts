@@ -209,6 +209,8 @@ export async function createPlanChangeSession(userId: string, target: PaidPlanId
   if (!stripe) return { ok: false, error: "billing_unavailable" };
   const ent = await getUserEntitlements(userId);
   if (!isPaidPlan(ent.plan)) return { ok: false, error: "not_subscribed" };
+  // Bought in the App Store: plans are changed there, not through Stripe.
+  if (ent.source === "apple") return { ok: false, error: "plan_change_unavailable" };
   if (ent.plan === target) return { ok: false, error: "invalid" };
   const [row] = await getDb().select().from(subscriptions).where(eq(subscriptions.userId, userId)).limit(1);
   if (!row?.stripeSubscriptionId) return { ok: false, error: "not_subscribed" };

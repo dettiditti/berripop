@@ -70,9 +70,6 @@ export type ThoughtStore = {
   /** Summaries of the member's latest completed sessions (for Premium patterns). */
   recentSummaries(userId: string, limit: number): Promise<ThoughtSummary[]>;
   /** Monthly allowance (one atomic conditional upsert in the real store). */
-  consumeMonthly(userId: string, period: string, limit: number): Promise<boolean>;
-  refundMonthly(userId: string, period: string): Promise<void>;
-  usedMonthly(userId: string, period: string): Promise<number>;
 };
 
 export type ThoughtEvent =
@@ -80,7 +77,7 @@ export type ThoughtEvent =
   | "thought_dissector_completed" | "thought_dissector_abandoned" | "thought_dissector_saved_to_journal" | "thought_dissector_quota_exhausted"
   | "thought_dissector_premium_clicked";
 
-export type AiSlot = { reserve: () => Promise<boolean>; release: () => Promise<void> };
+export type AiSlot = { reserve: () => Promise<boolean | "duplicate">; release: () => Promise<void>; commit?: () => Promise<void> };
 export type AiCall = <T>(userId: string, req: { feature: string; instructions: string; prompt: string; maxOutputTokens: number; parse: (t: string) => T | null }, slot: AiSlot) => Promise<AiOutcome<T>>;
 
 export type ThoughtDeps = {
@@ -96,7 +93,16 @@ export type ThoughtDeps = {
   ownEntry: (userId: string, entryId: string) => Promise<{ id: string; body: string } | null>;
   /** Creates a saved journal entry and returns its id. */
   createEntry: (userId: string, body: string) => Promise<string>;
-  period: (now: Date) => string;
+  /**
+   * The Gondolatboncoló allowance (PLAN_QUOTAS.thought): Free has one session
+   * for the lifetime of the account, the trial week one more, paid plans a
+   * monthly number. A session is charged once, ever: reserving the same
+   * session again hands back its existing charge instead of a second one.
+   */
+  sessionQuota: {
+    reserve: (userId: string, sessionId: string) => Promise<{ ok: true; period: string; release: () => Promise<void> } | { ok: false }>;
+    usage: (userId: string) => Promise<{ used: number; limit: number; remaining: number; resets: string | null }>;
+  };
   now: () => Date;
 };
 
@@ -144,10 +150,7 @@ export function toListItem(r: ThoughtRow): ThoughtListItem {
 }
 
 export async function quota(deps: ThoughtDeps, userId: string) {
-  const { limits } = await deps.plan(userId);
-  const used = await deps.store.usedMonthly(userId, deps.period(deps.now()));
-  const limit = limits.thoughtSessionsPerMonth;
-  return { used, limit, remaining: Math.max(0, limit - used) };
+  return deps.sessionQuota.usage(userId);
 }
 
 const at = (deps: ThoughtDeps) => deps.now().toISOString();
@@ -193,12 +196,14 @@ export async function startSession(deps: ThoughtDeps, userId: string, input: { s
   // Only one request may run the first turn; a concurrent one sees "busy".
   if (!(await store.transition(userId, row.id, ["draft"], "starting"))) return fail("busy");
 
-  const period = deps.period(deps.now());
-  if (!(await store.consumeMonthly(userId, period, limits.thoughtSessionsPerMonth))) {
+  // Charged once per session: an earlier attempt that never finished hands back its charge, not a second one.
+  const charge = await deps.sessionQuota.reserve(userId, row.id);
+  if (!charge.ok) {
     await store.transition(userId, row.id, ["starting"], "draft");
     await deps.track(userId, "thought_dissector_quota_exhausted");
     return fail("quota_exhausted");
   }
+  const period = charge.period;
 
   const out = await deps.ai(userId, {
     feature: "thought_dissector_start",
@@ -209,8 +214,8 @@ export async function startSession(deps: ThoughtDeps, userId: string, input: { s
   }, turnSlot(deps, userId, row.id, 1));
 
   if (!out.ok) {
-    // Nothing was delivered: the monthly session goes back and the draft stays for a retry.
-    await store.refundMonthly(userId, period);
+    // Nothing was delivered: the session's charge goes back and the draft stays for a retry.
+    await charge.release();
     await store.transition(userId, row.id, ["starting"], "draft");
     return fail(out.error === "limit_ai" ? "turn_limit" : out.error);
   }

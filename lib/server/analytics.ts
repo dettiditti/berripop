@@ -12,6 +12,13 @@ import { CIRCLE_TIME_ZONE } from "../domain/rules";
  */
 export const FUNNEL_EVENTS = [
   "signup_completed",
+  // Sign-up page, before an account exists: anonymous, no user id (components/auth/SignUpTracker.tsx).
+  "signup_page_viewed",
+  "signup_form_started",
+  "signup_submitted",
+  "signup_social_clicked",
+  "signup_verify_viewed",
+  "signup_error_shown",
   "first_goal_created",
   "first_entry_saved",
   "first_reflection_received",
@@ -61,12 +68,25 @@ export const FUNNEL_EVENTS = [
   "thought_dissector_saved_to_journal",
   "thought_dissector_quota_exhausted",
   "thought_dissector_premium_clicked",
+  // App Store purchases (plan and environment only).
+  "apple_purchase_started",
+  "apple_purchase_recorded",
+  "apple_purchase_failed",
+  // Pricing and allowances (plan, interval and a context only; never content).
+  "trial_started",
+  "trial_completed",
+  "feature_paywall_viewed",
+  "plan_selected",
+  "free_quota_exhausted",
+  "ai_cost_cap_reached",
 ] as const;
 export type FunnelEvent = (typeof FUNNEL_EVENTS)[number];
 
 const CONTEXTS = new Set([
   "goals", "ai", "summary", "circles", "pricing", "profile", "journal", "start", "path",
   "personal", "circle", "daily", "journey", "goal", "assessment", "building", "rest", "thought",
+  "sandbox", "production", "app", "settings", "converted", "not_converted",
+  "google", "apple", "social",
 ]);
 export const isTrackContext = (c: string | undefined) => !!c && CONTEXTS.has(c);
 

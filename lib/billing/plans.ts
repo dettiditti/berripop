@@ -13,25 +13,77 @@ export type BillingInterval = "month" | "year";
 export type PriceId = "monthly" | "annual" | "plus_monthly" | "plus_annual";
 export type CurrencyCode = "HUF";
 
+/** The four AI allowances. Each AI request counts against exactly one of them. */
+export type QuotaKey = "assist" | "journal" | "assessment" | "thought";
+
+/**
+ * How long an allowance lasts: a week (resets Monday 00:00, Europe/Budapest),
+ * a calendar month, or "once" (never resets, for the lifetime of the account).
+ */
+export type QuotaWindow = "week" | "month" | "once";
+
+/**
+ * One allowance pool. A quota is a list of pools used in order: the first one
+ * with room is charged. "once" pools are named so two one-time allowances
+ * (e.g. the first free Gondolatboncoló and the one from the trial week) stay
+ * separate and each is used at most once.
+ */
+export type QuotaPool = { window: QuotaWindow; limit: number; name?: string };
+
+/**
+ * Who the limits are for: the three plans, plus the one-time 7-day trial
+ * (Premium-like but capped, see TRIAL_DAYS). The trial is not a plan: billing
+ * still says Free, only the limits change.
+ */
+export type Tier = PlanId | "trial";
+
+export const TRIAL_DAYS = 7;
+
+const week = (limit: number): QuotaPool[] => [{ window: "week", limit }];
+const month = (limit: number): QuotaPool[] => [{ window: "month", limit }];
+/** The first Gondolatboncoló, free once per account. */
+const FIRST_THOUGHT: QuotaPool = { window: "once", limit: 1, name: "first" };
+/** One more Gondolatboncoló during the trial week, once per account. */
+const TRIAL_THOUGHT: QuotaPool = { window: "once", limit: 1, name: "trial" };
+
+/**
+ * THE central allowance configuration. Change numbers here only; the server
+ * enforces exactly these (lib/server/quota.ts) and the UI only displays them.
+ */
+export const PLAN_QUOTAS: Record<Tier, Record<QuotaKey, readonly QuotaPool[]>> = {
+  free: { assist: week(2), journal: week(1), assessment: week(6), thought: [FIRST_THOUGHT] },
+  // Enough to try every feature during the week, never unlimited.
+  trial: { assist: week(10), journal: week(5), assessment: week(12), thought: [FIRST_THOUGHT, TRIAL_THOUGHT] },
+  premium: { assist: week(60), journal: week(15), assessment: week(12), thought: month(10) },
+  premium_plus: { assist: week(120), journal: week(30), assessment: week(20), thought: month(20) },
+};
+
+/** The sum of a quota's pools (what the member can use at most in the current windows). */
+export const quotaTotal = (pools: readonly QuotaPool[]) => pools.reduce((n, p) => n + p.limit, 0);
+/** The window to show for a quota: the first pool's (the paid and free quotas each have one kind). */
+export const quotaWindow = (pools: readonly QuotaPool[]): QuotaWindow => pools[0]?.window ?? "week";
+
 export type PlanLimits = {
   /** Active (not paused) growth goals at the same time. */
   activeGoals: number;
-  /** AI-assisted interactions per allowance period. */
+  /** AI-assisted interactions per week (from PLAN_QUOTAS.assist). */
   aiPerPeriod: number;
   /** Circles a user can own (joining others is always free). */
   ownedCircles: number;
   /** AI weekly growth summary. */
   weeklySummary: boolean;
-  /** AI reflections on journal entries per allowance period (separate from follow-ups). */
+  /** AI reflections on journal entries per week (from PLAN_QUOTAS.journal). */
   journalAiPerPeriod: number;
   /** AI weekly journal reflection. */
   weeklyJournal: boolean;
   /** Use the member's approved growth insights to personalise journal reflections. */
   insightContext: boolean;
-  /** AI calls for the My Path assessment per allowance period (each assessment is also capped at MAX_AI_CALLS). */
+  /** AI calls for the My Path assessment per week (from PLAN_QUOTAS.assessment; each assessment is also capped at MAX_AI_CALLS). */
   assessmentAiPerPeriod: number;
-  /** Gondolatboncoló sessions a member can start per calendar month (Europe/Budapest). Continuing one never counts. */
-  thoughtSessionsPerMonth: number;
+  /** Gondolatboncoló sessions in `thoughtWindow` (from PLAN_QUOTAS.thought). Continuing one never counts. */
+  thoughtSessions: number;
+  /** "once" (Free, trial: one-time sessions) or "month" (paid). */
+  thoughtWindow: QuotaWindow;
   /** Viewpoints Berri works through in one session (at most 6). */
   thoughtViewpoints: number;
   /** AI turns per session, the summary included (cost cap). */
@@ -40,17 +92,45 @@ export type PlanLimits = {
   thoughtMaxOutputTokens: number;
   /** Premium: continue a finished session and look for patterns across sessions (opt-in per request). */
   thoughtDeep: boolean;
+  /**
+   * Safety net: estimated AI cost per member per calendar month (micro-USD,
+   * from ai_calls). Set well above the most the allowances can use (about
+   * USD 0.03 Free, 0.7 Premium, 2.3 Plus), so it only stops anomalies.
+   */
+  aiMonthlyCostCapMicroUsd: number;
 };
 
-export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
-  free: { activeGoals: 1, aiPerPeriod: 5, ownedCircles: 1, weeklySummary: false, journalAiPerPeriod: 3, weeklyJournal: false, insightContext: false, assessmentAiPerPeriod: 6,
-    thoughtSessionsPerMonth: 2, thoughtViewpoints: 4, thoughtTurnsPerSession: 9, thoughtMaxOutputTokens: 500, thoughtDeep: false },
-  premium: { activeGoals: 5, aiPerPeriod: 60, ownedCircles: 5, weeklySummary: true, journalAiPerPeriod: 40, weeklyJournal: true, insightContext: true, assessmentAiPerPeriod: 12,
-    thoughtSessionsPerMonth: 30, thoughtViewpoints: 6, thoughtTurnsPerSession: 18, thoughtMaxOutputTokens: 700, thoughtDeep: true },
-  // Higher, still capped weekly limits (fair use and cost protection, never "unlimited").
-  // Worst case at gpt-5-mini prices is about USD 1.9 per month per member (Premium: about USD 1).
-  premium_plus: { activeGoals: 10, aiPerPeriod: 120, ownedCircles: 10, weeklySummary: true, journalAiPerPeriod: 80, weeklyJournal: true, insightContext: true, assessmentAiPerPeriod: 20,
-    thoughtSessionsPerMonth: 60, thoughtViewpoints: 6, thoughtTurnsPerSession: 24, thoughtMaxOutputTokens: 700, thoughtDeep: true },
+type OwnLimits = Omit<PlanLimits, "aiPerPeriod" | "journalAiPerPeriod" | "assessmentAiPerPeriod" | "thoughtSessions" | "thoughtWindow">;
+
+const OWN: Record<Tier, OwnLimits> = {
+  free: { activeGoals: 1, ownedCircles: 1, weeklySummary: false, weeklyJournal: false, insightContext: false,
+    thoughtViewpoints: 4, thoughtTurnsPerSession: 9, thoughtMaxOutputTokens: 500, thoughtDeep: false, aiMonthlyCostCapMicroUsd: 150_000 },
+  trial: { activeGoals: 3, ownedCircles: 1, weeklySummary: true, weeklyJournal: true, insightContext: true,
+    thoughtViewpoints: 6, thoughtTurnsPerSession: 18, thoughtMaxOutputTokens: 700, thoughtDeep: true, aiMonthlyCostCapMicroUsd: 500_000 },
+  premium: { activeGoals: 5, ownedCircles: 5, weeklySummary: true, weeklyJournal: true, insightContext: true,
+    thoughtViewpoints: 6, thoughtTurnsPerSession: 18, thoughtMaxOutputTokens: 700, thoughtDeep: true, aiMonthlyCostCapMicroUsd: 1_500_000 },
+  // Higher, still capped limits (fair use and cost protection, never "unlimited").
+  premium_plus: { activeGoals: 10, ownedCircles: 10, weeklySummary: true, weeklyJournal: true, insightContext: true,
+    thoughtViewpoints: 6, thoughtTurnsPerSession: 24, thoughtMaxOutputTokens: 700, thoughtDeep: true, aiMonthlyCostCapMicroUsd: 4_000_000 },
+};
+
+function limitsFor(tier: Tier): PlanLimits {
+  const q = PLAN_QUOTAS[tier];
+  return {
+    ...OWN[tier],
+    aiPerPeriod: quotaTotal(q.assist),
+    journalAiPerPeriod: quotaTotal(q.journal),
+    assessmentAiPerPeriod: quotaTotal(q.assessment),
+    thoughtSessions: quotaTotal(q.thought),
+    thoughtWindow: quotaWindow(q.thought),
+  };
+}
+
+export const PLAN_LIMITS: Record<Tier, PlanLimits> = {
+  free: limitsFor("free"),
+  trial: limitsFor("trial"),
+  premium: limitsFor("premium"),
+  premium_plus: limitsFor("premium_plus"),
 };
 
 export const PAID_PLANS: readonly PaidPlanId[] = ["premium", "premium_plus"];
@@ -70,10 +150,19 @@ export type PriceConfig = {
 };
 
 export const PRICES: Record<PriceId, PriceConfig> = {
-  monthly: { id: "monthly", plan: "premium", interval: "month", amount: 2990, currency: "HUF", lookupKey: "kozos_premium_monthly_huf" },
-  annual: { id: "annual", plan: "premium", interval: "year", amount: 23990, currency: "HUF", lookupKey: "kozos_premium_annual_huf" },
+  monthly: { id: "monthly", plan: "premium", interval: "month", amount: 2490, currency: "HUF", lookupKey: "kozos_premium_monthly_huf_2490" },
+  annual: { id: "annual", plan: "premium", interval: "year", amount: 19990, currency: "HUF", lookupKey: "kozos_premium_annual_huf_19990" },
   plus_monthly: { id: "plus_monthly", plan: "premium_plus", interval: "month", amount: 3990, currency: "HUF", lookupKey: "kozos_premium_plus_monthly_huf" },
   plus_annual: { id: "plus_annual", plan: "premium_plus", interval: "year", amount: 31990, currency: "HUF", lookupKey: "kozos_premium_plus_annual_huf" },
+};
+
+/**
+ * Earlier prices no longer sold. A subscription on one of them keeps its plan
+ * (and its price, until the member changes it), so these keys still grant it.
+ */
+export const LEGACY_LOOKUP_KEYS: Record<string, PaidPlanId> = {
+  kozos_premium_monthly_huf: "premium", // 2 990 Ft / month, until 2026-11
+  kozos_premium_annual_huf: "premium", // 23 990 Ft / year, until 2026-11
 };
 
 /** One Stripe Product per paid plan, found by metadata (see scripts/stripe-setup.ts). */
@@ -94,7 +183,8 @@ export function priceFor(plan: PaidPlanId, interval: BillingInterval): PriceConf
 
 /** The plan a Stripe price grants, from its lookup key; null for prices that aren't ours. */
 export function planForLookupKey(lookupKey: string | null | undefined): PaidPlanId | null {
-  return Object.values(PRICES).find(p => p.lookupKey === lookupKey)?.plan ?? null;
+  if (!lookupKey) return null;
+  return Object.values(PRICES).find(p => p.lookupKey === lookupKey)?.plan ?? (Object.hasOwn(LEGACY_LOOKUP_KEYS, lookupKey) ? LEGACY_LOOKUP_KEYS[lookupKey] : null);
 }
 
 /**

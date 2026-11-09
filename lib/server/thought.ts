@@ -1,8 +1,8 @@
 import "server-only";
 import { and, desc, eq, isNotNull, sql } from "drizzle-orm";
 import { getDb } from "../db";
-import { aiUsage, journalEntries, thoughtSessions } from "../db/schema";
-import { thoughtPeriodKey, thoughtPeriodResets } from "../billing/plans";
+import { journalEntries, quotaUses, thoughtSessions } from "../db/schema";
+import { useKey, type Reservation } from "../billing/quota";
 import { isLocale, type Locale } from "../i18n/config";
 import { THOUGHT_COPY } from "../thought/copy";
 import * as core from "../thought/core";
@@ -10,7 +10,8 @@ import type { ThoughtDeps, ThoughtRow, ThoughtStore } from "../thought/core";
 import type { ThoughtResult, ThoughtSessionDTO, ThoughtState } from "../thought/types";
 import { track } from "./analytics";
 import { aiConfigured, runSlottedAi } from "./ai";
-import { consumeAiAllowance, getUserEntitlements, refundAiAllowance } from "./entitlements";
+import { getUserEntitlements, releaseQuota, reserveAi } from "./entitlements";
+import { quotaUsage } from "./quota";
 import { saveEntry } from "./journal";
 import { aiAllowedFor } from "./legal";
 
@@ -92,24 +93,14 @@ const store: ThoughtStore = {
       .where(and(eq(T.userId, userId), eq(T.status, "completed"), isNotNull(T.summary))).orderBy(desc(T.updatedAt)).limit(limit);
     return rows.flatMap(r => (r.summary ? [r.summary] : []));
   },
-  // The monthly allowance shares the ai_usage table with a "thought:YYYY-MM" period.
-  async consumeMonthly(userId, period, limit) {
-    if (limit <= 0) return false;
-    const res = await getDb().execute(sql`
-      insert into ai_usage (user_id, period, count) values (${userId}, ${`thought:${period}`}, 1)
-      on conflict (user_id, period) do update set count = ai_usage.count + 1
-      where ai_usage.count < ${limit}
-      returning count`);
-    return res.rows.length > 0;
-  },
-  async refundMonthly(userId, period) {
-    await getDb().execute(sql`update ai_usage set count = count - 1 where user_id = ${userId} and period = ${`thought:${period}`} and count > 0`);
-  },
-  async usedMonthly(userId, period) {
-    const [r] = await getDb().select({ count: aiUsage.count }).from(aiUsage).where(and(eq(aiUsage.userId, userId), eq(aiUsage.period, `thought:${period}`))).limit(1);
-    return r?.count ?? 0;
-  },
 };
+
+/** The existing charge of one session (its one-time key is kept, see lib/billing/quota.ts). */
+async function chargeOf(userId: string, key: string): Promise<Reservation | null> {
+  const [r] = await getDb().select({ id: quotaUses.id, period: quotaUses.period }).from(quotaUses)
+    .where(and(eq(quotaUses.userId, userId), eq(quotaUses.idemKey, useKey("thought", key)))).limit(1);
+  return r ?? null;
+}
 
 const deps: ThoughtDeps = {
   store,
@@ -120,8 +111,27 @@ const deps: ThoughtDeps = {
   aiReady: async userId => (!aiConfigured() ? "ai_unavailable" : (await aiAllowedFor(userId)) ? "ok" : "ai_consent_required"),
   ai: (userId, req, slot) => runSlottedAi(userId, req, slot),
   allowanceSlot: userId => {
-    const now = new Date();
-    return { reserve: () => consumeAiAllowance(userId, now, "journal"), release: () => refundAiAllowance(userId, now, "journal") };
+    let held: Reservation | null = null;
+    return {
+      reserve: async () => {
+        const r = await reserveAi(userId, "journal");
+        if (r.ok) held = r.reservation;
+        return r.ok;
+      },
+      release: async () => { if (held) await releaseQuota(userId, held); },
+    };
+  },
+  sessionQuota: {
+    async reserve(userId, sessionId) {
+      const key = `session:${sessionId}`;
+      const r = await reserveAi(userId, "thought", { idempotencyKey: key });
+      const held = r.ok ? r.reservation : r.reason === "duplicate" ? await chargeOf(userId, key) : null;
+      return held ? { ok: true, period: held.period, release: () => releaseQuota(userId, held) } : { ok: false };
+    },
+    async usage(userId) {
+      const ent = await getUserEntitlements(userId);
+      return quotaUsage(userId, ent.tier, "thought");
+    },
   },
   track: (userId, event) => track(userId, event, { context: "thought" }),
   ownEntry: async (userId, entryId) => {
@@ -135,7 +145,6 @@ const deps: ThoughtDeps = {
     if (!res.ok || !res.data) throw new Error("journal_save_failed");
     return res.data;
   },
-  period: thoughtPeriodKey,
   now: () => new Date(),
 };
 
@@ -144,11 +153,10 @@ const off = <T,>(): ThoughtResult<T> => ({ ok: false, error: "disabled" });
 
 export async function loadThoughtState(userId: string): Promise<ThoughtState> {
   const ent = await getUserEntitlements(userId);
-  const base = { enabled: thoughtEnabled(), aiConfigured: aiConfigured(), plan: ent.plan, deep: ent.limits.thoughtDeep, viewpointCount: ent.limits.thoughtViewpoints };
-  const now = new Date();
-  if (!base.enabled) return { ...base, quota: { used: 0, limit: ent.limits.thoughtSessionsPerMonth, remaining: 0, resets: thoughtPeriodResets(now) }, sessions: [] };
+  const base = { enabled: thoughtEnabled(), aiConfigured: aiConfigured(), plan: ent.plan, tier: ent.tier, deep: ent.limits.thoughtDeep, viewpointCount: ent.limits.thoughtViewpoints };
+  if (!base.enabled) return { ...base, quota: { used: 0, limit: ent.limits.thoughtSessions, remaining: 0, resets: null }, sessions: [] };
   const [q, rows] = await Promise.all([core.quota(deps, userId), store.list(userId)]);
-  return { ...base, quota: { ...q, resets: thoughtPeriodResets(now) }, sessions: rows.map(core.toListItem) };
+  return { ...base, quota: { used: q.used, limit: q.limit, remaining: q.remaining, resets: q.resets }, sessions: rows.map(core.toListItem) };
 }
 
 export const startThought = (userId: string, input: { startKey: unknown; problem: unknown; journalEntryId?: unknown }, locale: string) =>

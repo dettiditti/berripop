@@ -45,6 +45,8 @@ import type { JourneyMode } from "./screens/types";
 import { useRun } from "./useRun";
 import Celebration, { type CelebrationItem } from "./Celebration";
 import { OfferContext } from "./billing/UpgradePrompt";
+import { reportTransactions } from "./billing/AppStorePaywall";
+import { appStore } from "@/lib/nativeBridge";
 import { celebratedKey, freshlyReached, readCelebrated, writeCelebrated, type CelebrationKind } from "@/lib/celebrate";
 import { achievementDefs } from "@/lib/domain/rules";
 import { milestonesFrom, type MilestoneCounts, type MilestoneId } from "@/lib/milestones";
@@ -122,7 +124,7 @@ function SignedInApp() {
   const newMember = !snapshot.circle && !snapshot.me.personalPath;
   const prompt = termsPrompt(legal.terms, newMember);
   const accepted = () => setLegal({ ...legal, terms: "granted" });
-  if (newMember) return <Onboarding name={snapshot.me.name} onSnapshot={setSnapshot} terms={prompt === "onboarding" ? { version: legal.termsVersion, onAccepted: accepted } : null} />;
+  if (newMember) return <div className="app app--onboarding"><Onboarding name={snapshot.me.name} onSnapshot={setSnapshot} terms={prompt === "onboarding" ? { version: legal.termsVersion, onAccepted: accepted } : null} /></div>;
   return (
     <AiConsentProvider initial={legal}>
       <AppShell snapshot={snapshot} setSnapshot={setSnapshot} />
@@ -221,6 +223,24 @@ function AppShell({ snapshot, setSnapshot }: { snapshot: Snapshot; setSnapshot: 
     const r = await getSnapshotAction().catch(() => null);
     if (r?.ok) setSnapshot(r.snapshot);
   }, [setSnapshot]);
+
+  // iPhone app: Apple's current subscriptions (and renewals, Ask to Buy approvals,
+  // refunds while the app is open) are sent to the server, which verifies them.
+  useEffect(() => {
+    const store = appStore();
+    if (!store) return;
+    let live = true;
+    const sync = (list: string[]) => {
+      if (!list.length) return;
+      void reportTransactions(list).then(r => { if (live && r.stored) void refresh(); });
+    };
+    store.current().then(r => sync(r.transactions)).catch(() => {});
+    const handle = store.addListener("transaction", v => sync(v.jws ? [v.jws] : []));
+    return () => {
+      live = false;
+      handle.then(h => h.remove()).catch(() => {});
+    };
+  }, [refresh]);
 
   // First steps need the journal (entries, reflections) even before the journal is opened.
   useEffect(() => {
@@ -367,7 +387,7 @@ function AppShell({ snapshot, setSnapshot }: { snapshot: Snapshot; setSnapshot: 
     covered: !!quest || !!reward || !!detail,
   };
   const questQuestion = quest ? view.question(quest.ref) : null;
-  const offerRules = useMemo(() => ({ activeDays: new Set(snapshot.progress.activeDates).size }), [snapshot.progress.activeDates]);
+  const offerRules = useMemo(() => ({ activeDays: new Set(snapshot.progress.activeDates).size, account: snapshot.account, notify }), [snapshot.progress.activeDates, snapshot.account, notify]);
 
   if (assessing && assessment) {
     return (

@@ -8,11 +8,13 @@ import type { AccountDTO } from "@/lib/domain/types";
 import { useI18n } from "@/lib/i18n/client";
 import { openBillingPortalAction } from "@/lib/server/actions";
 import { useNativeApp } from "../useNativeApp";
+import AppStorePaywall from "./AppStorePaywall";
 
 /**
- * Current plan, status and billing management. Shows only what Stripe has
- * confirmed. Inside the phone app the plan and AI allowance stay visible, but
- * nothing links to buying or managing a subscription (App Store rules).
+ * Current plan, status and billing management. Shows only what Stripe or
+ * Apple has confirmed. Inside the iPhone app plans are sold through the App
+ * Store (never a link to the website's checkout); on the website a plan bought
+ * in the App Store is managed in Apple's settings, not in the billing portal.
  */
 export default function SubscriptionCard({ account, notify }: { account: AccountDTO; notify: (m: string) => void }) {
   const { d, t, date } = useI18n();
@@ -49,6 +51,8 @@ export default function SubscriptionCard({ account, notify }: { account: Account
       {ent.paymentIssue && <p className="sub-warning" role="status"><AlertTriangle size={15} /> {s.paymentIssue}</p>}
       {paid && periodEnd && <p className="muted">{ent.cancelAtPeriodEnd ? t(s.endsOn, { date: periodEnd }) : t(s.renews, { date: periodEnd })}</p>}
       {ent.ended && <p className="muted">{s.ended}</p>}
+      {ent.tier === "trial" && ent.trial.endsAt && <p className="sub-trial" role="status">{t(s.trialActive, { date: date(ent.trial.endsAt.slice(0, 10), "long") })}</p>}
+      {ent.plan === "free" && ent.trial.status === "used" && <p className="muted">{s.trialUsed}</p>}
 
       <div className="ai-meter">
         <span className="shared-progress-label">{s.aiTitle}</span>
@@ -56,7 +60,9 @@ export default function SubscriptionCard({ account, notify }: { account: Account
         <small className="muted">{t(s.aiUsage, { used: account.ai.used, limit: account.ai.limit })} · {t(s.aiResets, { date: date(account.ai.resets) })}</small>
       </div>
 
-      {!inApp && <div className="row-gap">
+      {inApp && <AppStorePaywall account={account} notify={notify} />}
+      {!inApp && ent.source === "apple" && <p className="muted">{d.billing.appStore.appleManaged}</p>}
+      {!inApp && ent.source !== "apple" && <div className="row-gap">
         {ent.plan === "free" && <Link className="btn btn--primary btn--sm" href="/pricing?from=profile"><Sparkles size={16} /> {s.upgrade}</Link>}
         {paid && <Link className="btn btn--ghost btn--sm" href="/pricing?from=profile">{s.changePlan}</Link>}
         {account.hasBillingCustomer && <button className="btn btn--ghost btn--sm" disabled={busy} onClick={portal}>{s.manage}</button>}

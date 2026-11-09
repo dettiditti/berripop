@@ -8,8 +8,10 @@ const sub = (over: Partial<SubscriptionRecord>): SubscriptionRecord => ({
 
 describe("plan configuration", () => {
   it("has a monthly and an annual HUF price", () => {
-    expect(PRICES.monthly).toMatchObject({ interval: "month", amount: 2990, currency: "HUF" });
-    expect(PRICES.annual).toMatchObject({ interval: "year", amount: 23990, currency: "HUF" });
+    expect(PRICES.monthly).toMatchObject({ interval: "month", amount: 2490, currency: "HUF" });
+    expect(PRICES.annual).toMatchObject({ interval: "year", amount: 19990, currency: "HUF" });
+    expect(PRICES.plus_monthly).toMatchObject({ interval: "month", amount: 3990 });
+    expect(PRICES.plus_annual).toMatchObject({ interval: "year", amount: 31990 });
     expect(priceFor("premium", "month")).toBe(PRICES.monthly);
     expect(priceFor("premium", "year")).toBe(PRICES.annual);
   });
@@ -24,8 +26,12 @@ describe("plan configuration", () => {
   it("maps every lookup key to exactly one plan, and unknown prices to none", () => {
     const keys = Object.values(PRICES).map(p => p.lookupKey);
     expect(new Set(keys).size).toBe(keys.length);
+    expect(planForLookupKey("kozos_premium_monthly_huf_2490")).toBe("premium");
+    expect(planForLookupKey("kozos_premium_annual_huf_19990")).toBe("premium");
+    // Earlier prices still grant their plan (subscriptions started at the old price).
     expect(planForLookupKey("kozos_premium_monthly_huf")).toBe("premium");
     expect(planForLookupKey("kozos_premium_annual_huf")).toBe("premium");
+    expect(planForLookupKey("toString")).toBeNull();
     expect(planForLookupKey("kozos_premium_plus_monthly_huf")).toBe("premium_plus");
     expect(planForLookupKey("kozos_premium_plus_annual_huf")).toBe("premium_plus");
     expect(planForLookupKey("someone_elses_price")).toBeNull();
@@ -35,8 +41,8 @@ describe("plan configuration", () => {
   });
   it("uses distinct lookup keys and Stripe's two-decimal HUF amounts", () => {
     expect(PRICES.monthly.lookupKey).not.toBe(PRICES.annual.lookupKey);
-    expect(stripeAmount(PRICES.monthly)).toBe(299000);
-    expect(stripeAmount(PRICES.annual)).toBe(2399000);
+    expect(stripeAmount(PRICES.monthly)).toBe(249000);
+    expect(stripeAmount(PRICES.annual)).toBe(1999000);
   });
   it("gives Premium strictly more than Free", () => {
     expect(PLAN_LIMITS.premium.activeGoals).toBeGreaterThan(PLAN_LIMITS.free.activeGoals);
