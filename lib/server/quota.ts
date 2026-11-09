@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { getSql } from "../db";
 import type { QuotaKey, Tier } from "../billing/plans";
 import {
-  poolPeriod, poolsFor, releaseStatement, reserveOutcome, reserveStatements, settleStatement, usageFrom, usageStatement, useKey,
+  poolPeriod, poolsFor, releaseStatement, reserveOutcome, reserveStatements, settleStatement, usageFrom, usageStatement, quotaUseKey,
   type QuotaUsage, type Reservation, type ReserveResult, type Statement,
 } from "../billing/quota";
 
@@ -24,7 +24,7 @@ export async function reserveQuota(userId: string, tier: Tier, quota: QuotaKey, 
   const now = opts.now ?? new Date();
   const pools = poolsFor(tier, quota);
   if (!pools.length) return { ok: false, reason: "limit" };
-  const key = useKey(quota, opts.idempotencyKey ?? randomUUID());
+  const key = quotaUseKey(quota, opts.idempotencyKey ?? randomUUID());
   const sql = getSql();
   const results = await sql.transaction(reserveStatements(userId, quota, pools, key, now).map(s => sql.query(s.text, s.params)));
   return reserveOutcome(results as { id: string; period: string }[][]);

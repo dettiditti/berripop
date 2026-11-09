@@ -24,7 +24,7 @@ export function poolResets(pool: QuotaPool, now: Date): string | null {
 export const poolsFor = (tier: Tier, quota: QuotaKey): readonly QuotaPool[] => PLAN_QUOTAS[tier][quota].filter(p => p.limit > 0);
 
 /** The key stored for one use; scoped by quota so features never collide. */
-export const useKey = (quota: QuotaKey, idempotencyKey: string) => `${quota}:${idempotencyKey}`.slice(0, 200);
+export const quotaUseKey = (quota: QuotaKey, idempotencyKey: string) => `${quota}:${idempotencyKey}`.slice(0, 200);
 
 export type Statement = { text: string; params: unknown[] };
 

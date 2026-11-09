@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { combinedEntitlements } from "../lib/billing/apple";
 import { trialEndsAt, withTrial, entitlementsFrom } from "../lib/billing/entitlements";
 import { PLAN_LIMITS, PLAN_QUOTAS, quotaTotal, TRIAL_DAYS, type QuotaKey, type Tier } from "../lib/billing/plans";
-import { poolPeriod, reserveOutcome, reserveStatements, usageFrom, useKey } from "../lib/billing/quota";
+import { poolPeriod, reserveOutcome, reserveStatements, usageFrom, quotaUseKey } from "../lib/billing/quota";
 import { runAiCall } from "../lib/ai/run";
 import { memoryQuota } from "./helpers/memory-quota";
 
@@ -64,7 +64,7 @@ describe("pools and periods", () => {
   });
 
   it("the SQL locks per member, checks the key first, then tries each pool in order", () => {
-    const st = reserveStatements("u1", "thought", PLAN_QUOTAS.trial.thought, useKey("thought", "session:s1"), NOW);
+    const st = reserveStatements("u1", "thought", PLAN_QUOTAS.trial.thought, quotaUseKey("thought", "session:s1"), NOW);
     expect(st).toHaveLength(4);
     expect(st[0].text).toContain("pg_advisory_xact_lock");
     expect(st[1].text).toContain("idem_key");

@@ -2,7 +2,7 @@ import "server-only";
 import { and, desc, eq, isNotNull, sql } from "drizzle-orm";
 import { getDb } from "../db";
 import { journalEntries, quotaUses, thoughtSessions } from "../db/schema";
-import { useKey, type Reservation } from "../billing/quota";
+import { quotaUseKey, type Reservation } from "../billing/quota";
 import { isLocale, type Locale } from "../i18n/config";
 import { THOUGHT_COPY } from "../thought/copy";
 import * as core from "../thought/core";
@@ -98,7 +98,7 @@ const store: ThoughtStore = {
 /** The existing charge of one session (its one-time key is kept, see lib/billing/quota.ts). */
 async function chargeOf(userId: string, key: string): Promise<Reservation | null> {
   const [r] = await getDb().select({ id: quotaUses.id, period: quotaUses.period }).from(quotaUses)
-    .where(and(eq(quotaUses.userId, userId), eq(quotaUses.idemKey, useKey("thought", key)))).limit(1);
+    .where(and(eq(quotaUses.userId, userId), eq(quotaUses.idemKey, quotaUseKey("thought", key)))).limit(1);
   return r ?? null;
 }
 

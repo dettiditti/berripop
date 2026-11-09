@@ -1,4 +1,4 @@
-import { poolPeriod, poolsFor, useKey, usageFrom, type ReserveResult } from "../../lib/billing/quota";
+import { poolPeriod, poolsFor, quotaUseKey, usageFrom, type ReserveResult } from "../../lib/billing/quota";
 import type { QuotaKey, Tier } from "../../lib/billing/plans";
 
 /**
@@ -11,7 +11,7 @@ export function memoryQuota(tierOf: (userId: string) => Tier, now: () => Date) {
   return {
     rows,
     reserve(userId: string, quota: QuotaKey, idempotencyKey: string = `rnd-${++n}`): ReserveResult {
-      const key = useKey(quota, idempotencyKey);
+      const key = quotaUseKey(quota, idempotencyKey);
       if (rows.some(r => r.userId === userId && r.idemKey === key)) return { ok: false, reason: "duplicate" };
       for (const pool of poolsFor(tierOf(userId), quota)) {
         const period = poolPeriod(pool, now());
@@ -24,7 +24,7 @@ export function memoryQuota(tierOf: (userId: string) => Tier, now: () => Date) {
       return { ok: false, reason: "limit" };
     },
     find(userId: string, quota: QuotaKey, idempotencyKey: string) {
-      const r = rows.find(x => x.userId === userId && x.idemKey === useKey(quota, idempotencyKey));
+      const r = rows.find(x => x.userId === userId && x.idemKey === quotaUseKey(quota, idempotencyKey));
       return r ? { id: r.id, period: r.period } : null;
     },
     release(userId: string, id: string) {
