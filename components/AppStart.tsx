@@ -71,7 +71,7 @@ export default function AppStart() {
   if (step === "hello") {
     return (
       <main className="berri-stage app-welcome">
-        <BerriVideo clip="wave" className="app-welcome-berri" />
+        <BerriVideo clip="hello" className="app-welcome-berri" />
         <div className="app-welcome-copy">
           <h1>{d.appWelcome.title}</h1>
           <p>{d.appWelcome.body}</p>
