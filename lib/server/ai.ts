@@ -11,6 +11,7 @@ import { getUserEntitlements, releaseQuota, reserveAi, settleQuota, type AiBucke
 import { track } from "./analytics";
 import { aiAllowedFor } from "./legal";
 import { profileInstructionFor } from "./profile";
+import { HUNGARIAN_STYLE } from "../ai/style";
 
 /*
  * The single server-side entry point for AI calls. Credentials stay on the
@@ -118,7 +119,8 @@ export async function runSlottedAi<T>(
   }
   // The member's optional age range and gender, only to fit tone and examples (lib/profile/model).
   const about = await profileInstructionFor(userId);
-  const instructions = about ? `${req.instructions} ${about}` : req.instructions;
+  // Natural Hungarian, never word-for-word translations (lib/ai/style).
+  const instructions = [req.instructions, about, HUNGARIAN_STYLE].filter(Boolean).join(" ");
   return runAiCall({ ...req, instructions, model: req.model ?? defaultAiModel() }, {
     generate: testGenerator ?? gatewayGenerate,
     reserve: slot.reserve,
