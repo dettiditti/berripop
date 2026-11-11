@@ -30,6 +30,7 @@ import Onboarding from "./Onboarding";
 import QuestFlow, { type Draft } from "./QuestFlow";
 import QuestionDetail from "./QuestionDetail";
 import ReminderPrompt from "./ReminderPrompt";
+import PushTimeZoneSync from "./PushTimeZoneSync";
 import ScenePrompt from "./ScenePrompt";
 import TermsGate from "./TermsGate";
 import Welcome from "./Welcome";
@@ -486,6 +487,7 @@ function AppShell({ snapshot, setSnapshot }: { snapshot: Snapshot; setSnapshot: 
           }}
         />
       )}
+      <PushTimeZoneSync />
       {askReminder && <ReminderPrompt notify={notify} onClose={() => setAskReminder(false)} />}
       {/* Once per account: "New: Berri can move!", on Today when nothing else is open. */}
       {!snapshot.me.scenePicked && tab === "home" && !askReminder && !quest && !reward && !detail && !nextCelebration && !inviteOpen && !composerOpen && (

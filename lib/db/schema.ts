@@ -632,11 +632,34 @@ export const pushDevices = pgTable("push_devices", {
   token: text("token").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   platform: text("platform", { enum: ["ios"] }).notNull().default("ios"),
-  /** The local date (Europe/Budapest) the last reminder went out, so it is sent at most once a day. */
+  /** The phone's local date the last reminder went out, so it is sent at most once a day. */
   lastSentDate: text("last_sent_date"),
+  /** The phone's IANA time zone, so the chosen hours are the member's own local hours. */
+  timeZone: text("time_zone").notNull().default("Europe/Budapest"),
+  /** The afternoon "Don't forget yourself" reminder (lib/push/reminder), skipped on days the member was active. */
+  remind: boolean("remind").notNull().default(true),
+  remindHour: integer("remind_hour").notNull().default(17),
+  /** Berri's thought of the day (lib/push/thoughts), in the morning. */
+  thought: boolean("thought").notNull().default(true),
+  thoughtHour: integer("thought_hour").notNull().default(8),
+  /** Pick the thought by the member's chosen areas, check-in mood and feedback (never the journal). Off: everyone's general thought. */
+  personalize: boolean("personalize").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, t => [index("push_devices_user_idx").on(t.userId)]);
+
+/**
+ * One row per member, notification kind and local date it went out: the
+ * database-level guarantee that each kind reaches a member at most once a
+ * day, even when the hourly job runs twice at once. Holds no content and no
+ * device token; rows older than a few days are deleted by the job itself.
+ */
+export const pushSends = pgTable("push_sends", {
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  kind: text("kind", { enum: ["thought", "remind"] }).notNull(),
+  date: text("date").notNull(),
+  sentAt: timestamp("sent_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [primaryKey({ columns: [t.userId, t.kind, t.date] })]);
 
 /**
  * Website visitors who asked to hear when the phone app launches. Kept apart

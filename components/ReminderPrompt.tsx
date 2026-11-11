@@ -63,7 +63,7 @@ export default function ReminderPrompt({ onClose, notify }: { onClose: () => voi
     try {
       const tk = await pushToken();
       if (tk === "denied") notify(r.denied);
-      else if (tk && (await setPushReminderAction(tk, true)).ok) {
+      else if (tk && (await setPushReminderAction(tk, true, Intl.DateTimeFormat().resolvedOptions().timeZone)).ok) {
         hapticSuccess();
         notify(r.on);
       } else notify(d.settings.reminderError);

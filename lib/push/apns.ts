@@ -43,7 +43,27 @@ export function isDeadToken(r: SendResult): boolean {
   return r.status === 410 || (r.status === 400 && (r.reason === "BadDeviceToken" || r.reason === "DeviceTokenNotForTopic"));
 }
 
-function sendOne(session: ClientHttp2Session, c: ApnsConfig, jwt: string, token: string, payload: string): Promise<SendResult> {
+/** Set by the job when the sender failed before any request left (bad key, no connection object). */
+export const NOT_SENT = "not_sent";
+
+/**
+ * Apple answered and did not accept the notification, or it never left this
+ * server: safe to try again later. A timeout or a dropped connection is not
+ * here: Apple may have accepted it and only the answer got lost, and a retry
+ * could show it twice.
+ */
+export function isRetryable(r: SendResult): boolean {
+  return r.reason === NOT_SENT || r.status === 429 || r.status === 500 || r.status === 503;
+}
+
+/**
+ * collapseId: the phone shows only the latest notification with the same id,
+ * so even a repeated delivery appears once. expiresAt (Unix seconds): Apple
+ * drops it if the phone is unreachable until then.
+ */
+export type SendOptions = { collapseId?: string; expiresAt?: number };
+
+function sendOne(session: ClientHttp2Session, c: ApnsConfig, jwt: string, token: string, payload: string, opts: SendOptions): Promise<SendResult> {
   return new Promise(resolve => {
     const req = session.request({
       [constants.HTTP2_HEADER_METHOD]: "POST",
@@ -52,8 +72,9 @@ function sendOne(session: ClientHttp2Session, c: ApnsConfig, jwt: string, token:
       "apns-topic": c.bundleId,
       "apns-push-type": "alert",
       "apns-priority": "5",
-      // A reminder is only useful today: drop it if the phone is off for 6 hours.
-      "apns-expiration": String(Math.floor(Date.now() / 1000) + 6 * 3600),
+      // Only useful today: dropped if the phone stays unreachable (by default for 6 hours).
+      "apns-expiration": String(opts.expiresAt ?? Math.floor(Date.now() / 1000) + 6 * 3600),
+      ...(opts.collapseId ? { "apns-collapse-id": opts.collapseId } : {}),
       "content-type": "application/json",
     });
     let status = 0;
@@ -73,7 +94,7 @@ function sendOne(session: ClientHttp2Session, c: ApnsConfig, jwt: string, token:
 }
 
 /** Sends one alert to many devices over a single connection. */
-export async function sendAlerts(c: ApnsConfig, tokens: string[], alert: { title: string; body: string }): Promise<SendResult[]> {
+export async function sendAlerts(c: ApnsConfig, tokens: string[], alert: { title: string; body: string }, opts: SendOptions = {}): Promise<SendResult[]> {
   if (!tokens.length) return [];
   const session = connect(c.production ? "https://api.push.apple.com" : "https://api.sandbox.push.apple.com");
   session.on("error", () => { /* each request reports its own failure */ });
@@ -83,7 +104,7 @@ export async function sendAlerts(c: ApnsConfig, tokens: string[], alert: { title
     const results: SendResult[] = [];
     // A few at a time: plenty for a daily reminder, gentle on the connection.
     for (let i = 0; i < tokens.length; i += 20) {
-      results.push(...await Promise.all(tokens.slice(i, i + 20).map(t => sendOne(session, c, jwt, t, payload))));
+      results.push(...await Promise.all(tokens.slice(i, i + 20).map(t => sendOne(session, c, jwt, t, payload, opts))));
     }
     return results;
   } finally {

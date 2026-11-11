@@ -35,11 +35,9 @@ describe("Berri's appetite", () => {
 
   it("never guilt-trips in the notification, and names nothing personal", () => {
     for (const locale of ["hu", "en"] as const) {
-      for (const hunger of ["full", "peckish", "hungry", "missing"] as const) {
-        const { title, body } = reminderText(locale, hunger);
-        expect(title.length).toBeGreaterThan(0);
-        expect(`${title} ${body}`).not.toMatch(/\{|\}|szomor|sad|miattad|because of you/i);
-      }
+      const { title, body } = reminderText(locale);
+      expect(title.length).toBeGreaterThan(0);
+      expect(`${title} ${body}`).not.toMatch(/\{|\}|szomor|sad|miattad|because of you/i);
     }
   });
 

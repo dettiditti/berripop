@@ -51,7 +51,10 @@ export async function exportAccount(userId: string) {
     db.select({ kind: legalRecords.kind, version: legalRecords.version, granted: legalRecords.granted, createdAt: legalRecords.createdAt }).from(legalRecords).where(eq(legalRecords.userId, userId)).orderBy(desc(legalRecords.createdAt)),
     invoicesForUser(userId),
     db.select({ date: dailyCheckins.date, state: dailyCheckins.state, topics: dailyCheckins.topics, note: dailyCheckins.note, need: dailyCheckins.need, aiReply: dailyCheckins.aiReply, updatedAt: dailyCheckins.updatedAt }).from(dailyCheckins).where(eq(dailyCheckins.userId, userId)).orderBy(desc(dailyCheckins.date)),
-    db.select({ platform: pushDevices.platform, lastReminder: pushDevices.lastSentDate, createdAt: pushDevices.createdAt }).from(pushDevices).where(eq(pushDevices.userId, userId)),
+    db.select({
+      platform: pushDevices.platform, timeZone: pushDevices.timeZone, thought: pushDevices.thought, thoughtHour: pushDevices.thoughtHour, personalize: pushDevices.personalize,
+      remind: pushDevices.remind, remindHour: pushDevices.remindHour, lastReminder: pushDevices.lastSentDate, createdAt: pushDevices.createdAt,
+    }).from(pushDevices).where(eq(pushDevices.userId, userId)),
     exportThoughts(userId),
   ]);
   return {

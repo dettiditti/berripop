@@ -25,6 +25,7 @@ import type { JournalResult } from "../journal/types";
 import * as goalJourney from "./goalJourney";
 import * as personal from "./personal";
 import * as push from "./push";
+import type { PushPrefs } from "../push/schedule";
 import { getMemberProfile, setMemberProfile } from "./profile";
 import type { MemberProfile } from "../profile/model";
 import * as service from "./service";
@@ -613,17 +614,30 @@ export async function setAiConsentAction(granted: boolean, version: string) {
 /* ---------- Daily reminder (iPhone app) ---------- */
 
 /** `on`: whether this phone gets the daily reminder after the call. */
-export async function setPushReminderAction(token: string, on: boolean): Promise<{ ok: boolean; on: boolean }> {
+export async function setPushReminderAction(token: string, on: boolean, timeZone?: string): Promise<{ ok: boolean; on: boolean }> {
   const userId = await requireUserId();
   if (!userId) return { ok: false, on: false };
-  const ok = on ? await push.savePushDevice(userId, token) : await push.removePushDevice(userId, token);
+  const ok = on ? await push.savePushDevice(userId, token, timeZone) : await push.removePushDevice(userId, token);
   return { ok, on: ok ? on : !on };
 }
 
-export async function pushReminderStatusAction(token: string): Promise<boolean> {
+/** On app launch: updates the time zone of this phone if it is registered. */
+export async function refreshPushTimeZoneAction(token: string, timeZone: string): Promise<void> {
   const userId = await requireUserId();
-  if (!userId) return false;
-  return push.hasPushDevice(userId, token);
+  if (userId) await push.refreshPushTimeZone(userId, token, timeZone);
+}
+
+/** This phone's notification choices, or null when they are off on it. */
+export async function pushPrefsAction(token: string): Promise<PushPrefs | null> {
+  const userId = await requireUserId();
+  if (!userId) return null;
+  return push.getPushPrefs(userId, token);
+}
+
+export async function setPushPrefsAction(token: string, patch: Partial<PushPrefs>): Promise<PushPrefs | null> {
+  const userId = await requireUserId();
+  if (!userId) return null;
+  return push.setPushPrefs(userId, token, patch);
 }
 
 /* ---------- Account: export and deletion ---------- */

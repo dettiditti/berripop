@@ -4,13 +4,16 @@ import { useEffect, useState } from "react";
 import { Bell } from "lucide-react";
 import { useI18n } from "@/lib/i18n/client";
 import { pushPermission, pushToken } from "@/lib/nativeBridge";
-import { pushReminderStatusAction, setPushReminderAction } from "@/lib/server/actions";
+import { pushPrefsAction, setPushPrefsAction, setPushReminderAction } from "@/lib/server/actions";
+import type { PushPrefs } from "@/lib/push/schedule";
+import NotifyKinds from "./NotifyKinds";
 import { useNativeApp } from "./useNativeApp";
 
 /**
- * Settings, iPhone app only: the daily reminder for this phone. Turning it on
+ * Settings, iPhone app only: notifications for this phone. Turning them on
  * asks iOS for permission (only now, never on first launch) and stores the
- * phone's token; turning it off deletes it.
+ * phone's token and time zone; turning them off deletes it. While on, the two
+ * kinds (Berri's morning thought, the afternoon "Don't forget yourself" reminder) each have a switch and an hour; the thought can also be fitted to the member (chosen areas and check-in mood, never the journal).
  */
 export default function ReminderCard({ notify }: { notify: (message: string) => void }) {
   const inApp = useNativeApp();
@@ -19,6 +22,7 @@ export default function ReminderCard({ notify }: { notify: (message: string) => 
   const [state, setState] = useState<"loading" | "on" | "off" | "denied" | "unavailable">("loading");
   const [token, setToken] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [prefs, setPrefs] = useState<PushPrefs | null>(null);
 
   useEffect(() => {
     if (!inApp) return;
@@ -34,7 +38,10 @@ export default function ReminderCard({ notify }: { notify: (message: string) => 
       if (!live) return;
       if (typeof tk !== "string" || tk === "denied") return setState("off");
       setToken(tk);
-      setState((await pushReminderStatusAction(tk).catch(() => false)) ? "on" : "off");
+      const p = await pushPrefsAction(tk).catch(() => null);
+      if (!live) return;
+      setPrefs(p);
+      setState(p ? "on" : "off");
     })();
     return () => { live = false; };
   }, [inApp]);
@@ -50,8 +57,9 @@ export default function ReminderCard({ notify }: { notify: (message: string) => 
       }
       if (!tk) throw new Error("no token");
       setToken(tk);
-      const r = await setPushReminderAction(tk, on);
+      const r = await setPushReminderAction(tk, on, Intl.DateTimeFormat().resolvedOptions().timeZone);
       if (!r.ok) throw new Error("not saved");
+      setPrefs(r.on ? await pushPrefsAction(tk).catch(() => null) : null);
       setState(r.on ? "on" : "off");
       notify(s.reminderSaved);
     } catch {
@@ -60,20 +68,38 @@ export default function ReminderCard({ notify }: { notify: (message: string) => 
     setBusy(false);
   }
 
+  async function update(patch: Partial<PushPrefs>) {
+    if (!token || !prefs) return;
+    const before = prefs;
+    setPrefs({ ...prefs, ...patch });
+    try {
+      const saved = await setPushPrefsAction(token, patch);
+      if (!saved) throw new Error("not saved");
+      setPrefs(saved);
+      notify(s.reminderSaved);
+    } catch {
+      setPrefs(before);
+      notify(s.reminderError);
+    }
+  }
+
   if (!inApp || state === "loading" || state === "unavailable") return null;
+  const on = state === "on";
   return (
-    <section className="card stack-sm" aria-labelledby="set-reminder">
-      <h2 id="set-reminder"><Bell size={18} aria-hidden /> {s.reminderTitle}</h2>
+    <section className="card stack-sm notify-card" aria-labelledby="set-reminder">
+      <div className="notify-head">
+        <span className="notify-badge" aria-hidden><Bell size={20} /></span>
+        <h2 id="set-reminder">{s.reminderTitle}</h2>
+        {state !== "denied" && <span className={`notify-status ${on ? "is-on" : ""}`}>{on ? s.reminderOn : s.reminderOff}</span>}
+      </div>
       <p className="muted">{s.reminderBody}</p>
-      {state === "denied" ? <p className="field-hint">{s.reminderDenied}</p> : (
+      {state === "denied" ? <p className="field-hint">{s.reminderDenied}</p> : on ? (
         <>
-          <strong>{state === "on" ? s.reminderOn : s.reminderOff}</strong>
-          {state === "on" ? (
-            <button type="button" className="btn btn--ghost btn--sm settings-inline-btn" disabled={busy} onClick={() => change(false)}>{s.reminderDisable}</button>
-          ) : (
-            <button type="button" className="btn btn--primary btn--sm settings-inline-btn" disabled={busy} onClick={() => change(true)}>{s.reminderEnable}</button>
-          )}
+          {prefs && <NotifyKinds prefs={prefs} onChange={update} />}
+          <button type="button" className="notify-off" disabled={busy} onClick={() => change(false)}>{s.reminderDisable}</button>
         </>
+      ) : (
+        <button type="button" className="btn btn--primary notify-enable" disabled={busy} onClick={() => change(true)}>{s.reminderEnable}</button>
       )}
     </section>
   );

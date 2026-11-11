@@ -1,81 +1,176 @@
 import "server-only";
-import { and, eq, inArray, max } from "drizzle-orm";
+import { and, eq, gte, inArray, lt, max, ne, sql } from "drizzle-orm";
+import { AREAS, type Area } from "../assessment/model";
+import { isCheckinState, type CheckinState } from "../checkin/checkin";
 import { getDb } from "../db";
-import { daysUntil, hungerAfter, lastFedDate, type Hunger } from "../berriHunger";
-import { dailyCheckins, pushDevices, userActivity, userPrefs, worldMoments } from "../db/schema";
-import { circleToday } from "../domain/rules";
-import { isLocale } from "../i18n/config";
-import { apnsConfig, isDeadToken, sendAlerts } from "../push/apns";
-import { devicesToRemind, isDeviceToken, reminderText } from "../push/reminder";
+import {
+  answers, dailyCheckins, growthSteps, journalEntries, pathAssessments, pushDevices, pushSends, userActivity, userPrefs, worldMoments,
+} from "../db/schema";
+import { apnsConfig, sendAlerts } from "../push/apns";
+import { runPushJob, type PushRunResult, type PushStore } from "../push/job";
+import { isDeviceToken } from "../push/reminder";
+import { cleanPrefs, cleanTimeZone, type PushPrefs } from "../push/schedule";
 
-/** Turns the daily reminder on for this phone (or refreshes its token). */
-export async function savePushDevice(userId: string, token: unknown): Promise<boolean> {
+/*
+ * Privacy rule for this file: the notification job reads only that something
+ * happened and when (timestamps), the member's picked interest areas, and the
+ * mood word of a recent check-in. It never selects a journal body, an AI
+ * reflection, an answer's text, a check-in note or any other written content.
+ * tests/push.test.ts checks this file for it.
+ */
+
+/** Turns notifications on for this phone (or refreshes its token and time zone). */
+export async function savePushDevice(userId: string, token: unknown, timeZone?: unknown): Promise<boolean> {
   if (!isDeviceToken(token)) return false;
-  await getDb().insert(pushDevices).values({ token, userId })
-    .onConflictDoUpdate({ target: pushDevices.token, set: { userId, updatedAt: new Date() } });
+  const tz = cleanTimeZone(timeZone);
+  await getDb().insert(pushDevices).values({ token, userId, timeZone: tz })
+    .onConflictDoUpdate({ target: pushDevices.token, set: { userId, timeZone: tz, updatedAt: new Date() } });
   return true;
 }
 
-/** Turns the daily reminder off for this phone. */
+/** Keeps an already registered phone's time zone current (after travel); never registers one. */
+export async function refreshPushTimeZone(userId: string, token: unknown, timeZone: unknown): Promise<void> {
+  if (!isDeviceToken(token) || typeof timeZone !== "string") return;
+  const tz = cleanTimeZone(timeZone);
+  if (tz !== timeZone) return;
+  await getDb().update(pushDevices).set({ timeZone: tz, updatedAt: new Date() })
+    .where(and(eq(pushDevices.token, token), eq(pushDevices.userId, userId), ne(pushDevices.timeZone, tz)));
+}
+
+/** This phone's notification choices, or null when notifications are off on it. */
+export async function getPushPrefs(userId: string, token: unknown): Promise<PushPrefs | null> {
+  if (!isDeviceToken(token)) return null;
+  const [row] = await getDb().select({
+    remind: pushDevices.remind, remindHour: pushDevices.remindHour, thought: pushDevices.thought, thoughtHour: pushDevices.thoughtHour, personalize: pushDevices.personalize,
+  }).from(pushDevices).where(and(eq(pushDevices.token, token), eq(pushDevices.userId, userId))).limit(1);
+  return row ? cleanPrefs(row) : null;
+}
+
+/**
+ * Changes which notifications this phone gets and when. Unknown values keep
+ * what was saved. A kind already sent today is not sent again today, even if
+ * the new hour is later (push_sends).
+ */
+export async function setPushPrefs(userId: string, token: unknown, patch: unknown): Promise<PushPrefs | null> {
+  const current = await getPushPrefs(userId, token);
+  if (!current || !isDeviceToken(token)) return null;
+  const next = cleanPrefs(patch, current);
+  await getDb().update(pushDevices).set({ ...next, updatedAt: new Date() })
+    .where(and(eq(pushDevices.token, token), eq(pushDevices.userId, userId)));
+  return next;
+}
+
+/**
+ * Turns notifications off for this phone. The send log (push_sends) stays for
+ * its few days, so switching off and on again cannot repeat today's ones.
+ */
 export async function removePushDevice(userId: string, token: unknown): Promise<boolean> {
   if (!isDeviceToken(token)) return false;
   await getDb().delete(pushDevices).where(and(eq(pushDevices.token, token), eq(pushDevices.userId, userId)));
   return true;
 }
 
-export async function hasPushDevice(userId: string, token: unknown): Promise<boolean> {
-  if (!isDeviceToken(token)) return false;
-  const rows = await getDb().select({ token: pushDevices.token }).from(pushDevices)
-    .where(and(eq(pushDevices.token, token), eq(pushDevices.userId, userId))).limit(1);
-  return rows.length > 0;
+/** A check-in this recent still says something about the member's mood this morning. */
+const MOOD_MS = 36 * 3600_000;
+
+/**
+ * When each member last did something in the app: a daily question or step,
+ * a check-in, a saved journal entry, a circle answer, a path step or a world
+ * moment. Timestamps only, never content.
+ */
+async function lastActivity(userIds: string[], since: Date): Promise<Map<string, Date>> {
+  const db = getDb();
+  const rows = (await Promise.all([
+    db.select({ userId: userActivity.userId, at: max(userActivity.completedAt) }).from(userActivity)
+      .where(and(inArray(userActivity.userId, userIds), gte(userActivity.completedAt, since))).groupBy(userActivity.userId),
+    db.select({ userId: dailyCheckins.userId, at: max(dailyCheckins.updatedAt) }).from(dailyCheckins)
+      .where(and(inArray(dailyCheckins.userId, userIds), gte(dailyCheckins.updatedAt, since))).groupBy(dailyCheckins.userId),
+    db.select({ userId: journalEntries.userId, at: max(journalEntries.updatedAt) }).from(journalEntries)
+      .where(and(inArray(journalEntries.userId, userIds), eq(journalEntries.status, "saved"), gte(journalEntries.updatedAt, since))).groupBy(journalEntries.userId),
+    db.select({ userId: answers.userId, at: max(answers.updatedAt) }).from(answers)
+      .where(and(inArray(answers.userId, userIds), gte(answers.updatedAt, since))).groupBy(answers.userId),
+    db.select({ userId: growthSteps.userId, at: max(growthSteps.doneAt) }).from(growthSteps)
+      .where(and(inArray(growthSteps.userId, userIds), gte(growthSteps.doneAt, since))).groupBy(growthSteps.userId),
+    db.select({ userId: worldMoments.userId, at: max(worldMoments.createdAt) }).from(worldMoments)
+      .where(and(inArray(worldMoments.userId, userIds), gte(worldMoments.createdAt, since))).groupBy(worldMoments.userId),
+  ])).flat();
+  const last = new Map<string, Date>();
+  for (const r of rows) {
+    if (!r.at) continue;
+    const at = new Date(r.at);
+    const prev = last.get(r.userId);
+    if (!prev || at > prev) last.set(r.userId, at);
+  }
+  return last;
 }
 
 /**
- * The daily reminder (cron): to every phone that asked for it, unless the
- * member already did today's step. Does nothing until APNs is configured.
- * Returns counts only.
+ * The only inputs a personal thought may use: the interest areas picked in the
+ * start questions (read inside the database, so the assessment's free-text
+ * answers never leave it) and the mood word of a recent check-in.
  */
-export async function sendDailyReminders(now = new Date()): Promise<{ configured: boolean; due: number; sent: number; removed: number }> {
-  const config = apnsConfig();
-  if (!config) return { configured: false, due: 0, sent: 0, removed: 0 };
+async function thoughtInputs(userIds: string[], now: Date): Promise<{ areas: Map<string, Area[]>; moods: Map<string, CheckinState> }> {
   const db = getDb();
-  const today = circleToday(now);
-  const devices = await db.select({ token: pushDevices.token, userId: pushDevices.userId, lastSentDate: pushDevices.lastSentDate, locale: userPrefs.locale })
-    .from(pushDevices).leftJoin(userPrefs, eq(userPrefs.userId, pushDevices.userId));
-  if (!devices.length) return { configured: true, due: 0, sent: 0, removed: 0 };
-  const userIds = [...new Set(devices.map(d => d.userId))];
-  // When each member last fed Berri: a completed question, a check-in or a saved moment (dates only, no content).
-  const [acts, checks, moments] = await Promise.all([
-    db.select({ userId: userActivity.userId, last: max(userActivity.date) }).from(userActivity).where(inArray(userActivity.userId, userIds)).groupBy(userActivity.userId),
-    db.select({ userId: dailyCheckins.userId, last: max(dailyCheckins.date) }).from(dailyCheckins).where(inArray(dailyCheckins.userId, userIds)).groupBy(dailyCheckins.userId),
-    db.select({ userId: worldMoments.userId, last: max(worldMoments.date) }).from(worldMoments).where(inArray(worldMoments.userId, userIds)).groupBy(worldMoments.userId),
+  const [areaRows, moodRows] = await Promise.all([
+    db.select({ userId: pathAssessments.userId, areas: sql<unknown>`${pathAssessments.answers} -> 'areas'`, area: sql<unknown>`${pathAssessments.answers} ->> 'area'` })
+      .from(pathAssessments).where(inArray(pathAssessments.userId, userIds)),
+    db.select({ userId: dailyCheckins.userId, state: dailyCheckins.state, at: dailyCheckins.updatedAt }).from(dailyCheckins)
+      .where(and(inArray(dailyCheckins.userId, userIds), gte(dailyCheckins.updatedAt, new Date(now.getTime() - MOOD_MS)))),
   ]);
-  const lastFed = new Map<string, string>();
-  for (const r of [...acts, ...checks, ...moments]) {
-    const last = r.last ? lastFedDate([r.last, lastFed.get(r.userId) ?? r.last], today) : null;
-    if (last) lastFed.set(r.userId, last);
+  const isArea = (v: unknown): v is Area => typeof v === "string" && (AREAS as readonly string[]).includes(v);
+  const areas = new Map<string, Area[]>();
+  for (const r of areaRows) {
+    const list = Array.isArray(r.areas) ? r.areas.filter(isArea) : isArea(r.area) ? [r.area] : [];
+    if (list.length) areas.set(r.userId, list);
   }
-  const hungerOf = (userId: string): Hunger => {
-    const last = lastFed.get(userId);
-    return hungerAfter(last ? daysUntil(last, today) : null);
-  };
-  const fedToday = new Set([...lastFed].filter(([, d]) => d === today).map(([u]) => u));
-  const due = devicesToRemind(devices, fedToday, today);
+  const moods = new Map<string, CheckinState>();
+  const latest = new Map<string, number>();
+  for (const r of moodRows) {
+    if (!isCheckinState(r.state)) continue;
+    const at = new Date(r.at).getTime();
+    if ((latest.get(r.userId) ?? 0) < at) { latest.set(r.userId, at); moods.set(r.userId, r.state); }
+  }
+  return { areas, moods };
+}
 
-  const localeOf = new Map(devices.map(d => [d.token, isLocale(d.locale) ? d.locale : "hu"]));
-  let sent = 0;
-  const dead: string[] = [];
-  for (const locale of ["hu", "en"] as const) {
-    for (const hunger of ["full", "peckish", "hungry", "missing"] as const) {
-      const group = due.filter(d => localeOf.get(d.token) === locale && hungerOf(d.userId) === hunger);
-      if (!group.length) continue;
-      const results = await sendAlerts(config, group.map(d => d.token), reminderText(locale, hunger));
-      const ok = results.filter(r => r.ok).map(r => r.token);
-      sent += ok.length;
-      dead.push(...results.filter(isDeadToken).map(r => r.token));
-      if (ok.length) await db.update(pushDevices).set({ lastSentDate: today }).where(inArray(pushDevices.token, ok));
-    }
-  }
-  if (dead.length) await db.delete(pushDevices).where(inArray(pushDevices.token, dead));
-  return { configured: true, due: due.length, sent, removed: dead.length };
+/** The database side of the job (lib/push/job). */
+const dbStore: PushStore = {
+  async pruneSends(before) {
+    await getDb().delete(pushSends).where(lt(pushSends.sentAt, before));
+  },
+  async devices() {
+    return getDb().select({
+      token: pushDevices.token, userId: pushDevices.userId, timeZone: pushDevices.timeZone,
+      remind: pushDevices.remind, remindHour: pushDevices.remindHour, thought: pushDevices.thought, thoughtHour: pushDevices.thoughtHour,
+      personalize: pushDevices.personalize, locale: userPrefs.locale,
+    }).from(pushDevices).leftJoin(userPrefs, eq(userPrefs.userId, pushDevices.userId));
+  },
+  lastActivity,
+  async sends(userIds) {
+    return getDb().select({ userId: pushSends.userId, kind: pushSends.kind, date: pushSends.date, sentAt: pushSends.sentAt }).from(pushSends).where(inArray(pushSends.userId, userIds));
+  },
+  thoughtInputs,
+  async claim(userId, kind, date) {
+    const rows = await getDb().insert(pushSends).values({ userId, kind, date }).onConflictDoNothing().returning({ userId: pushSends.userId });
+    return rows.length > 0;
+  },
+  async release(userId, kind, date) {
+    await getDb().delete(pushSends).where(and(eq(pushSends.userId, userId), eq(pushSends.kind, kind), eq(pushSends.date, date)));
+  },
+  async markReminded(tokens, date) {
+    if (tokens.length) await getDb().update(pushDevices).set({ lastSentDate: date }).where(inArray(pushDevices.token, tokens));
+  },
+  async removeDevices(tokens) {
+    if (tokens.length) await getDb().delete(pushDevices).where(inArray(pushDevices.token, tokens));
+  },
+};
+
+/**
+ * The hourly job (cron): see lib/push/job. Does nothing until APNs is
+ * configured. Returns counts only; failures are logged as counts by status.
+ */
+export async function sendDuePushes(now = new Date()): Promise<PushRunResult> {
+  const config = apnsConfig();
+  if (!config) return { configured: false, thoughts: 0, reminders: 0, skippedActive: 0, removed: 0, failed: 0 };
+  return runPushJob(dbStore, (tokens, alert, opts) => sendAlerts(config, tokens, alert, opts), now, (message, counts) => console.warn(message, counts));
 }
