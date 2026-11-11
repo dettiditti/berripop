@@ -8,24 +8,26 @@ export type BerriClip = "hello" | "wave" | "wonder" | "joy" | "joy2" | "care" | 
 
 /**
  * How Berri can be shown without a background in this browser:
- * - "mov": Apple's browsers (Safari, every iPhone browser and the Berripop
- *   app) play HEVC video with transparency directly.
- * - "stack": elsewhere (Chrome, Firefox, Android), a plain H.264 clip with
- *   the colour in its top half and the transparency in its bottom half, put
- *   back together on a canvas with WebGL.
- * - "scene": no WebGL either, so the clip with its own lavender background.
+ * - "stack": wherever WebGL works (every current browser and the Berripop
+ *   app), a plain H.264 clip with the colour in its top half and the
+ *   transparency in its bottom half, put back together on a canvas.
+ * - "mov": Apple's browsers without WebGL play HEVC video with transparency
+ *   directly (its edges look jagged on iPhone, so it is only a fallback).
+ * - "scene": neither, so the clip with its own lavender background.
  */
 type Mode = "mov" | "stack" | "scene";
 
 function detectMode(): Mode {
-  const v = document.createElement("video");
-  if (navigator.vendor.startsWith("Apple") && v.canPlayType('video/quicktime; codecs="hvc1"') !== "") return "mov";
+  // WebGL first, Apple included: WebKit draws HEVC transparency with jagged
+  // edges on iPhone, while the stacked clip stays sharp.
   try {
     const c = document.createElement("canvas");
     if (c.getContext("webgl", { premultipliedAlpha: true })) return "stack";
   } catch {
     // No WebGL.
   }
+  const v = document.createElement("video");
+  if (navigator.vendor.startsWith("Apple") && v.canPlayType('video/quicktime; codecs="hvc1"') !== "") return "mov";
   return "scene";
 }
 const noSubscribe = () => () => {};
