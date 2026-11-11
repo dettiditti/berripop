@@ -1816,9 +1816,22 @@ html:has(.lp) { scroll-behavior: smooth; }
    screen with lavender instead. */
 html[data-app] { --safe-top: env(safe-area-inset-top, 0px); }
 html[data-app] body { padding-top: var(--safe-top); }
+/* The status bar: frosted glass over the page's own colour, so the screen
+   reads as one surface up to the top edge and content scrolls under it blurred. */
 html[data-app] body::before {
   content: ""; position: fixed; z-index: 40; top: 0; left: 0; right: 0; height: var(--safe-top);
-  background: var(--cream);
+  background: linear-gradient(100deg, rgba(214, 200, 252, 0.72), rgba(240, 222, 252, 0.62) 50%, rgba(252, 218, 206, 0.68));
+  -webkit-backdrop-filter: blur(18px) saturate(160%); backdrop-filter: blur(18px) saturate(160%);
+}
+/* The app's soft ambient light behind every page, the sign-in pages included. */
+html[data-app] body::after {
+  content: ""; position: fixed; inset: 0; z-index: -2; pointer-events: none;
+  background:
+    radial-gradient(42vmax 42vmax at -6% -10%, rgba(228, 217, 253, 0.85), transparent 70%),
+    radial-gradient(30vmax 30vmax at 104% 12%, rgba(251, 224, 212, 0.75), transparent 70%),
+    radial-gradient(30vmax 30vmax at 40% 108%, rgba(214, 241, 230, 0.7), transparent 70%),
+    radial-gradient(24vmax 24vmax at 88% 84%, rgba(235, 226, 254, 0.7), transparent 70%),
+    #fffaf5;
 }
 html[data-app] .overlay { top: var(--safe-top); }
 html[data-app] .settings-top { top: var(--safe-top); }

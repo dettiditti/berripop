@@ -1126,6 +1126,7 @@ export const en = {
     },
   },
   auth: {
+    socialContinue: "Continue with {{provider|titleize}}",
     signInTitle: "Welcome back to Berripop",
     signInSubtitle: "Sign in and pick up where you left off.",
     signUpTitle: "Create your Berripop account",

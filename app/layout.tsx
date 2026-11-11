@@ -25,6 +25,9 @@ function clerkLocalization(locale: Locale) {
     ...base,
     signIn: { ...base.signIn, start: { ...base.signIn?.start, title: a.signInTitle, subtitle: a.signInSubtitle } },
     signUp: { ...base.signUp, start: { ...base.signUp?.start, title: a.signUpTitle, subtitle: a.signUpSubtitle } },
+    // Full labels on the Apple and Google buttons, also when several are shown.
+    socialButtonsBlockButton: a.socialContinue,
+    socialButtonsBlockButtonManyInView: a.socialContinue,
     unstable__errors: {
       ...base.unstable__errors,
       form_param_format_invalid: a.errors.invalidFormat,

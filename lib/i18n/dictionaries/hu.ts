@@ -1120,6 +1120,7 @@ export const hu: Dictionary = {
     },
   },
   auth: {
+    socialContinue: "Folytatás {{provider|titleize}}-fiókkal",
     signInTitle: "Üdv újra a Berripopban",
     signInSubtitle: "Lépj be, és folytasd ott, ahol abbahagytad.",
     signUpTitle: "Hozd létre a Berripop-fiókodat",
