@@ -1,7 +1,7 @@
 import { generateKeyPairSync, sign } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { APPLE_ISSUER, AppleTokenRejected, appleTokenKid, verifyAppleIdToken, type AppleKey } from "../lib/auth/appleToken";
+import { APPLE_ISSUER, AppleTokenRejected, appleTokenKid, GOOGLE_ISSUERS, verifyAppleIdToken, verifyIdToken, type AppleKey } from "../lib/auth/appleToken";
 
 const AUD = "com.berripop.app";
 const NOW = new Date("2026-11-11T18:00:00Z");
@@ -76,9 +76,28 @@ describe("Sign in with Apple token check", () => {
   });
 
   it("the server side never logs the token and gives tickets that are short-lived", () => {
-    const src = readFileSync("lib/server/appleSignIn.ts", "utf8");
+    const src = readFileSync("lib/server/nativeSignIn.ts", "utf8");
     expect(src).not.toMatch(/console\./);
     expect(src).toMatch(/TICKET_SECONDS = 120/);
     expect(src).toMatch(/verification\?\.status !== "verified"/);
+  });
+
+  it("checks Google tokens the same way: Google's issuer, our web or iOS client, the iOS client as the party", () => {
+    const WEB = "240-web.apps.googleusercontent.com", IOS = "240-ios.apps.googleusercontent.com";
+    const g = (claims: Record<string, unknown>) => {
+      try {
+        verifyIdToken(token({ iss: "https://accounts.google.com", aud: WEB, azp: IOS, email_verified: true, ...claims }), { issuers: GOOGLE_ISSUERS, audiences: [WEB, IOS], keys, now: NOW });
+        return "accepted";
+      } catch (err) {
+        return err instanceof AppleTokenRejected ? err.code : "threw";
+      }
+    };
+    expect(g({})).toBe("accepted");
+    expect(g({ iss: "accounts.google.com" })).toBe("accepted");
+    expect(g({ aud: IOS, azp: undefined })).toBe("accepted");
+    expect(g({ aud: "999-other.apps.googleusercontent.com" })).toBe("bad_audience");
+    expect(g({ azp: "999-other.apps.googleusercontent.com" })).toBe("bad_audience");
+    expect(g({ iss: APPLE_ISSUER })).toBe("bad_issuer");
+    expect(g({ email_verified: false })).toBe("email_unverified");
   });
 });

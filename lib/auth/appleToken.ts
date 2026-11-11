@@ -1,10 +1,13 @@
 import { createPublicKey, verify, type JsonWebKey } from "node:crypto";
 
+export const GOOGLE_ISSUERS = ["https://accounts.google.com", "accounts.google.com"];
+
 /**
- * Checks an identity token from Sign in with Apple on the iPhone (the app's
- * own Apple sheet). Only a token that Apple signed, for this app, recently,
- * with an email Apple vouches for is accepted. Pure: the caller passes
- * Apple's public keys and the clock, so every rule is unit-tested.
+ * Checks an identity token from Sign in with Apple or Google on the iPhone
+ * (the app's own sign-in sheets). Only a token that the provider signed, for
+ * this app, recently, with an email the provider vouches for is accepted.
+ * Pure: the caller passes the provider's public keys and the clock, so every
+ * rule is unit-tested.
  */
 
 export const APPLE_ISSUER = "https://appleid.apple.com";
@@ -47,6 +50,16 @@ export function appleTokenKid(token: string): string | null {
  * email), or throws AppleTokenRejected with the reason.
  */
 export function verifyAppleIdToken(token: unknown, opts: { audience: string; keys: AppleKey[]; now: Date }): AppleIdentity {
+  return verifyIdToken(token, { issuers: [APPLE_ISSUER], audiences: [opts.audience], keys: opts.keys, now: opts.now });
+}
+
+/**
+ * The same checks for any OpenID provider (Apple, Google): RS256 signed by one
+ * of the provider's keys, one of its issuers, one of our client ids as the
+ * audience (and as the authorised party, when the token names one), fresh,
+ * with a subject and a verified email.
+ */
+export function verifyIdToken(token: unknown, opts: { issuers: string[]; audiences: string[]; keys: AppleKey[]; now: Date }): AppleIdentity {
   if (typeof token !== "string" || token.length > 8000) throw new AppleTokenRejected("malformed");
   const segments = token.split(".");
   if (segments.length !== 3 || segments.some(s => !/^[A-Za-z0-9_-]+$/.test(s))) throw new AppleTokenRejected("malformed");
@@ -66,9 +79,10 @@ export function verifyAppleIdToken(token: unknown, opts: { audience: string; key
   }
   if (!ok) throw new AppleTokenRejected("bad_signature");
 
-  if (claims.iss !== APPLE_ISSUER) throw new AppleTokenRejected("bad_issuer");
-  const aud = claims.aud;
-  if (!(aud === opts.audience || (Array.isArray(aud) && aud.length === 1 && aud[0] === opts.audience))) throw new AppleTokenRejected("bad_audience");
+  if (typeof claims.iss !== "string" || !opts.issuers.includes(claims.iss)) throw new AppleTokenRejected("bad_issuer");
+  const aud = Array.isArray(claims.aud) && claims.aud.length === 1 ? claims.aud[0] : claims.aud;
+  if (typeof aud !== "string" || !opts.audiences.includes(aud)) throw new AppleTokenRejected("bad_audience");
+  if (claims.azp !== undefined && (typeof claims.azp !== "string" || !opts.audiences.includes(claims.azp))) throw new AppleTokenRejected("bad_audience");
   const now = Math.floor(opts.now.getTime() / 1000);
   if (typeof claims.exp !== "number" || claims.exp + SKEW_S < now) throw new AppleTokenRejected("expired");
   if (typeof claims.iat !== "number" || claims.iat > now + SKEW_S || now - claims.iat > APPLE_MAX_AGE_S) throw new AppleTokenRejected("too_old");

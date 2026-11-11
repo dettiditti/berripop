@@ -35,7 +35,7 @@ import { recordApplePurchase, type AppleResult } from "./apple";
 import { APPLE_PRODUCT_IDS } from "../billing/apple";
 import { appAccountToken } from "../billing/apple-token";
 import { joinWaitlist } from "./waitlist";
-import { appleSignIn, type AppleSignInResult } from "./appleSignIn";
+import { nativeSignIn, type NativeSignInResult } from "./nativeSignIn";
 import { readWaitlist, type WaitlistError, type WaitlistInput } from "../waitlist";
 
 /** Server actions: authenticate the caller, then delegate to the circle, growth or billing services. */
@@ -675,9 +675,10 @@ export async function joinAppWaitlistAction(input: WaitlistInput): Promise<{ ok:
 }
 
 /**
- * Sign in with Apple in the iPhone app: checks the app's Apple identity token
- * on the server and returns a one-time Clerk sign-in ticket (lib/server/appleSignIn).
+ * Sign in with Apple or Google in the iPhone app: checks the app's identity
+ * token on the server and returns a one-time Clerk sign-in ticket (lib/server/nativeSignIn).
  */
-export async function appleSignInAction(idToken: string, firstName?: string, lastName?: string): Promise<AppleSignInResult> {
-  return appleSignIn(idToken, firstName, lastName);
+export async function nativeSignInAction(provider: "apple" | "google", idToken: string, firstName?: string, lastName?: string): Promise<NativeSignInResult> {
+  if (provider !== "apple" && provider !== "google") return { ok: false, code: "bad_provider" };
+  return nativeSignIn(provider, idToken, firstName, lastName);
 }

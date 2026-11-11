@@ -4,14 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import { useClerk } from "@clerk/nextjs";
 import { useI18n } from "@/lib/i18n/client";
 import { nativeAuth } from "@/lib/nativeBridge";
-import { appleSignInAction } from "@/lib/server/actions";
+import { nativeSignInAction } from "@/lib/server/actions";
 
 /*
  * Sign in with Apple and with Google inside the iPhone app. The buttons are
  * Clerk's own, in the sign-in/sign-up card; a tap on them is caught here and
  * run natively instead (lib/nativeBridge.ts), because Google refuses sign-in
- * in embedded web views. The app returns an ID token; Clerk verifies it and
- * signs the member in, or creates the account like a web sign-up with Google.
+ * in embedded web views. The app returns an ID token; our server verifies it
+ * and returns a one-time Clerk ticket that signs the member in, creating the
+ * account first if needed (lib/server/nativeSignIn).
  *
  * Each is switched on separately once it is set up in Clerk (public values,
  * no secrets). Google is never offered without Apple (App Store rule 4.8).
@@ -59,23 +60,18 @@ export default function NativeSignIn() {
     busy.current = true;
     document.documentElement.classList.add("native-busy");
     setError(null);
-    const done = { signInForceRedirectUrl: "/", signUpForceRedirectUrl: "/" };
     try {
-      if (provider === "apple") {
-        // Clerk's web API does not take the app's Apple token, so the server checks it and returns a one-time ticket.
-        const r = await auth.apple();
-        const res = await appleSignInAction(r.idToken, r.firstName, r.lastName);
-        if (!res.ok) throw new Error(res.code);
-        const signIn = await clerk.client.signIn.create({ strategy: "ticket", ticket: res.ticket });
-        if (signIn.status !== "complete" || !signIn.createdSessionId) throw new Error("incomplete");
-        await clerk.setActive({ session: signIn.createdSessionId, redirectUrl: "/" });
-        return;
-      } else {
-        const r = await auth.google({ clientId: GOOGLE_IOS_CLIENT_ID, audience: GOOGLE_WEB_CLIENT_ID });
-        const res = await clerk.authenticateWithGoogleOneTap({ token: r.idToken });
-        await clerk.handleGoogleOneTapCallback(res, done);
-        return;
-      }
+      // Clerk's web API does not take the app's own tokens, so the server checks them and returns a one-time ticket.
+      const r = provider === "apple"
+        ? await auth.apple()
+        : await auth.google({ clientId: GOOGLE_IOS_CLIENT_ID, audience: GOOGLE_WEB_CLIENT_ID });
+      const names = "firstName" in r ? r as { firstName?: string; lastName?: string } : {};
+      const res = await nativeSignInAction(provider, r.idToken, names.firstName, names.lastName);
+      if (!res.ok) throw new Error(res.code);
+      const signIn = await clerk.client.signIn.create({ strategy: "ticket", ticket: res.ticket });
+      if (signIn.status !== "complete" || !signIn.createdSessionId) throw new Error("incomplete");
+      await clerk.setActive({ session: signIn.createdSessionId, redirectUrl: "/" });
+      return;
     } catch (err) {
       if (!(err instanceof Error && /cancel/i.test(err.message))) setError(`${s.failed} (${errorCode(err)})`);
     }
