@@ -33,6 +33,18 @@ function providerOf(target: EventTarget | null): Provider | null {
   return null;
 }
 
+/**
+ * A short code for the failure, shown in small print so a failed sign-in can
+ * be diagnosed: Clerk's error code (e.g. "form_identifier_exists"), or the
+ * app's own ("failed", "busy"). Never the token or any account detail.
+ */
+function errorCode(err: unknown): string {
+  const clerk = (err as { errors?: { code?: unknown }[] } | null)?.errors?.[0]?.code;
+  if (typeof clerk === "string" && /^[a-z0-9_]{1,60}$/.test(clerk)) return clerk;
+  const msg = err instanceof Error ? err.message : "";
+  return /^[a-z_]{1,20}$/.test(msg) ? msg : "unknown";
+}
+
 export default function NativeSignIn() {
   const { d } = useI18n();
   const s = d.auth.native;
@@ -67,7 +79,7 @@ export default function NativeSignIn() {
         return;
       }
     } catch (err) {
-      if (!(err instanceof Error && /cancel/i.test(err.message))) setError(s.failed);
+      if (!(err instanceof Error && /cancel/i.test(err.message))) setError(`${s.failed} (${errorCode(err)})`);
     }
     busy.current = false;
     document.documentElement.classList.remove("native-busy");
