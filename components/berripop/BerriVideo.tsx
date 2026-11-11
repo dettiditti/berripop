@@ -86,8 +86,17 @@ export default function BerriVideo({ clip, className }: { clip: BerriClip; class
 const VERTEX = `attribute vec2 p; varying vec2 uv;
 void main() { uv = vec2((p.x + 1.0) * 0.5, (1.0 - p.y) * 0.25); gl_Position = vec4(p, 0.0, 1.0); }`;
 // The colour is already premultiplied (drawn over black), as the canvas expects.
-const FRAGMENT = `precision mediump float; uniform sampler2D t; varying vec2 uv;
-void main() { vec3 c = texture2D(t, uv).rgb; float a = texture2D(t, uv + vec2(0.0, 0.5)).r; gl_FragColor = vec4(min(c, vec3(a)), a); }`;
+// A light sharpen (the clips come from soft, compressed renders): the colour
+// is pushed away from the average of its four neighbours, one texel apart.
+const FRAGMENT = `precision highp float; uniform sampler2D t; uniform vec2 px; varying vec2 uv;
+void main() {
+  vec3 c = texture2D(t, uv).rgb;
+  vec3 n = texture2D(t, uv + vec2(px.x, 0.0)).rgb + texture2D(t, uv - vec2(px.x, 0.0)).rgb
+         + texture2D(t, uv + vec2(0.0, px.y)).rgb + texture2D(t, uv - vec2(0.0, px.y)).rgb;
+  c = clamp(c + 0.35 * (c - n * 0.25), 0.0, 1.0);
+  float a = texture2D(t, uv + vec2(0.0, 0.5)).r;
+  gl_FragColor = vec4(min(c, vec3(a)), a);
+}`;
 
 /**
  * Plays a stacked-alpha clip in a hidden video and draws each frame onto a
@@ -125,6 +134,7 @@ function StackedClip({ src, still, onError }: { src: string; still: string; onEr
     gl.bindBuffer(gl.ARRAY_BUFFER, buf);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
     const loc = gl.getAttribLocation(prog, "p");
+    const pxLoc = gl.getUniformLocation(prog, "px");
     gl.enableVertexAttribArray(loc);
     gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
     const tex = gl.createTexture();
@@ -143,6 +153,7 @@ function StackedClip({ src, still, onError }: { src: string; still: string; onEr
         c.width = v.videoWidth;
         c.height = v.videoHeight / 2;
         gl.viewport(0, 0, c.width, c.height);
+        gl.uniform2f(pxLoc, 1 / v.videoWidth, 1 / v.videoHeight);
       }
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, v);
       gl.clearColor(0, 0, 0, 0);

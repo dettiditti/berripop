@@ -2600,3 +2600,54 @@ html:not(.native-auth) .in-app-social, html:not(.native-auth) .in-app-divider { 
 html:not(.native-google) .in-app-social .cl-socialButtonsBlockButton__google { display: none !important; }
 html.native-busy .in-app-social { opacity: 0.6; pointer-events: none; }
 .native-sign-in-error { max-width: 400px; margin: 10px auto 0; text-align: center; }
+
+/* ============ Berri's intro, colourful glass ============
+ * Stronger colour behind the glass: violet, peach and mint light with a soft
+ * glow behind Berri, so the milky cards and buttons read as frosted glass. */
+.berri-stage:has(.berri-video--clear) {
+  position: relative; isolation: isolate;
+  background:
+    radial-gradient(60vmax 52vmax at -10% -12%, rgba(160, 130, 250, 0.5), transparent 62%),
+    radial-gradient(46vmax 40vmax at 112% 6%, rgba(255, 165, 180, 0.42), transparent 64%),
+    radial-gradient(52vmax 44vmax at 108% 78%, rgba(130, 140, 250, 0.32), transparent 62%),
+    radial-gradient(50vmax 40vmax at -8% 96%, rgba(110, 225, 180, 0.32), transparent 62%),
+    radial-gradient(40vmax 30vmax at 50% 112%, rgba(255, 190, 130, 0.3), transparent 66%),
+    linear-gradient(170deg, #f4efff 0%, #fdf3f5 55%, #f0faf5 100%);
+}
+/* A halo of light right behind Berri. */
+.berri-stage:has(.berri-video--clear) .berri-video::after {
+  content: ""; position: absolute; inset: 12% 8% 18%; z-index: -1; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 255, 255, 0.95), rgba(233, 222, 255, 0.55) 55%, transparent);
+  filter: blur(6px);
+}
+.berri-stage:has(.berri-video--clear) .berri-video { isolation: isolate; }
+.berri-stage:has(.berri-video--clear) .berri-intro-card,
+.berri-stage:has(.berri-video--clear) .app-welcome-copy {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.3));
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  -webkit-backdrop-filter: blur(22px) saturate(170%); backdrop-filter: blur(22px) saturate(170%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 24px 50px -22px rgba(76, 52, 150, 0.45), 0 2px 8px rgba(84, 60, 150, 0.06);
+}
+.berri-stage:has(.berri-video--clear) .berri-intro-card::before,
+.berri-stage:has(.berri-video--clear) .app-welcome-copy::before {
+  background: rgba(255, 255, 255, 0.62); border-color: rgba(255, 255, 255, 0.75);
+}
+/* Primary button: a glossy violet pill; secondary: clear glass. */
+.berri-stage:has(.berri-video--clear) .btn--primary {
+  background: linear-gradient(180deg, #8b6cf0, #6a48d6); border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 14px 28px -12px rgba(90, 60, 200, 0.7);
+}
+.berri-stage:has(.berri-video--clear) .btn--primary:disabled { background: rgba(118, 84, 217, 0.22); color: rgba(255, 255, 255, 0.9); box-shadow: none; }
+.berri-stage:has(.berri-video--clear) .btn--ghost {
+  background: rgba(255, 255, 255, 0.5); border: 1px solid rgba(255, 255, 255, 0.8);
+  -webkit-backdrop-filter: blur(16px) saturate(160%); backdrop-filter: blur(16px) saturate(160%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 10px 24px -16px rgba(76, 52, 150, 0.45);
+}
+.berri-stage:has(.berri-video--clear) .assessment-option,
+.berri-stage:has(.berri-video--clear) .input,
+.berri-stage:has(.berri-video--clear) .app-start-back {
+  background: rgba(255, 255, 255, 0.55); border-color: rgba(255, 255, 255, 0.85);
+}
+.berri-stage:has(.berri-video--clear) .assessment-option.is-selected { background: rgba(255, 255, 255, 0.92); border-color: rgba(118, 84, 217, 0.6); }
+.berri-stage:has(.berri-video--clear) .app-start-progress { background: rgba(118, 84, 217, 0.16); }
+html[data-app]:has(.berri-video--clear), html[data-app] body:has(.berri-video--clear) { background: #f3edff; }

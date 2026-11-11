@@ -17,7 +17,8 @@ type Question = "name" | "age" | "gender" | "scene" | "area" | "obstacles" | "ti
 type Step = "hello" | Question | "ready" | "young";
 const QUESTIONS: readonly Question[] = ["name", "age", "gender", "scene", "area", "obstacles", "time", "support"];
 const ORDER: readonly Step[] = ["hello", ...QUESTIONS, "ready"];
-const CLIP: Record<Step, BerriClip> = { hello: "hello", name: "wonder", age: "joy2", gender: "wonder", scene: "joy", area: "joy2", obstacles: "care", time: "wonder", support: "joy2", ready: "joy", young: "care" };
+// Every step shows the same (newest, sharpest) Berri, so their colour never changes between screens.
+const CLIP: Record<Step, BerriClip> = { hello: "hello", name: "hello", age: "hello", gender: "hello", scene: "hello", area: "hello", obstacles: "hello", time: "hello", support: "hello", ready: "hello", young: "hello" };
 const MAX_NAME = 40;
 
 /**
