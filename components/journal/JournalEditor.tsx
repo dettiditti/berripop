@@ -82,7 +82,7 @@ export default function JournalEditor({
   }, [mood, status, saver, state.moodsEnabled, moodTick]);
 
   useEffect(() => {
-    textRef.current?.focus();
+    textRef.current?.focus({ preventScroll: true });
   }, []);
 
   // Fit the editor to the visible viewport, so the on-screen keyboard never covers the save button.
@@ -90,15 +90,20 @@ export default function JournalEditor({
     const vv = window.visualViewport;
     const el = rootRef.current;
     if (!vv || !el) return;
-    const fit = () => {
+    // One update per frame: iOS fires many resize and scroll events while the keyboard slides in.
+    let frame = 0;
+    const apply = () => {
+      frame = 0;
       el.style.setProperty("--editor-height", `${vv.height}px`);
       el.style.setProperty("--editor-top", `${vv.offsetTop}px`);
       setKeyboard(window.innerHeight - vv.height > 120);
     };
-    fit();
+    const fit = () => { if (!frame) frame = requestAnimationFrame(apply); };
+    apply();
     vv.addEventListener("resize", fit);
     vv.addEventListener("scroll", fit);
     return () => {
+      cancelAnimationFrame(frame);
       vv.removeEventListener("resize", fit);
       vv.removeEventListener("scroll", fit);
     };
@@ -151,7 +156,7 @@ export default function JournalEditor({
             {showPrompts && (
               <div className="chip-row journal-prompts">
                 {j.prompts.map(p => (
-                  <button key={p} type="button" className="chip" onClick={() => { setBody(b => (b.trim() ? `${b.trimEnd()}\n\n${p}\n` : `${p}\n`)); dirty.current = true; textRef.current?.focus(); }}>{p}</button>
+                  <button key={p} type="button" className="chip" onClick={() => { setBody(b => (b.trim() ? `${b.trimEnd()}\n\n${p}\n` : `${p}\n`)); dirty.current = true; textRef.current?.focus({ preventScroll: true }); }}>{p}</button>
                 ))}
               </div>
             )}

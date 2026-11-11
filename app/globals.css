@@ -1843,6 +1843,15 @@ html[data-app] body::after {
     #fffaf5;
 }
 html[data-app] .overlay { top: var(--safe-top); }
+/* The writing screens follow the visible area (above the keyboard) and keep
+   clear of the status bar: top and height both move with it, so the save bar
+   stays just above the keyboard. The page behind them never scrolls, so iOS
+   has nothing to shift while the keyboard opens. */
+html[data-app] :is(.journal-editor, .thought) {
+  top: calc(var(--editor-top, 0px) + var(--safe-top));
+  height: calc(var(--editor-height, 100dvh) - var(--safe-top));
+}
+html[data-app]:has(:is(.journal-editor, .thought)), html[data-app] body:has(:is(.journal-editor, .thought)) { overflow: hidden; overscroll-behavior: none; }
 html[data-app] .settings-top { top: var(--safe-top); }
 html[data-app]:has(.berri-stage), html[data-app] body:has(.berri-stage) { background: #cbc3d9; }
 html[data-app] body:has(.berri-stage) { padding-top: 0; }

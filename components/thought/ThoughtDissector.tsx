@@ -85,15 +85,19 @@ export default function ThoughtDissector({ source, onClose, notify, onJournalCha
     const vv = window.visualViewport;
     const el = rootRef.current;
     if (!vv || !el) return;
-    const fit = () => {
+    // One update per frame: iOS fires many resize and scroll events while the keyboard slides in.
+    let frame = 0;
+    const apply = () => {
+      frame = 0;
       el.style.setProperty("--editor-height", `${vv.height}px`);
       el.style.setProperty("--editor-top", `${vv.offsetTop}px`);
       setKeyboard(window.innerHeight - vv.height > 120);
     };
-    fit();
+    const fit = () => { if (!frame) frame = requestAnimationFrame(apply); };
+    apply();
     vv.addEventListener("resize", fit);
     vv.addEventListener("scroll", fit);
-    return () => { vv.removeEventListener("resize", fit); vv.removeEventListener("scroll", fit); };
+    return () => { cancelAnimationFrame(frame); vv.removeEventListener("resize", fit); vv.removeEventListener("scroll", fit); };
   }, []);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }); }, [session?.messages.length, busy, failed, safety]);
