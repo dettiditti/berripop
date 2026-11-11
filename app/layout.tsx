@@ -77,6 +77,8 @@ export async function generateViewport(): Promise<Viewport> {
   return { themeColor: "#FFF8EE", width: "device-width", initialScale: 1, ...(inApp ? { viewportFit: "cover" as const } : {}) };
 }
 
+const ERROR_REPORTER = `(function(){var n=0;function send(e,src){if(n++>4)return;try{var err=e&&e.error||e&&e.reason||e||{};var st=String(err.stack||"").split("\\n").slice(0,3).join(" | ");navigator.sendBeacon&&navigator.sendBeacon("/api/client-error",new Blob([JSON.stringify({name:String(err.name||src),message:String(err.message||e&&e.message||err).slice(0,200),at:st.slice(0,200)||String(e&&e.filename||"")+":"+(e&&e.lineno||""),path:location.pathname,app:/BerripopApp\\//.test(navigator.userAgent)})],{type:"application/json"}))}catch(_){}}addEventListener("error",function(e){send(e,"error")});addEventListener("unhandledrejection",function(e){send(e,"rejection")})})();`;
+
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   // The language cookie lets server-rendered screens (and Clerk's sign-in) match the app's language.
   const stored = (await cookies()).get(LOCALE_COOKIE)?.value;
@@ -93,6 +95,8 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     >
       <html lang={locale} data-app={inApp ? "" : undefined} suppressHydrationWarning>
         <body>
+          {/* Reports uncaught page errors (type, short message, code location, path) to the server logs: never the member or anything typed. */}
+          <script dangerouslySetInnerHTML={{ __html: ERROR_REPORTER }} />
           <LocaleProvider locale={locale}>{children}</LocaleProvider>
           {/* Cookieless, anonymous page views (Vercel Web Analytics). */}
           <Analytics />
