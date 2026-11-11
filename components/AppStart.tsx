@@ -11,14 +11,12 @@ import { AGE_CHOICES, GENDERS, type AgeChoice, type MemberProfile } from "@/lib/
 import type { SceneId } from "@/lib/world";
 import ScenePicker from "./world/ScenePicker";
 import { Confetti } from "./berripop/BerripopCelebration";
-import BerriVideo, { type BerriClip } from "./berripop/BerriVideo";
+import { BerriStill } from "./berripop/BerriVideo";
 
 type Question = "name" | "age" | "gender" | "scene" | "area" | "obstacles" | "time" | "support";
 type Step = "hello" | Question | "ready" | "young";
 const QUESTIONS: readonly Question[] = ["name", "age", "gender", "scene", "area", "obstacles", "time", "support"];
 const ORDER: readonly Step[] = ["hello", ...QUESTIONS, "ready"];
-// Every step shows the same (newest, sharpest) Berri, so their colour never changes between screens.
-const CLIP: Record<Step, BerriClip> = { hello: "hello", name: "hello", age: "hello", gender: "hello", scene: "hello", area: "hello", obstacles: "hello", time: "hello", support: "hello", ready: "hello", young: "hello" };
 const MAX_NAME = 40;
 
 /**
@@ -92,7 +90,7 @@ export default function AppStart() {
   if (step === "hello") {
     return (
       <main className="berri-stage app-welcome">
-        <BerriVideo clip="hello" className="app-welcome-berri" />
+        <BerriStill className="app-welcome-berri" />
         <div className="app-welcome-copy">
           <h1>{d.appWelcome.title}</h1>
           <p>{d.appWelcome.body}</p>
@@ -109,7 +107,7 @@ export default function AppStart() {
     const y = d.aboutYou;
     return (
       <main className="berri-stage app-start app-start--ready">
-        <BerriVideo clip={CLIP.young} className="app-start-berri" />
+        <BerriStill className="app-start-berri" />
         <section className="berri-intro-card" aria-labelledby="as-young">
           <h1 id="as-young">{y.under16Title}</h1>
           <p>{y.under16Body}</p>
@@ -125,7 +123,7 @@ export default function AppStart() {
     return (
       <main className="berri-stage app-start app-start--ready">
         <Confetti pieces={40} />
-        <BerriVideo clip={CLIP.ready} className="app-start-berri" />
+        <BerriStill className="app-start-berri" />
         <section className="berri-intro-card" aria-labelledby="as-ready">
           <div className="app-start-progress is-full" aria-hidden><span style={{ width: "100%" }} /></div>
           <h1 id="as-ready">{t(s.readyTitle, { name: clean })}</h1>
@@ -148,7 +146,7 @@ export default function AppStart() {
 
   return (
     <main className="berri-stage app-start">
-      <BerriVideo clip={CLIP[q]} className="app-start-berri" />
+      <BerriStill className="app-start-berri" />
       <form className="berri-intro-card app-start-card" aria-labelledby="as-title" onSubmit={e => { e.preventDefault(); if (q === "name") submitName(e); else if (done(q)) next(); }}>
         <div className="app-start-top">
           <button type="button" className="app-start-back" onClick={back} aria-label={s.back}><ArrowLeft size={20} aria-hidden /></button>

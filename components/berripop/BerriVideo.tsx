@@ -83,6 +83,20 @@ export default function BerriVideo({ clip, className }: { clip: BerriClip; class
   );
 }
 
+/**
+ * Berri as a sharp still picture (waving hello), standing on the page like
+ * the transparent clips. Used where a crisp figure matters more than motion:
+ * the app's first screen and its questions. Decorative.
+ */
+export function BerriStill({ className }: { className?: string }) {
+  return (
+    <div className={`berri-video berri-video--clear berri-video--still${className ? ` ${className}` : ""}`} aria-hidden>
+      {/* eslint-disable-next-line @next/next/no-img-element -- transparent still from public/berri */}
+      <img src="/berri/berri-hi.png" alt="" width={808} height={872} decoding="async" fetchPriority="high" />
+    </div>
+  );
+}
+
 const VERTEX = `attribute vec2 p; varying vec2 uv;
 void main() { uv = vec2((p.x + 1.0) * 0.5, (1.0 - p.y) * 0.25); gl_Position = vec4(p, 0.0, 1.0); }`;
 // The colour is already premultiplied (drawn over black), as the canvas expects.

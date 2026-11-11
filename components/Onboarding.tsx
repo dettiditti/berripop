@@ -8,7 +8,7 @@ import { clearStart, readStart, resumeStep, type StartData } from "@/lib/onboard
 import { saveAssessmentAnswersAction, setDisplayNameAction, setProfileAction, setSceneAction, startAssessmentAction, startPersonalPathAction } from "@/lib/server/actions";
 import BerriIntro from "./BerriIntro";
 import BerripopMascot from "./berripop/BerripopMascot";
-import BerriVideo from "./berripop/BerriVideo";
+import { BerriStill } from "./berripop/BerriVideo";
 import CircleSetup from "./CircleSetup";
 import TermsGate from "./TermsGate";
 
@@ -85,7 +85,7 @@ function ContinueFromStart({ name, onSnapshot, terms, start, onRestart }: Props 
 
   return (
     <main className="berri-stage app-start app-start--ready">
-      <BerriVideo clip="hello" className="app-start-berri" />
+      <BerriStill className="app-start-berri" />
       <section className="berri-intro-card" aria-live="polite">
         {failed ? (
           <>

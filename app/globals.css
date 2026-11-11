@@ -1617,6 +1617,8 @@ html:has(.lp) { scroll-behavior: smooth; }
 }
 .berri-video video, .berri-video img, .berri-video canvas { width: 100%; height: 100%; object-fit: cover; object-position: 50% 45%; display: block; }
 .berri-video--clear canvas { position: relative; }
+/* The still picture is already trimmed to Berri: shown whole, feet on the shadow. */
+.berri-video--still img { box-sizing: border-box; object-fit: contain; object-position: 50% 100%; padding: 12% 8% 6%; }
 /* The stacked clip's source video only feeds the canvas. */
 .berri-video .berri-video-source { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .berri-video img + .berri-video-pending { position: absolute; inset: 0; opacity: 0; }
