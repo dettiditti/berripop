@@ -11,6 +11,7 @@ import BerripopReaction from "../berripop/BerripopReaction";
 import Companion from "../world/Companion";
 import ThemeGlyph from "../world/ThemeGlyph";
 import MoodCalendar from "../world/MoodCalendar";
+import { calendarMoods } from "@/lib/checkin/moodCalendar";
 import WorldScene from "../world/WorldScene";
 import type { ScreenProps } from "./types";
 
@@ -25,6 +26,8 @@ export default function InnerWorldScreen({ view, run, notify, go }: ScreenProps)
   const { d, t, plural, relativeDay } = useI18n();
   const w = d.innerWorld;
   const world = useMemo(() => deriveWorld(view, moments), [view, moments]);
+  // A day without a "How are you?" answer takes its colour from that day's moments.
+  const calendar = useMemo(() => calendarMoods(view.snapshot.progress.moods, moments), [view.snapshot.progress.moods, moments]);
   const [saving, setSaving] = useState(false);
 
   const [words, setWords] = useState<string[]>([]);
@@ -110,7 +113,7 @@ export default function InnerWorldScreen({ view, run, notify, go }: ScreenProps)
         </details>
       </section>
 
-      <MoodCalendar moods={view.snapshot.progress.moods} today={today} />
+      <MoodCalendar moods={calendar} today={today} />
 
       <section id="world-moment" className="card moment-card" aria-labelledby="moment-title">
         <h2 id="moment-title">{w.moment.title}</h2>

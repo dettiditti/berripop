@@ -849,8 +849,8 @@ export const en = {
   },
   moodCalendar: {
     title: "Mood calendar",
-    intro: "It fills with colour from your \"How are you today?\" answers. Only you can see it.",
-    empty: "No coloured days yet. Start with the \"How are you today?\" card on Today.",
+    intro: "It fills with colour from your \"How are you today?\" answers and the feelings of your moments. Only you can see it.",
+    empty: "No coloured days yet. Start with the \"How are you today?\" card on Today, or with a moment below.",
     prev: "Previous month",
     next: "Next month",
     day: "{date}: {state}",

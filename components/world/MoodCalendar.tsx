@@ -9,7 +9,8 @@ import { useI18n } from "@/lib/i18n/client";
 
 /**
  * The mood calendar in My Inner World: each day coloured by the member's
- * "How are you today?" answer. Only the date and the chosen state are used,
+ * "How are you today?" answer, or on days without one by the feelings of its
+ * moments (lib/checkin/moodCalendar). Only the date and the chosen state are used,
  * never notes, and nothing is judged: every colour is a soft one.
  */
 export default function MoodCalendar({ moods, today }: { moods: Mood[]; today: string }) {

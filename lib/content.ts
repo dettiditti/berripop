@@ -124,8 +124,10 @@ export const levels = [
 export const overflowStep = 500;
 
 /**
- * Words for "My Inner World". Deliberately an unsorted cloud: no groups, no
- * scores, no colour per emotion. Text is in the dictionaries (`innerWorld.words`).
+ * Words for "My Inner World". Deliberately an unsorted cloud: no groups and
+ * no scores on screen. Each only tints that day in the mood calendar, as one of
+ * the soft "How are you?" colours (lib/checkin/moodCalendar). Text is in the
+ * dictionaries (`innerWorld.words`).
  */
 export const feelingWords = [
   "calm", "curious", "tired", "hopeful", "restless", "grateful", "tender", "proud",

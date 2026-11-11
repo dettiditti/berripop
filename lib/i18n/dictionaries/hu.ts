@@ -843,8 +843,8 @@ export const hu: Dictionary = {
   },
   moodCalendar: {
     title: "Hangulatnaptár",
-    intro: "A „Hogy vagy ma?” válaszaidból színeződik ki. Csak te látod.",
-    empty: "Még nincs színes napod. A Ma oldalon a „Hogy vagy ma?” kártyával kezdheted.",
+    intro: "A „Hogy vagy ma?” válaszaidból és a pillanataid érzéseiből színeződik ki. Csak te látod.",
+    empty: "Még nincs színes napod. A Ma oldalon a „Hogy vagy ma?” kártyával vagy itt lent egy pillanattal kezdheted.",
     prev: "Előző hónap",
     next: "Következő hónap",
     day: "{date}: {state}",
