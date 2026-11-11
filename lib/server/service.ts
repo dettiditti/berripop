@@ -10,6 +10,7 @@ import {
 import { categoryTheme, CHAPTER_DAYS, journeyNodes } from "../content";
 import { isLocale } from "../i18n/config";
 import { isGoalRef } from "../journey/goal";
+import { isScene } from "../world";
 import {
   computeFacts, isCustomRef, isSharedComplete, journeyDayOf, journeyStateFor, resolveQuestion,
   SHARED_XP, unlockedAchievements, unlockedMilestones, XP_RULES,
@@ -110,6 +111,19 @@ export async function setLocale(userId: string, locale: string): Promise<{ ok: b
   if (!isLocale(locale)) return { ok: false };
   await getDb().insert(userPrefs).values({ userId, locale }).onConflictDoUpdate({ target: userPrefs.userId, set: { locale } });
   return { ok: true };
+}
+
+/** Berri's world backdrop (meadow, city or exotic). */
+export async function setScene(userId: string, scene: string): Promise<ActionResult> {
+  if (!isScene(scene)) return fail("invalid");
+  await getDb().insert(userPrefs).values({ userId, scene, scenePicked: true }).onConflictDoUpdate({ target: userPrefs.userId, set: { scene, scenePicked: true } });
+  return result(userId);
+}
+
+/** Closes the one-time "Berri can move" popup without changing the backdrop. */
+export async function dismissScenePrompt(userId: string): Promise<ActionResult> {
+  await getDb().insert(userPrefs).values({ userId, scenePicked: true }).onConflictDoUpdate({ target: userPrefs.userId, set: { scenePicked: true } });
+  return result(userId);
 }
 
 /** The member starts on their own (My Path); circles stay available any time. Stored in the existing user_prefs.onboarded flag. */

@@ -1212,7 +1212,7 @@ export const en = {
     next: "Next",
     nameTitle: "What should I call you?",
     nameHint: "I only use it to greet you.",
-    cheer: { age: "Nice to meet you, {name}!", gender: "Thank you!", area: "Now for the main part.", obstacles: "I see, thank you.", time: "That makes complete sense.", support: "Great, just one more!" },
+    cheer: { age: "Nice to meet you, {name}!", gender: "Thank you!", scene: "Now for something fun!", area: "Now for the main part.", obstacles: "I see, thank you.", time: "That makes complete sense.", support: "Great, just one more!" },
     readyTitle: "That's everything, {name}!",
     readyBody: "I'll build your own path from this. Create an account so I can save it, and we'll carry on there.",
     readyCta: "Create an account",
@@ -1233,6 +1233,20 @@ export const en = {
       on: "Okay, I'll remind you tomorrow evening!",
       denied: "Notifications are turned off. You can turn them on under Settings › Berripop › Notifications.",
     },
+  },
+
+  worldScene: {
+    title: "Where should Berri live?",
+    hint: "Pick a home for Berri. As you make progress, this little world blooms more and more. Berri can move any time in Settings.",
+    names: { meadow: "Flower meadow", city: "Pastel city", exotic: "Tropical shore" },
+    settingsTitle: "Berri's home",
+    settingsBody: "Choose the world Berri lives in.",
+    saved: "Berri has moved.",
+    promptKicker: "New",
+    promptTitle: "Berri can move!",
+    promptBody: "You can now choose where Berri lives. You can move Berri again any time in Settings.",
+    promptSave: "Move here",
+    promptLater: "Not now",
   },
 
   aboutYou: {

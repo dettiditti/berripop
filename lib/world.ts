@@ -8,6 +8,11 @@ import type { BadgeId } from "./progress";
  */
 
 export type RegionId = "meadow" | "pond" | "isles";
+
+/** Where Berri's little world is: the member picks one; growth works the same in each. */
+export const SCENES = ["meadow", "city", "exotic"] as const;
+export type SceneId = (typeof SCENES)[number];
+export const isScene = (v: unknown): v is SceneId => typeof v === "string" && (SCENES as readonly string[]).includes(v);
 export type DecorId = "lantern" | "bubbles" | "kite" | "chimes" | "bridge" | "signpost" | "arch";
 
 /** Each badge adds one decoration. */
@@ -38,6 +43,8 @@ export type World = {
   /** Something grew today (shows a gentle sparkle). */
   grewToday: boolean;
   themesExplored: number;
+  /** The chosen backdrop (meadow by default). */
+  scene: SceneId;
 };
 
 export function deriveWorld(view: View, moments: { date: string }[]): World {
@@ -59,5 +66,6 @@ export function deriveWorld(view: View, moments: { date: string }[]): World {
     glows: Math.min(moments.length, MAX_GLOWS),
     grewToday: view.myAnswers.some(a => a.date === today) || Object.values(view.myJourney).includes(today) || moments.some(m => m.date === today),
     themesExplored,
+    scene: isScene(view.snapshot.me.scene) ? view.snapshot.me.scene : "meadow",
   };
 }

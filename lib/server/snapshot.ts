@@ -39,7 +39,7 @@ export async function loadSnapshot(userId: string, requestedCircleId?: string | 
     loadProgress(userId, myCircles.length > 0),
   ]);
   return {
-    me: { id: userId, name: meRow?.displayName ?? "", locale: prefs?.locale ?? null, personalPath: prefs?.onboarded ?? false },
+    me: { id: userId, name: meRow?.displayName ?? "", locale: prefs?.locale ?? null, personalPath: prefs?.onboarded ?? false, scene: prefs?.scene ?? "meadow", scenePicked: prefs?.scenePicked ?? false },
     circles: myCircles.map(c => ({ id: c.id, name: c.name, role: c.role })),
     circle,
     saved: saved.map(s => s.ref),

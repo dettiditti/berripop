@@ -1206,7 +1206,7 @@ export const hu: Dictionary = {
     next: "Tovább",
     nameTitle: "Hogy szólíthatlak?",
     nameHint: "Csak arra használom, hogy így köszöntselek.",
-    cheer: { age: "Örülök, {name}!", gender: "Köszönöm!", area: "Most jöjjön a lényeg.", obstacles: "Értem, köszönöm.", time: "Ez teljesen érthető.", support: "Szuper, már csak egy!" },
+    cheer: { age: "Örülök, {name}!", gender: "Köszönöm!", scene: "Most egy kis játék!", area: "Most jöjjön a lényeg.", obstacles: "Értem, köszönöm.", time: "Ez teljesen érthető.", support: "Szuper, már csak egy!" },
     readyTitle: "Megvan minden, {name}!",
     readyBody: "Ebből rakom össze a saját utadat. Hozz létre egy fiókot, hogy elmenthessem, és ott folytatjuk.",
     readyCta: "Fiók létrehozása",
@@ -1227,6 +1227,20 @@ export const hu: Dictionary = {
       on: "Rendben, holnap este szólok!",
       denied: "Az értesítések ki vannak kapcsolva. A Beállítások › Berripop › Értesítések alatt kapcsolhatod be.",
     },
+  },
+
+  worldScene: {
+    title: "Hol lakjon Berri?",
+    hint: "Válassz neki otthont. Ahogy haladsz, ez a kis világ egyre jobban kivirágzik. Később a Beállításokban bármikor átköltözhet.",
+    names: { meadow: "Virágos rét", city: "Pasztell város", exotic: "Trópusi part" },
+    settingsTitle: "Berri otthona",
+    settingsBody: "Itt választhatod ki, milyen világban él Berri.",
+    saved: "Berri átköltözött.",
+    promptKicker: "Újdonság",
+    promptTitle: "Berri költözhet!",
+    promptBody: "Mostantól te döntöd el, hol lakjon Berri. Később a Beállításokban is átköltöztetheted.",
+    promptSave: "Ide költözzön",
+    promptLater: "Most nem",
   },
 
   aboutYou: {

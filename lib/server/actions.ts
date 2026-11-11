@@ -200,6 +200,18 @@ export async function setProfileAction(patch: { ageRange?: string | null; gender
   return { ok: true, profile: await setMemberProfile(userId, patch) };
 }
 
+export async function setSceneAction(scene: string): Promise<ActionResult> {
+  const userId = await requireUserId();
+  if (!userId) return { ok: false, error: "unauthorized" } as const;
+  return service.setScene(userId, scene);
+}
+
+export async function dismissScenePromptAction(): Promise<ActionResult> {
+  const userId = await requireUserId();
+  if (!userId) return { ok: false, error: "unauthorized" } as const;
+  return service.dismissScenePrompt(userId);
+}
+
 export async function createCircleAction(name: string): Promise<ActionResult> {
   const userId = await requireUserId();
   if (!userId) return { ok: false, error: "unauthorized" } as const;

@@ -12,6 +12,7 @@ import BerripopMascot from "./berripop/BerripopMascot";
 import ReminderCard from "./ReminderCard";
 import AiConsentCard from "./AiConsentCard";
 import AboutYouCard from "./AboutYouCard";
+import SceneCard from "./SceneCard";
 import SubscriptionCard from "./billing/SubscriptionCard";
 import LanguageSelector from "./LanguageSelector";
 import { Toast } from "./Modals";
@@ -120,6 +121,8 @@ export default function SettingsPage() {
             </section>
 
             <AboutYouCard notify={notify} />
+
+            <SceneCard initial={snapshot.me.scene} notify={notify} />
 
             <LanguageSelector persist onChanged={notify} />
 

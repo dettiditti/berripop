@@ -1854,6 +1854,16 @@ html[data-app] body:has(.berri-stage)::before { content: none; }
 .app-start-options .assessment-option:active { transform: scale(0.96); }
 .app-start-privacy { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px !important; }
 .app-start-back-low { margin-top: 8px; color: var(--purple-dark); }
+/* Where Berri lives: three backdrop cards (start flow and Settings). */
+.scene-picker { display: grid; gap: 8px; }
+.scene-option { display: grid; gap: 4px; padding: 4px 4px 6px; border-radius: 20px; border: 2px solid var(--line); background: #fff; font: inherit; cursor: pointer; transition: border-color 0.15s, background 0.15s, transform 0.15s; }
+.scene-option .world-scene--compact { aspect-ratio: 16 / 5; border-radius: 15px; }
+.scene-option.is-selected { border-color: var(--purple); background: var(--lavender); }
+.scene-option:active { transform: scale(0.98); }
+.scene-prompt .scene-option .world-scene--compact { aspect-ratio: 16 / 4; }
+.scene-prompt .scene-picker { gap: 6px; }
+.scene-option-name { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-weight: 800; font-size: 15px; color: var(--ink-2); }
+.scene-option.is-selected .scene-option-name { color: var(--purple-dark); }
 @media (prefers-reduced-motion: reduce) { .app-start-cheer { animation: none; } .app-start-progress span { transition: none; } }
 .reminder-prompt { display: flex; align-items: center; gap: 14px; }
 .reminder-prompt p { margin: 0; color: var(--ink-2); line-height: 1.45; }

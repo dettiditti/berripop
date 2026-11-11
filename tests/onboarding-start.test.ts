@@ -35,6 +35,12 @@ describe("phone app first answers (before sign-up)", () => {
     expect(cleanStart({ name: "A", profile: { ageRange: "35_44", gender: "unsaid" } })?.profile).toEqual({ ageRange: "35_44", gender: "unsaid" });
   });
 
+  it("keeps a known world backdrop and drops unknown ones", () => {
+    expect(cleanStart({ name: "A", scene: "city" })?.scene).toBe("city");
+    expect(cleanStart({ name: "A", scene: "moon" })).toEqual({ name: "A", profile: {}, answers: {} });
+    expect(cleanStart({ scene: "exotic" })).toEqual({ name: "", profile: {}, scene: "exotic", answers: {} });
+  });
+
   it("ignores junk and empty data", () => {
     expect(cleanStart(null)).toBeNull();
     expect(cleanStart({ name: " ", answers: { area: "nope" } })).toBeNull();
@@ -74,7 +80,9 @@ describe("phone app first answers (before sign-up)", () => {
     for (const d of Object.values(dictionaries)) {
       expect(d.appStart.left).toContain("{n}");
       expect(d.appStart.readyTitle).toContain("{name}");
-      expect(Object.keys(d.appStart.cheer).sort()).toEqual(["age", "area", "gender", "obstacles", "support", "time"]);
+      expect(Object.keys(d.worldScene.names).sort()).toEqual(["city", "exotic", "meadow"]);
+      for (const k of ["promptKicker", "promptTitle", "promptBody", "promptSave", "promptLater", "settingsTitle", "saved"] as const) expect(d.worldScene[k]).toBeTruthy();
+      expect(Object.keys(d.appStart.cheer).sort()).toEqual(["age", "area", "gender", "obstacles", "scene", "support", "time"]);
     }
   });
 });

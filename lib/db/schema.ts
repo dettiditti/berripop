@@ -158,6 +158,10 @@ export const userPrefs = pgTable("user_prefs", {
   locale: text("locale").notNull().default("hu"),
   lastCircleId: uuid("last_circle_id"),
   onboarded: boolean("onboarded").notNull().default(false),
+  /** Berri's world backdrop: "meadow", "city" or "exotic" (lib/world SCENES). */
+  scene: text("scene", { enum: ["meadow", "city", "exotic"] }).notNull().default("meadow"),
+  /** The member chose a backdrop, or closed the one-time "Berri can move" popup. */
+  scenePicked: boolean("scene_picked").notNull().default(false),
 });
 
 /* ---------- Subscriptions & usage ---------- */

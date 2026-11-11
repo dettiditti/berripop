@@ -8,20 +8,22 @@ import { useI18n } from "@/lib/i18n/client";
 import { hapticSuccess, hapticTap } from "@/lib/nativeBridge";
 import { clearStart, readStart, saveStart, type StartAnswers } from "@/lib/onboarding/start";
 import { AGE_CHOICES, GENDERS, type AgeChoice, type MemberProfile } from "@/lib/profile/model";
+import type { SceneId } from "@/lib/world";
+import ScenePicker from "./world/ScenePicker";
 import { Confetti } from "./berripop/BerripopCelebration";
 import BerriVideo, { type BerriClip } from "./berripop/BerriVideo";
 
-type Question = "name" | "age" | "gender" | "area" | "obstacles" | "time" | "support";
+type Question = "name" | "age" | "gender" | "scene" | "area" | "obstacles" | "time" | "support";
 type Step = "hello" | Question | "ready" | "young";
-const QUESTIONS: readonly Question[] = ["name", "age", "gender", "area", "obstacles", "time", "support"];
+const QUESTIONS: readonly Question[] = ["name", "age", "gender", "scene", "area", "obstacles", "time", "support"];
 const ORDER: readonly Step[] = ["hello", ...QUESTIONS, "ready"];
-const CLIP: Record<Step, BerriClip> = { hello: "hello", name: "wonder", age: "joy2", gender: "wonder", area: "joy2", obstacles: "care", time: "wonder", support: "joy2", ready: "joy", young: "care" };
+const CLIP: Record<Step, BerriClip> = { hello: "hello", name: "wonder", age: "joy2", gender: "wonder", scene: "joy", area: "joy2", obstacles: "care", time: "wonder", support: "joy2", ready: "joy", young: "care" };
 const MAX_NAME = 40;
 
 /**
  * The phone app's first screen, before any account: Berri says hello, asks
  * your name, your age range and gender (optional facts that only shape the AI's
- * tone; under 16 stops here, as the app is for 16 and over), and four tap-only questions (what you want to work on, what gets
+ * tone; under 16 stops here, as the app is for 16 and over), where Berri should live, and four tap-only questions (what you want to work on, what gets
  * in the way, how much time you have, what kind of help you like), then asks
  * you to create an account to keep your path. The answers stay on this phone
  * (lib/onboarding/start) until sign-up moves them into the account. Nothing
@@ -36,6 +38,7 @@ export default function AppStart() {
   const [answers, setAnswers] = useState<StartAnswers>({});
   const [profile, setProfile] = useState<MemberProfile>({});
   const [age, setAge] = useState<AgeChoice | undefined>(undefined);
+  const [scene, setScene] = useState<SceneId | undefined>(undefined);
 
   // Coming back to the app before signing up picks up the answers already given.
   useEffect(() => {
@@ -44,6 +47,7 @@ export default function AppStart() {
     setName(saved.name);
     setProfile(saved.profile);
     setAge(saved.profile.ageRange);
+    setScene(saved.scene);
     setAnswers(saved.answers);
   }, []);
 
@@ -51,10 +55,10 @@ export default function AppStart() {
   const index = QUESTIONS.indexOf(step as Question);
   const left = QUESTIONS.length - index - 1;
   const done = (q: Question) =>
-    q === "name" ? !!clean : q === "age" ? !!age : q === "gender" ? !!profile.gender : q === "area" ? areasOf(answers).length > 0 : q === "obstacles" ? !!answers.obstacles?.length : q === "time" ? !!answers.time : !!answers.support?.length;
+    q === "name" ? !!clean : q === "age" ? !!age : q === "gender" ? !!profile.gender : q === "scene" ? !!scene : q === "area" ? areasOf(answers).length > 0 : q === "obstacles" ? !!answers.obstacles?.length : q === "time" ? !!answers.time : !!answers.support?.length;
 
   function move(to: Step) {
-    saveStart({ name: clean, profile, answers });
+    saveStart({ name: clean, profile, scene, answers });
     if (to === "ready") hapticSuccess();
     else hapticTap();
     setStep(to);
@@ -136,8 +140,9 @@ export default function AppStart() {
 
   const q = step as Question;
   const y = d.aboutYou;
-  const title = q === "name" ? s.nameTitle : q === "age" ? y.ageTitle : q === "gender" ? y.genderTitle : a.questions[q].title;
-  const hint = q === "name" ? s.nameHint : q === "age" ? y.ageHint : q === "gender" ? y.genderHint : a.questions[q].hint;
+  const w = d.worldScene;
+  const title = q === "name" ? s.nameTitle : q === "age" ? y.ageTitle : q === "gender" ? y.genderTitle : q === "scene" ? w.title : a.questions[q].title;
+  const hint = q === "name" ? s.nameHint : q === "age" ? y.ageHint : q === "gender" ? y.genderHint : q === "scene" ? w.hint : a.questions[q].hint;
   const cheer = q === "name" ? null : t(s.cheer[q], { name: clean });
 
   return (
@@ -214,6 +219,8 @@ export default function AppStart() {
             ))}
           </div>
         )}
+
+        {q === "scene" && <ScenePicker value={scene} onPick={v => { hapticTap(); setScene(v); }} labelledBy="as-title" />}
 
         {q === "area" && (
           <div className="app-start-options" role="group" aria-labelledby="as-title">

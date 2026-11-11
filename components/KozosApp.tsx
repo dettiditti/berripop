@@ -30,6 +30,7 @@ import Onboarding from "./Onboarding";
 import QuestFlow, { type Draft } from "./QuestFlow";
 import QuestionDetail from "./QuestionDetail";
 import ReminderPrompt from "./ReminderPrompt";
+import ScenePrompt from "./ScenePrompt";
 import TermsGate from "./TermsGate";
 import Welcome from "./Welcome";
 import CircleScreen from "./screens/CircleScreen";
@@ -486,6 +487,10 @@ function AppShell({ snapshot, setSnapshot }: { snapshot: Snapshot; setSnapshot: 
         />
       )}
       {askReminder && <ReminderPrompt notify={notify} onClose={() => setAskReminder(false)} />}
+      {/* Once per account: "New: Berri can move!", on Today when nothing else is open. */}
+      {!snapshot.me.scenePicked && tab === "home" && !askReminder && !quest && !reward && !detail && !nextCelebration && !inviteOpen && !composerOpen && (
+        <ScenePrompt current={snapshot.me.scene} run={run} notify={notify} />
+      )}
       {toast && <Toast key={toast.id} message={toast.message} />}
       {nextCelebration && !quest && !reward && <Celebration key={`${nextCelebration.kind}:${nextCelebration.id}`} item={nextCelebration} onDone={finishCelebration} />}
     </div>

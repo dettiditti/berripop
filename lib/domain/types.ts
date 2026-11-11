@@ -183,7 +183,7 @@ export type MomentDTO = {
 
 export type Snapshot = {
   /** `personalPath`: the member chose to start on their own (My Path) without a circle. */
-  me: { id: string; name: string; locale: string | null; personalPath: boolean };
+  me: { id: string; name: string; locale: string | null; personalPath: boolean; /** Berri's world backdrop (lib/world SCENES). */ scene: string; /** Chose a backdrop or closed the "new" popup. */ scenePicked: boolean };
   circles: { id: string; name: string; role: "owner" | "member" }[];
   circle: CircleDTO | null;
   saved: QuestionRef[];
