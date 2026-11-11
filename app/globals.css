@@ -1527,6 +1527,9 @@ html:has(.lp) { scroll-behavior: smooth; }
 .auth-back { align-self: center; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 12px; border-radius: 12px; font-weight: 800; color: var(--ink-2); text-decoration: none; }
 .auth-back:hover { background: rgba(123, 77, 255, 0.08); color: var(--purple-dark); }
 .auth-clerk-root { width: 100%; max-width: 420px; }
+/* Clerk caps its card at the window width minus 2.5rem, which on a phone is
+   narrower than the column: the card would sit off-centre. */
+.auth-clerk-root .auth-clerk-card { max-width: 100%; }
 .auth-clerk-card { width: 100%; box-shadow: 0 24px 50px -28px rgba(43, 33, 64, 0.35), 0 2px 8px rgba(43, 33, 64, 0.05); border-radius: 24px; }
 .auth-clerk-title { font-family: var(--font-display); font-weight: 700; font-size: 22px; }
 .auth-clerk-primary { min-height: 46px; font-weight: 900; font-size: 15px; }
@@ -1818,13 +1821,17 @@ html:has(.lp) { scroll-behavior: smooth; }
    screen with lavender instead. */
 html[data-app] { --safe-top: env(safe-area-inset-top, 0px); }
 html[data-app] body { padding-top: var(--safe-top); }
-/* The status bar: frosted glass over the page's own colour, so the screen
-   reads as one surface up to the top edge and content scrolls under it blurred. */
+/* The status bar has no colour of its own: the page's light runs up to the
+   top edge as one surface. Content scrolling under the clock is blurred, and
+   the blur fades out downwards so there is no edge. */
 html[data-app] body::before {
-  content: ""; position: fixed; z-index: 40; top: 0; left: 0; right: 0; height: var(--safe-top);
-  background: linear-gradient(100deg, rgba(214, 200, 252, 0.72), rgba(240, 222, 252, 0.62) 50%, rgba(252, 218, 206, 0.68));
-  -webkit-backdrop-filter: blur(18px) saturate(160%); backdrop-filter: blur(18px) saturate(160%);
+  content: ""; position: fixed; z-index: 40; top: 0; left: 0; right: 0; height: calc(var(--safe-top) + 12px); pointer-events: none;
+  background: rgba(255, 250, 245, 0.18);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  -webkit-mask-image: linear-gradient(#000 calc(100% - 16px), transparent); mask-image: linear-gradient(#000 calc(100% - 16px), transparent);
 }
+/* Pages fill the screen below the status bar exactly, with no extra scroll. */
+html[data-app] .app, html[data-app] .auth-page { min-height: calc(100dvh - var(--safe-top)); }
 /* The app's soft ambient light behind every page, the sign-in pages included. */
 html[data-app] body::after {
   content: ""; position: fixed; inset: 0; z-index: -2; pointer-events: none;
