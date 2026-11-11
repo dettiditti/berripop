@@ -35,6 +35,7 @@ import { recordApplePurchase, type AppleResult } from "./apple";
 import { APPLE_PRODUCT_IDS } from "../billing/apple";
 import { appAccountToken } from "../billing/apple-token";
 import { joinWaitlist } from "./waitlist";
+import { appleSignIn, type AppleSignInResult } from "./appleSignIn";
 import { readWaitlist, type WaitlistError, type WaitlistInput } from "../waitlist";
 
 /** Server actions: authenticate the caller, then delegate to the circle, growth or billing services. */
@@ -671,4 +672,12 @@ export async function joinAppWaitlistAction(input: WaitlistInput): Promise<{ ok:
     console.error("waitlist: save failed");
     return { ok: false, error: "server" };
   }
+}
+
+/**
+ * Sign in with Apple in the iPhone app: checks the app's Apple identity token
+ * on the server and returns a one-time Clerk sign-in ticket (lib/server/appleSignIn).
+ */
+export async function appleSignInAction(idToken: string, firstName?: string, lastName?: string): Promise<AppleSignInResult> {
+  return appleSignIn(idToken, firstName, lastName);
 }
