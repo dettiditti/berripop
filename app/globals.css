@@ -1919,6 +1919,7 @@ html[data-app] body:has(.berri-stage)::before { content: none; }
 .notify-hour { min-height: 40px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); color: var(--ink-2); font: inherit; font-weight: 800; font-variant-numeric: tabular-nums; cursor: pointer; transition: background 0.15s, color 0.15s, transform 0.1s; }
 .notify-hour:active { transform: scale(0.96); }
 .notify-hour.is-on { background: var(--tone-dark); border-color: var(--tone-dark); color: #fff; box-shadow: 0 4px 10px color-mix(in srgb, var(--tone-dark) 30%, transparent); }
+.notify-test { justify-self: center; }
 .notify-off { justify-self: center; margin-top: 2px; padding: 8px 4px; border: 0; background: none; color: var(--muted); font: inherit; font-size: 14px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .notify-enable { width: 100%; }
 .scene-prompt .scene-option .world-scene--compact { aspect-ratio: 16 / 4; }

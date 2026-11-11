@@ -7,6 +7,7 @@ import { isPaidPlan, type BillingInterval, type PaidPlanId } from "../billing/pl
 import { isBuyerRegion, type BuyerRegion } from "../billing/sales";
 import type { ActionResult, AnswerContext, QuestionRef, RewardDTO } from "../domain/types";
 import { isLocale, LOCALE_COOKIE } from "../i18n/config";
+import { makeI18n } from "../i18n/format";
 import { track, trackDaily, type FunnelEvent } from "./analytics";
 import type { AssessmentResult } from "../assessment/types";
 import * as account from "./account";
@@ -639,6 +640,14 @@ export async function setPushPrefsAction(token: string, patch: Partial<PushPrefs
   const userId = await requireUserId();
   if (!userId) return null;
   return push.setPushPrefs(userId, token, patch);
+}
+
+/** Settings: a test notification to this phone right now. */
+export async function sendTestPushAction(token: string): Promise<"sent" | "failed" | "off"> {
+  const userId = await requireUserId();
+  if (!userId) return "failed";
+  const s = makeI18n(await locale()).d.settings;
+  return push.sendTestPush(userId, token, { title: "Berripop", body: s.notifyTestBody });
 }
 
 /* ---------- Account: export and deletion ---------- */

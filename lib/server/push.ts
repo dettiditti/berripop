@@ -61,6 +61,22 @@ export async function setPushPrefs(userId: string, token: unknown, patch: unknow
 }
 
 /**
+ * "Send a test notification" in Settings: one alert to this phone only, if it
+ * is registered to this member. Not logged in push_sends, so it never uses up
+ * the day's real notifications. "off" when APNs is not configured.
+ */
+export async function sendTestPush(userId: string, token: unknown, alert: { title: string; body: string }): Promise<"sent" | "failed" | "off"> {
+  if (!isDeviceToken(token)) return "failed";
+  const config = apnsConfig();
+  if (!config) return "off";
+  const [row] = await getDb().select({ token: pushDevices.token }).from(pushDevices)
+    .where(and(eq(pushDevices.token, token), eq(pushDevices.userId, userId))).limit(1);
+  if (!row) return "failed";
+  const [result] = await sendAlerts(config, [token], alert, { collapseId: "berripop-test", expiresAt: Math.floor(Date.now() / 1000) + 600 });
+  return result?.ok ? "sent" : "failed";
+}
+
+/**
  * Turns notifications off for this phone. The send log (push_sends) stays for
  * its few days, so switching off and on again cannot repeat today's ones.
  */

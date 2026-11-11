@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Bell } from "lucide-react";
 import { useI18n } from "@/lib/i18n/client";
 import { pushPermission, pushToken } from "@/lib/nativeBridge";
-import { pushPrefsAction, setPushPrefsAction, setPushReminderAction } from "@/lib/server/actions";
+import { pushPrefsAction, sendTestPushAction, setPushPrefsAction, setPushReminderAction } from "@/lib/server/actions";
 import type { PushPrefs } from "@/lib/push/schedule";
 import NotifyKinds from "./NotifyKinds";
 import { useNativeApp } from "./useNativeApp";
@@ -23,6 +23,7 @@ export default function ReminderCard({ notify }: { notify: (message: string) => 
   const [token, setToken] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [prefs, setPrefs] = useState<PushPrefs | null>(null);
+  const [testing, setTesting] = useState(false);
 
   useEffect(() => {
     if (!inApp) return;
@@ -68,6 +69,15 @@ export default function ReminderCard({ notify }: { notify: (message: string) => 
     setBusy(false);
   }
 
+  async function test() {
+    if (!token || testing) return;
+    setTesting(true);
+    const r = await sendTestPushAction(token).catch(() => "failed" as const);
+    notify(r === "sent" ? s.notifyTestSent : s.notifyTestFailed);
+    // A short pause, so a double tap does not send two.
+    window.setTimeout(() => setTesting(false), 5000);
+  }
+
   async function update(patch: Partial<PushPrefs>) {
     if (!token || !prefs) return;
     const before = prefs;
@@ -96,6 +106,7 @@ export default function ReminderCard({ notify }: { notify: (message: string) => 
       {state === "denied" ? <p className="field-hint">{s.reminderDenied}</p> : on ? (
         <>
           {prefs && <NotifyKinds prefs={prefs} onChange={update} />}
+          <button type="button" className="btn btn--ghost btn--sm notify-test" disabled={testing || !token} onClick={() => void test()}>{s.notifyTest}</button>
           <button type="button" className="notify-off" disabled={busy} onClick={() => change(false)}>{s.reminderDisable}</button>
         </>
       ) : (
