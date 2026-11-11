@@ -56,7 +56,7 @@ export async function exportAccount(userId: string) {
   ]);
   return {
     exportedAt: new Date().toISOString(),
-    account: { id: userId, displayName: user?.displayName ?? "", createdAt: user?.createdAt ?? null, language: prefs?.locale ?? null },
+    account: { id: userId, displayName: user?.displayName ?? "", ageRange: user?.ageRange ?? null, gender: user?.gender ?? null, createdAt: user?.createdAt ?? null, language: prefs?.locale ?? null },
     subscription: sub ? { plan: sub.planId, status: sub.status, interval: sub.interval, currentPeriodEnd: sub.currentPeriodEnd, cancelAtPeriodEnd: sub.cancelAtPeriodEnd } : null,
     circles: memberships,
     answers: myAnswers,

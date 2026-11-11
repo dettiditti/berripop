@@ -25,6 +25,8 @@ import type { JournalResult } from "../journal/types";
 import * as goalJourney from "./goalJourney";
 import * as personal from "./personal";
 import * as push from "./push";
+import { getMemberProfile, setMemberProfile } from "./profile";
+import type { MemberProfile } from "../profile/model";
 import * as service from "./service";
 import { requireUserId } from "./session";
 import { startPremiumTrial } from "./trial";
@@ -182,6 +184,20 @@ export async function setDisplayNameAction(name: string): Promise<ActionResult> 
   const userId = await requireUserId();
   if (!userId) return { ok: false, error: "unauthorized" } as const;
   return service.setDisplayName(userId, name);
+}
+
+/** The optional age range and gender, for the Settings card. */
+export async function getProfileAction(): Promise<{ ok: true; profile: MemberProfile } | { ok: false; error: "unauthorized" }> {
+  const userId = await requireUserId();
+  if (!userId) return { ok: false, error: "unauthorized" };
+  return { ok: true, profile: await getMemberProfile(userId) };
+}
+
+/** Saves the optional age range and gender (null clears one). Only shapes the tone of AI answers. */
+export async function setProfileAction(patch: { ageRange?: string | null; gender?: string | null }): Promise<{ ok: true; profile: MemberProfile } | { ok: false; error: "unauthorized" }> {
+  const userId = await requireUserId();
+  if (!userId) return { ok: false, error: "unauthorized" };
+  return { ok: true, profile: await setMemberProfile(userId, patch) };
 }
 
 export async function createCircleAction(name: string): Promise<ActionResult> {

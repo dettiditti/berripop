@@ -15,6 +15,9 @@ export const users = pgTable("users", {
   displayName: text("display_name").notNull().default(""),
   /** Where the account was created: "web" (the website) or "appstore" (the iPhone app). Set once, never changed. */
   signupSource: text("signup_source", { enum: ["web", "appstore"] }).notNull().default("web"),
+  /** Optional, shared by the member (lib/profile/model): only shapes the tone of AI answers. */
+  ageRange: text("age_range", { enum: ["16_17", "18_24", "25_34", "35_44", "45_54", "55_plus"] }),
+  gender: text("gender", { enum: ["woman", "man", "other", "unsaid"] }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

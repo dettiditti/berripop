@@ -6,20 +6,22 @@ import { ArrowLeft, ArrowRight, Check, Lock } from "lucide-react";
 import { AREAS, areasOf, MAX_AREAS, OBSTACLES, SUPPORTS, TIMES, toggleArea } from "@/lib/assessment/model";
 import { useI18n } from "@/lib/i18n/client";
 import { hapticSuccess, hapticTap } from "@/lib/nativeBridge";
-import { readStart, saveStart, type StartAnswers } from "@/lib/onboarding/start";
+import { clearStart, readStart, saveStart, type StartAnswers } from "@/lib/onboarding/start";
+import { AGE_CHOICES, GENDERS, type AgeChoice, type MemberProfile } from "@/lib/profile/model";
 import { Confetti } from "./berripop/BerripopCelebration";
 import BerriVideo, { type BerriClip } from "./berripop/BerriVideo";
 
-type Question = "name" | "area" | "obstacles" | "time" | "support";
-type Step = "hello" | Question | "ready";
-const QUESTIONS: readonly Question[] = ["name", "area", "obstacles", "time", "support"];
+type Question = "name" | "age" | "gender" | "area" | "obstacles" | "time" | "support";
+type Step = "hello" | Question | "ready" | "young";
+const QUESTIONS: readonly Question[] = ["name", "age", "gender", "area", "obstacles", "time", "support"];
 const ORDER: readonly Step[] = ["hello", ...QUESTIONS, "ready"];
-const CLIP: Record<Step, BerriClip> = { hello: "wave", name: "wonder", area: "joy2", obstacles: "care", time: "wonder", support: "joy2", ready: "joy" };
+const CLIP: Record<Step, BerriClip> = { hello: "hello", name: "wonder", age: "joy2", gender: "wonder", area: "joy2", obstacles: "care", time: "wonder", support: "joy2", ready: "joy", young: "care" };
 const MAX_NAME = 40;
 
 /**
  * The phone app's first screen, before any account: Berri says hello, asks
- * your name and four tap-only questions (what you want to work on, what gets
+ * your name, your age range and gender (optional facts that only shape the AI's
+ * tone; under 16 stops here, as the app is for 16 and over), and four tap-only questions (what you want to work on, what gets
  * in the way, how much time you have, what kind of help you like), then asks
  * you to create an account to keep your path. The answers stay on this phone
  * (lib/onboarding/start) until sign-up moves them into the account. Nothing
@@ -32,12 +34,16 @@ export default function AppStart() {
   const [step, setStep] = useState<Step>("hello");
   const [name, setName] = useState("");
   const [answers, setAnswers] = useState<StartAnswers>({});
+  const [profile, setProfile] = useState<MemberProfile>({});
+  const [age, setAge] = useState<AgeChoice | undefined>(undefined);
 
   // Coming back to the app before signing up picks up the answers already given.
   useEffect(() => {
     const saved = readStart();
     if (!saved) return;
     setName(saved.name);
+    setProfile(saved.profile);
+    setAge(saved.profile.ageRange);
     setAnswers(saved.answers);
   }, []);
 
@@ -45,16 +51,26 @@ export default function AppStart() {
   const index = QUESTIONS.indexOf(step as Question);
   const left = QUESTIONS.length - index - 1;
   const done = (q: Question) =>
-    q === "name" ? !!clean : q === "area" ? areasOf(answers).length > 0 : q === "obstacles" ? !!answers.obstacles?.length : q === "time" ? !!answers.time : !!answers.support?.length;
+    q === "name" ? !!clean : q === "age" ? !!age : q === "gender" ? !!profile.gender : q === "area" ? areasOf(answers).length > 0 : q === "obstacles" ? !!answers.obstacles?.length : q === "time" ? !!answers.time : !!answers.support?.length;
 
   function move(to: Step) {
-    saveStart({ name: clean, answers });
+    saveStart({ name: clean, profile, answers });
     if (to === "ready") hapticSuccess();
     else hapticTap();
     setStep(to);
     window.scrollTo({ top: 0 });
   }
-  const next = () => move(ORDER[ORDER.indexOf(step) + 1]);
+  function next() {
+    // The app is for 16 and over: nothing is kept, and Berri says goodbye kindly.
+    if (step === "age" && age === "under16") {
+      clearStart();
+      hapticTap();
+      setStep("young");
+      window.scrollTo({ top: 0 });
+      return;
+    }
+    move(ORDER[ORDER.indexOf(step) + 1]);
+  }
   const back = () => move(ORDER[ORDER.indexOf(step) - 1]);
 
   function pick(patch: StartAnswers) {
@@ -84,6 +100,22 @@ export default function AppStart() {
     );
   }
 
+  if (step === "young") {
+    const y = d.aboutYou;
+    return (
+      <main className="berri-stage app-start app-start--ready">
+        <BerriVideo clip={CLIP.young} className="app-start-berri" />
+        <section className="berri-intro-card" aria-labelledby="as-young">
+          <h1 id="as-young">{y.under16Title}</h1>
+          <p>{y.under16Body}</p>
+          <button type="button" className="btn btn--ghost btn--block" onClick={() => { setAge(undefined); setStep("age"); }}>
+            <ArrowLeft size={16} aria-hidden /> {y.under16Back}
+          </button>
+        </section>
+      </main>
+    );
+  }
+
   if (step === "ready") {
     return (
       <main className="berri-stage app-start app-start--ready">
@@ -103,8 +135,9 @@ export default function AppStart() {
   }
 
   const q = step as Question;
-  const title = q === "name" ? s.nameTitle : a.questions[q].title;
-  const hint = q === "name" ? s.nameHint : a.questions[q].hint;
+  const y = d.aboutYou;
+  const title = q === "name" ? s.nameTitle : q === "age" ? y.ageTitle : q === "gender" ? y.genderTitle : a.questions[q].title;
+  const hint = q === "name" ? s.nameHint : q === "age" ? y.ageHint : q === "gender" ? y.genderHint : a.questions[q].hint;
   const cheer = q === "name" ? null : t(s.cheer[q], { name: clean });
 
   return (
@@ -146,6 +179,40 @@ export default function AppStart() {
               enterKeyHint="next"
             />
           </>
+        )}
+
+        {q === "age" && (
+          <div className="app-start-options" role="radiogroup" aria-labelledby="as-title">
+            {AGE_CHOICES.map(k => (
+              <button
+                key={k}
+                type="button"
+                role="radio"
+                aria-checked={age === k}
+                className={`assessment-option ${age === k ? "is-selected" : ""}`}
+                onClick={() => { hapticTap(); setAge(k); setProfile(p => ({ ...p, ageRange: k === "under16" ? undefined : k })); }}
+              >
+                {age === k && <Check size={16} strokeWidth={3} aria-hidden />} {y.age[k]}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {q === "gender" && (
+          <div className="app-start-options" role="radiogroup" aria-labelledby="as-title">
+            {GENDERS.map(k => (
+              <button
+                key={k}
+                type="button"
+                role="radio"
+                aria-checked={profile.gender === k}
+                className={`assessment-option ${profile.gender === k ? "is-selected" : ""}`}
+                onClick={() => { hapticTap(); setProfile(p => ({ ...p, gender: k })); }}
+              >
+                {profile.gender === k && <Check size={16} strokeWidth={3} aria-hidden />} {y.gender[k]}
+              </button>
+            ))}
+          </div>
         )}
 
         {q === "area" && (

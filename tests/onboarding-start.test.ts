@@ -27,7 +27,12 @@ describe("phone app first answers (before sign-up)", () => {
       name: "  Anna  ",
       answers: { area: "stress", areaText: "secret", situation: "private words", obstacles: ["time", "nope"], time: "daily5", support: ["questions"], outcome: "x" },
     });
-    expect(c).toEqual({ name: "Anna", answers: { area: "stress", obstacles: ["time"], time: "daily5", support: ["questions"] } });
+    expect(c).toEqual({ name: "Anna", profile: {}, answers: { area: "stress", obstacles: ["time"], time: "daily5", support: ["questions"] } });
+  });
+
+  it("keeps a known age range and gender, and never stores under 16", () => {
+    expect(cleanStart({ name: "A", profile: { ageRange: "under16", gender: "robot" } })?.profile).toEqual({});
+    expect(cleanStart({ name: "A", profile: { ageRange: "35_44", gender: "unsaid" } })?.profile).toEqual({ ageRange: "35_44", gender: "unsaid" });
   });
 
   it("ignores junk and empty data", () => {
@@ -37,21 +42,21 @@ describe("phone app first answers (before sign-up)", () => {
   });
 
   it("saves, reads back and clears", () => {
-    saveStart({ name: "Bea", answers: { area: "habits", time: "weekly1" } }, 1000);
-    expect(readStart(2000)).toEqual({ name: "Bea", answers: { area: "habits", time: "weekly1" } });
+    saveStart({ name: "Bea", profile: { ageRange: "25_34", gender: "woman" }, answers: { area: "habits", time: "weekly1" } }, 1000);
+    expect(readStart(2000)).toEqual({ name: "Bea", profile: { ageRange: "25_34", gender: "woman" }, answers: { area: "habits", time: "weekly1" } });
     clearStart();
     expect(readStart(2000)).toBeNull();
   });
 
   it("drops answers older than a week", () => {
-    saveStart({ name: "Bea", answers: { area: "habits" } }, 0);
+    saveStart({ name: "Bea", profile: {}, answers: { area: "habits" } }, 0);
     expect(readStart(8 * 24 * 60 * 60 * 1000)).toBeNull();
     expect(storage.raw.size).toBe(0);
   });
 
   it("survives blocked or broken storage", () => {
     (globalThis as unknown as { window: unknown }).window = { localStorage: { getItem: () => { throw new Error("blocked"); }, setItem: () => { throw new Error("blocked"); }, removeItem: () => { throw new Error("blocked"); } } };
-    expect(() => saveStart({ name: "A", answers: {} })).not.toThrow();
+    expect(() => saveStart({ name: "A", profile: {}, answers: {} })).not.toThrow();
     expect(readStart()).toBeNull();
     expect(() => clearStart()).not.toThrow();
     storage.setItem("berripop.start.v1", "{not json");
@@ -69,7 +74,7 @@ describe("phone app first answers (before sign-up)", () => {
     for (const d of Object.values(dictionaries)) {
       expect(d.appStart.left).toContain("{n}");
       expect(d.appStart.readyTitle).toContain("{name}");
-      expect(Object.keys(d.appStart.cheer).sort()).toEqual(["area", "obstacles", "support", "time"]);
+      expect(Object.keys(d.appStart.cheer).sort()).toEqual(["age", "area", "gender", "obstacles", "support", "time"]);
     }
   });
 });

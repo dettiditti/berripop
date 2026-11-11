@@ -5,7 +5,7 @@ import { ArrowRight, Check, Sprout, Users } from "lucide-react";
 import type { Snapshot } from "@/lib/domain/types";
 import { useI18n } from "@/lib/i18n/client";
 import { clearStart, readStart, resumeStep, type StartData } from "@/lib/onboarding/start";
-import { saveAssessmentAnswersAction, setDisplayNameAction, startAssessmentAction, startPersonalPathAction } from "@/lib/server/actions";
+import { saveAssessmentAnswersAction, setDisplayNameAction, setProfileAction, startAssessmentAction, startPersonalPathAction } from "@/lib/server/actions";
 import BerriIntro from "./BerriIntro";
 import BerripopMascot from "./berripop/BerripopMascot";
 import BerriVideo from "./berripop/BerriVideo";
@@ -42,6 +42,10 @@ function ContinueFromStart({ name, onSnapshot, terms, start, onRestart }: Props 
     setFailed(false);
     try {
       if (start.name && start.name !== name.trim()) await setDisplayNameAction(start.name);
+      if (start.profile.ageRange || start.profile.gender) {
+        const p = await setProfileAction(start.profile);
+        if (!p.ok) throw new Error("profile");
+      }
       const r = await startPersonalPathAction();
       if (!r.ok) throw new Error("path");
       const a = await startAssessmentAction();

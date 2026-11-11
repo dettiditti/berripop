@@ -11,6 +11,7 @@ import { deleteAccountAction, exportAccountAction, getSnapshotAction, setDisplay
 import BerripopMascot from "./berripop/BerripopMascot";
 import ReminderCard from "./ReminderCard";
 import AiConsentCard from "./AiConsentCard";
+import AboutYouCard from "./AboutYouCard";
 import SubscriptionCard from "./billing/SubscriptionCard";
 import LanguageSelector from "./LanguageSelector";
 import { Toast } from "./Modals";
@@ -117,6 +118,8 @@ export default function SettingsPage() {
               </div>
               {user?.createdAt && <small className="muted">{t(a.memberSince, { date: date(user.createdAt.toISOString().slice(0, 10)) })}</small>}
             </section>
+
+            <AboutYouCard notify={notify} />
 
             <LanguageSelector persist onChanged={notify} />
 

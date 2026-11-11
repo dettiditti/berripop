@@ -10,6 +10,7 @@ import { reasoningFor, runAiCall, type AiOutcome, type AiRequest, type GenerateF
 import { getUserEntitlements, releaseQuota, reserveAi, settleQuota, type AiBucket } from "./entitlements";
 import { track } from "./analytics";
 import { aiAllowedFor } from "./legal";
+import { profileInstructionFor } from "./profile";
 
 /*
  * The single server-side entry point for AI calls. Credentials stay on the
@@ -115,7 +116,10 @@ export async function runSlottedAi<T>(
     await track(userId, "ai_cost_cap_reached");
     return { ok: false, error: "limit_ai", reason: "cost_cap" };
   }
-  return runAiCall({ ...req, model: req.model ?? defaultAiModel() }, {
+  // The member's optional age range and gender, only to fit tone and examples (lib/profile/model).
+  const about = await profileInstructionFor(userId);
+  const instructions = about ? `${req.instructions} ${about}` : req.instructions;
+  return runAiCall({ ...req, instructions, model: req.model ?? defaultAiModel() }, {
     generate: testGenerator ?? gatewayGenerate,
     reserve: slot.reserve,
     release: slot.release,

@@ -1,23 +1,25 @@
 import { areasOf, sanitizeAnswers, type AssessmentAnswers } from "../assessment/model";
+import { cleanProfile, type MemberProfile } from "../profile/model";
 
 /**
- * The phone app's first steps before an account exists: a name and the four
- * tap-only questions of the My Path assessment (area, obstacles, time,
- * support). Kept only in this browser until the member signs up, then moved
+ * The phone app's first steps before an account exists: a name, an age range
+ * and a gender (both optional facts for the AI's tone), and the four tap-only
+ * questions of the My Path assessment (area, obstacles, time, support). Kept only in this browser until the member signs up, then moved
  * into their account and deleted here. Never any free text, never analytics.
  */
 export type StartAnswers = Pick<AssessmentAnswers, "area" | "areas" | "obstacles" | "time" | "support">;
-export type StartData = { name: string; answers: StartAnswers };
+export type StartData = { name: string; profile: MemberProfile; answers: StartAnswers };
 
 const KEY = "berripop.start.v1";
 const MAX_NAME = 40;
 /** Answers older than this are dropped rather than carried into a new account. */
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
-/** Keeps only the tap answers (no free text) and a trimmed name. */
+/** Keeps only the tap answers (no free text), the known profile values and a trimmed name. */
 export function cleanStart(raw: unknown): StartData | null {
   const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
   const name = typeof r.name === "string" ? r.name.trim().slice(0, MAX_NAME) : "";
+  const profile = cleanProfile(r.profile);
   const a = sanitizeAnswers(r.answers);
   const answers: StartAnswers = {};
   if (a.area) answers.area = a.area;
@@ -25,8 +27,8 @@ export function cleanStart(raw: unknown): StartData | null {
   if (a.obstacles?.length) answers.obstacles = a.obstacles;
   if (a.time) answers.time = a.time;
   if (a.support?.length) answers.support = a.support;
-  if (!name && !Object.keys(answers).length) return null;
-  return { name, answers };
+  if (!name && !Object.keys(profile).length && !Object.keys(answers).length) return null;
+  return { name, profile, answers };
 }
 
 /**
