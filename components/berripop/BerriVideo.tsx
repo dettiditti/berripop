@@ -94,7 +94,12 @@ void main() {
   vec3 n = texture2D(t, uv + vec2(px.x, 0.0)).rgb + texture2D(t, uv - vec2(px.x, 0.0)).rgb
          + texture2D(t, uv + vec2(0.0, px.y)).rgb + texture2D(t, uv - vec2(0.0, px.y)).rgb;
   c = clamp(c + 0.35 * (c - n * 0.25), 0.0, 1.0);
-  float a = texture2D(t, uv + vec2(0.0, 0.5)).r;
+  // The edge: the transparency is softened with its neighbours so the outline
+  // is smooth instead of stepped (the matte comes from a compressed video).
+  vec2 m = uv + vec2(0.0, 0.5);
+  float a = (4.0 * texture2D(t, m).r
+    + texture2D(t, m + vec2(px.x, 0.0)).r + texture2D(t, m - vec2(px.x, 0.0)).r
+    + texture2D(t, m + vec2(0.0, px.y)).r + texture2D(t, m - vec2(0.0, px.y)).r) / 8.0;
   gl_FragColor = vec4(min(c, vec3(a)), a);
 }`;
 

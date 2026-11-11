@@ -1830,6 +1830,8 @@ html[data-app] body:has(.berri-stage)::before { content: none; }
 .app-start { gap: 6px; }
 .app-start .app-start-berri { width: min(32vw, 136px, 17dvh); }
 .app-start--ready .app-start-berri { width: min(64vw, 280px, 34dvh); }
+/* The welcome Berri a little smaller than the clip, so phones scale it down (sharper) rather than up. */
+.app-welcome .app-welcome-berri { width: min(68vw, 280px, 34dvh); }
 .app-start-card { gap: 8px; text-align: center; }
 .app-start-top { display: flex; align-items: center; gap: 10px; }
 .app-start-back {
