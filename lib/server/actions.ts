@@ -643,9 +643,9 @@ export async function setPushPrefsAction(token: string, patch: Partial<PushPrefs
 }
 
 /** Settings: a test notification to this phone right now. */
-export async function sendTestPushAction(token: string): Promise<"sent" | "failed" | "off"> {
+export async function sendTestPushAction(token: string): Promise<{ sent: boolean; code?: string }> {
   const userId = await requireUserId();
-  if (!userId) return "failed";
+  if (!userId) return { sent: false, code: "signed_out" };
   const s = makeI18n(await locale()).d.settings;
   return push.sendTestPush(userId, token, { title: "Berripop", body: s.notifyTestBody });
 }

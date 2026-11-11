@@ -63,17 +63,18 @@ export async function setPushPrefs(userId: string, token: unknown, patch: unknow
 /**
  * "Send a test notification" in Settings: one alert to this phone only, if it
  * is registered to this member. Not logged in push_sends, so it never uses up
- * the day's real notifications. "off" when APNs is not configured.
+ * the day's real notifications. On failure, a short code says why.
  */
-export async function sendTestPush(userId: string, token: unknown, alert: { title: string; body: string }): Promise<"sent" | "failed" | "off"> {
-  if (!isDeviceToken(token)) return "failed";
+export async function sendTestPush(userId: string, token: unknown, alert: { title: string; body: string }): Promise<{ sent: boolean; code?: string }> {
+  if (!isDeviceToken(token)) return { sent: false, code: "bad_token" };
   const config = apnsConfig();
-  if (!config) return "off";
+  if (!config) return { sent: false, code: "apns_off" };
   const [row] = await getDb().select({ token: pushDevices.token }).from(pushDevices)
     .where(and(eq(pushDevices.token, token), eq(pushDevices.userId, userId))).limit(1);
-  if (!row) return "failed";
+  if (!row) return { sent: false, code: "no_device" };
   const [result] = await sendAlerts(config, [token], alert, { collapseId: "berripop-test", expiresAt: Math.floor(Date.now() / 1000) + 600 });
-  return result?.ok ? "sent" : "failed";
+  // Apple's short reason (e.g. BadDeviceToken) helps to tell what is wrong; it names no one.
+  return result?.ok ? { sent: true } : { sent: false, code: `${result?.status ?? 0}${result?.reason ? ` ${result.reason}` : ""}`.slice(0, 40) };
 }
 
 /**

@@ -72,8 +72,8 @@ export default function ReminderCard({ notify }: { notify: (message: string) => 
   async function test() {
     if (!token || testing) return;
     setTesting(true);
-    const r = await sendTestPushAction(token).catch(() => "failed" as const);
-    notify(r === "sent" ? s.notifyTestSent : s.notifyTestFailed);
+    const r = await sendTestPushAction(token).catch(() => ({ sent: false, code: "network" }));
+    notify(r.sent ? s.notifyTestSent : `${s.notifyTestFailed}${r.code ? ` (${r.code})` : ""}`);
     // A short pause, so a double tap does not send two.
     window.setTimeout(() => setTesting(false), 5000);
   }
