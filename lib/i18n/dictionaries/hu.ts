@@ -394,6 +394,14 @@ export const hu: Dictionary = {
     description: "Napi kérdések, apró lépések és privát napló, hogy jobban megértsd önmagad. Ha szeretnéd, egy közös körben együtt haladhatsz azokkal, akik fontosak neked. Ingyenes kezdés.",
   },
 
+  appError: {
+    title: "Hoppá, ez most nem sikerült",
+    body: "Valami hiba történt ezen az oldalon. Próbáld újra, vagy menj vissza a kezdőlapra.",
+    retry: "Újrapróbálom",
+    home: "Vissza a kezdőlapra",
+    code: "Hibakód",
+  },
+
   common: {
     loading: "Betöltés…",
     close: "Bezárás",

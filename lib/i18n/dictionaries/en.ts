@@ -397,6 +397,14 @@ export const en = {
     description: "Daily questions, small steps and a private journal to help you understand yourself better. If you like, grow together in a shared circle with the people who matter to you. Free to start.",
   },
 
+  appError: {
+    title: "Oops, that didn't work",
+    body: "Something went wrong on this page. Try again, or go back to the home page.",
+    retry: "Try again",
+    home: "Back to home",
+    code: "Error code",
+  },
+
   common: {
     loading: "Loading…",
     close: "Close",
