@@ -4,7 +4,18 @@
  * bridge and every call quietly does nothing. Presentation only.
  */
 
-type Listener = { remove: () => Promise<void> };
+type Listener = { remove: () => Promise<void> | void };
+/** What a native addListener hands back: the listener itself, or a promise of it, depending on the plugin. */
+export type ListenerHandle = Listener | Promise<Listener> | undefined;
+
+/** Stops a native listener, whichever form addListener returned; never throws. */
+export function removeListener(handle: ListenerHandle): void {
+  try {
+    Promise.resolve(handle).then(l => l?.remove?.()).catch(() => {});
+  } catch {
+    // Nothing to remove.
+  }
+}
 type PushPermission = { receive: "granted" | "denied" | "prompt" | "prompt-with-rationale" };
 type Bridge = {
   Plugins?: {
@@ -13,7 +24,7 @@ type Bridge = {
       checkPermissions: () => Promise<PushPermission>;
       requestPermissions: () => Promise<PushPermission>;
       register: () => Promise<void>;
-      addListener: (event: "registration" | "registrationError", cb: (v: { value?: string; error?: string }) => void) => Promise<Listener>;
+      addListener: (event: "registration" | "registrationError", cb: (v: { value?: string; error?: string }) => void) => ListenerHandle;
     };
     BerripopStore?: StorePlugin;
     BerripopAuth?: AuthPlugin;
@@ -28,7 +39,7 @@ type StorePlugin = {
   current: () => Promise<{ transactions: string[] }>;
   restore: () => Promise<{ transactions: string[] }>;
   manage: () => Promise<void>;
-  addListener: (event: "transaction", cb: (v: { jws: string }) => void) => Promise<Listener>;
+  addListener: (event: "transaction", cb: (v: { jws: string }) => void) => ListenerHandle;
 };
 
 /** Native sign-in: each returns an ID token for Clerk to verify; it rejects with "cancelled" when the member closes the sheet. */
@@ -76,10 +87,10 @@ export async function pushToken(): Promise<string | "denied" | null> {
     const { receive } = await p.requestPermissions();
     if (receive !== "granted") return "denied";
     return await new Promise<string | null>(resolve => {
-      const handles: Promise<Listener>[] = [];
+      const handles: ListenerHandle[] = [];
       const done = (v: string | null) => {
         clearTimeout(timer);
-        handles.forEach(h => h.then(l => l.remove()).catch(() => {}));
+        handles.forEach(removeListener);
         resolve(v);
       };
       const timer = setTimeout(() => done(null), 15_000);

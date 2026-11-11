@@ -48,7 +48,7 @@ import { useRun } from "./useRun";
 import Celebration, { type CelebrationItem } from "./Celebration";
 import { OfferContext } from "./billing/UpgradePrompt";
 import { reportTransactions } from "./billing/AppStorePaywall";
-import { appStore } from "@/lib/nativeBridge";
+import { appStore, removeListener } from "@/lib/nativeBridge";
 import { celebratedKey, freshlyReached, readCelebrated, writeCelebrated, type CelebrationKind } from "@/lib/celebrate";
 import { achievementDefs } from "@/lib/domain/rules";
 import { milestonesFrom, type MilestoneCounts, type MilestoneId } from "@/lib/milestones";
@@ -240,7 +240,7 @@ function AppShell({ snapshot, setSnapshot }: { snapshot: Snapshot; setSnapshot: 
     const handle = store.addListener("transaction", v => sync(v.jws ? [v.jws] : []));
     return () => {
       live = false;
-      handle.then(h => h.remove()).catch(() => {});
+      removeListener(handle);
     };
   }, [refresh]);
 
