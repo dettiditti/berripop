@@ -418,8 +418,9 @@ button.avatar:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ton
 .home-greeting { flex: 1; min-width: 0; }
 .home-greeting h1 { font-size: 24px; overflow-wrap: anywhere; }
 .home-greeting p { color: var(--ink-2); font-weight: 700; font-size: 15px; }
-.home-chips { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
-@media (min-width: 420px) { .home-chips { flex-direction: row; } }
+.home-chips { display: flex; flex-direction: row; align-items: center; gap: 6px; flex-shrink: 0; }
+.home-head > div:first-child { flex: 1; min-width: 0; }
+@media (max-width: 380px) { .home-chips .streak-chip, .home-chips .star-chip { padding: 5px 8px; font-size: 14px; } }
 
 .quest-card {
   position: relative; overflow: hidden;
