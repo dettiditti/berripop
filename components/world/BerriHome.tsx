@@ -15,16 +15,16 @@ import BerripopSpeechBubble from "../berripop/BerripopSpeechBubble";
 import WorldScene from "./WorldScene";
 
 const MOOD: Record<Hunger, BerripopMood> = { full: "proud", peckish: "curious", hungry: "encouraging", missing: "happy" };
-/** Berri's pose for each appetite: happy when full, dreaming of a snack when peckish, holding a rumbling tummy when hungry. */
-const POSE: Record<Hunger, BerriPose> = { full: "joy", peckish: "peckish", hungry: "hungry", missing: "missed" };
+/**
+ * Berri's pose for each appetite: meditating and floating calmly when fed, dreaming of a snack when peckish,
+ * holding a rumbling tummy when hungry. Berri stays in that pose and only changes when something happens.
+ */
+const POSE: Record<Hunger, BerriPose> = { full: "calm", peckish: "peckish", hungry: "hungry", missing: "missed" };
 const ICON = { question: Sparkles, checkin: HeartHandshake, moment: Star } as const;
 
 const SEEN = "berripop.berriBites";
 /** How long Berri shows the "eat" pose (munching the star) after a new bite. */
 const FEED_MS = 4200;
-/** Once Berri is fed, another contented pose now and then, so Berri never looks frozen. */
-const IDLE: BerriPose[] = ["calm", "joy", "wonder", "celebrate"];
-const IDLE_MS = 11000;
 
 /** How many bites the member has already watched Berri eat today (this phone only). */
 function seenBites(today: string): number {
@@ -79,31 +79,20 @@ export default function BerriHome({ view, onWorld, onFeed, fullMessage, covered 
   // (the "eat" pose: Berri munches a star; "Yum!", and the new dot lights up).
   const [feeding, setFeeding] = useState(false);
   const [replay, setReplay] = useState(0);
-  // After eating, Berri keeps munching until the next contented pose comes round.
-  const [ate, setAte] = useState(false);
-  // Which contented pose Berri shows while resting after a meal (-1: still the meal itself).
-  const [idle, setIdle] = useState(-1);
   useEffect(() => {
     if (covered) return;
     const seen = seenBites(view.today);
     markSeen(view.today, bites);
     if (bites <= seen) return;
     setFeeding(true);
-    setAte(true);
-    setIdle(-1);
     setReplay(r => r + 1);
     hapticSuccess();
   }, [covered, bites, view.today]);
-  const resting = ate || appetite.hunger === "full";
-  useEffect(() => {
-    if (!resting || feeding || covered) return;
-    const t = window.setInterval(() => setIdle(i => i + 1), IDLE_MS);
-    return () => window.clearInterval(t);
-  }, [resting, feeding, covered]);
   // What Berri wears from the treasure chest; the party-hat pose already has its own hat, so then plain joy instead.
   const wear = wornHeadItem(view.snapshot.wardrobe);
-  const picked: BerriPose = resting && idle >= 0 ? IDLE[idle % IDLE.length] : ate ? "eat" : POSE[appetite.hunger];
+  const picked: BerriPose = feeding ? "eat" : POSE[appetite.hunger];
   const pose: BerriPose = wear && picked === "celebrate" ? "joy" : picked;
+  const floating = pose === "calm";
   // The home-screen widget (iPhone app only) shows the same Berri, worked out by the date from here.
   const lastActive = useMemo(() => [...view.facts.myActiveDates].filter(x => x <= view.today).sort().pop() ?? null, [view.facts.myActiveDates, view.today]);
   useEffect(() => {
@@ -127,7 +116,7 @@ export default function BerriHome({ view, onWorld, onFeed, fullMessage, covered 
   return (
     <section className={`card berri-home is-${appetite.hunger} ${feeding ? "is-feeding" : ""}`} aria-labelledby="berri-home-title">
       <button type="button" className="berri-home-world" onClick={onWorld} aria-label={b.open}>
-        <WorldScene world={world} label={d.innerWorld.homeBody} compact mood={MOOD[appetite.hunger]} berri={<BerriStill key={`${pose}-${replay}-${idle}`} pose={pose} wear={wear} className="world-berri-video" />} />
+        <WorldScene world={world} label={d.innerWorld.homeBody} compact mood={MOOD[appetite.hunger]} berri={<BerriStill key={`${pose}-${replay}`} pose={pose} wear={wear} className={`world-berri-video${floating ? " is-floating" : ""}`} />} />
         <span className="berri-home-open pill">{b.open} <ArrowRight size={14} aria-hidden /></span>
       </button>
       <h2 id="berri-home-title" className="sr-only">{b.eyebrow}</h2>

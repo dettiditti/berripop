@@ -14,6 +14,7 @@ import { prefersReducedMotion } from "@/lib/motion";
 import AchievementBadge from "../AchievementBadge";
 import CheckinCard from "../checkin/CheckinCard";
 import Feed from "../Feed";
+import StarChip from "../StarChip";
 import StreakIndicator from "../StreakIndicator";
 import ThemeGlyph from "../world/ThemeGlyph";
 import BerriHome from "../world/BerriHome";
@@ -92,7 +93,7 @@ export default function HomeScreen({ view, run, notify, go, startQuest, openQues
           <span className="eyebrow">{td.eyebrow}</span>
           <h1>{view.snapshot.me.name ? t(td.titleNamed, { name: view.snapshot.me.name }) : td.title}</h1>
         </div>
-        <div className="home-chips"><StreakIndicator streak={view.streak} /></div>
+        <div className="home-chips"><StreakIndicator streak={view.streak} /><StarChip wardrobe={view.snapshot.wardrobe} onOpen={() => go("world")} /></div>
       </header>
 
       <BerriHome view={view} covered={!!covered} onWorld={() => go("world")} onFeed={feed} fullMessage={berripopSays(d, key, view.today, { n: view.streak.current })} />

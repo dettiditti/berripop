@@ -366,7 +366,7 @@ button.avatar:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ton
 .xp-progress-top strong { font-family: var(--font-display); font-weight: 600; font-size: 17px; min-width: 0; overflow-wrap: anywhere; }
 .xp-progress-top span { font-size: 13px; font-weight: 800; color: var(--muted); }
 
-.streak-chip, .xp-chip {
+.streak-chip, .xp-chip, .star-chip {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 6px 10px; border-radius: 999px; background: var(--paper); border: 2px solid var(--line);
   font-weight: 900; font-size: 15px; color: #b5aec2;
@@ -374,6 +374,9 @@ button.avatar:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ton
 .streak-chip.is-lit { color: var(--coral); border-color: var(--coral-soft); background: #fff6f2; }
 .streak-chip.is-lit svg { animation: flicker 1.8s ease-in-out infinite; }
 .xp-chip { color: #9a6a00; border-color: var(--sun-soft); background: #fffaf0; }
+.star-chip { color: #b8860b; border-color: var(--sun-soft); background: #fffaf0; font-family: inherit; line-height: inherit; cursor: pointer; }
+.star-chip:active { transform: scale(0.96); }
+.star-chip:focus-visible { outline: 3px solid var(--sun-soft); outline-offset: 2px; }
 @keyframes flicker { 50% { transform: scale(1.1) rotate(-4deg); } }
 
 .streak-card {
@@ -1637,9 +1640,9 @@ html:has(.lp) { scroll-behavior: smooth; }
 .berri-video--still .berri-pose > img:first-child { width: 100%; height: 100%; object-fit: contain; }
 .berri-video .berri-wear { position: absolute; width: var(--w, 46%); height: auto; translate: var(--x, -50%) var(--y, -80%); rotate: var(--rot, -6deg); pointer-events: none; filter: drop-shadow(0 4px 4px rgba(60, 30, 140, 0.2)); }
 .berri-wear--capblue, .berri-wear--cappink { --w: 50%; --x: -44%; --y: -74%; --rot: -8deg; }
-.berri-wear--beanie { --w: 46%; --x: -50%; --y: -78%; --rot: -6deg; }
+.berri-wear--beanie { --w: 62%; --x: -50%; --y: -66%; --rot: -6deg; }
 .berri-wear--cowboy { --w: 62%; --x: -50%; --y: -78%; --rot: -6deg; }
-.berri-wear--aviator { --w: 48%; --x: -50%; --y: -70%; --rot: -4deg; }
+.berri-wear--aviator { --w: 62%; --x: -40%; --y: -62%; --rot: -2deg; }
 /* A new pose pops in softly (the individual scale property leaves room for the idle breathing transform). */
 .berri-pose { animation: berri-pose-in 0.45s cubic-bezier(0.34, 1.4, 0.64, 1) both; transform-origin: 50% 92%; }
 @keyframes berri-pose-in { from { opacity: 0; scale: 0.9; } }
@@ -2014,6 +2017,10 @@ html[data-app] body:has(.berri-stage)::before { content: none; }
 .world-scene .berri-video--clear > :is(video, canvas, img, .berri-pose) { transform-origin: 50% 92%; animation: berri-idle-breathe 3.8s ease-in-out infinite; }
 .world-scene .berri-video--clear > .berri-pose { animation: berri-pose-in 0.45s cubic-bezier(0.34, 1.4, 0.64, 1) both, berri-idle-breathe 3.8s ease-in-out 0.45s infinite; }
 @keyframes berri-idle-breathe { 50% { transform: translateY(-1.5%) scale(1.02, 0.985); } }
+/* Fed and content: Berri meditates, floating gently above the ground (until something happens). */
+.world-scene .berri-video--clear.is-floating > .berri-pose { animation: berri-pose-in 0.45s cubic-bezier(0.34, 1.4, 0.64, 1) both, berri-float 5s ease-in-out 0.45s infinite; }
+@keyframes berri-float { 0%, 100% { transform: translateY(-3%); } 50% { transform: translateY(-9%); } }
+@media (prefers-reduced-motion: reduce) { .world-scene .berri-video--clear.is-floating > .berri-pose { animation: none; transform: translateY(-5%); } }
 @media (prefers-reduced-motion: reduce) { .world-scene .berri-video--clear > :is(video, canvas, img, .berri-pose) { animation: none; } }
 .berri-home-intro { margin: 0 6px; font-weight: 700; font-size: 15px; line-height: 1.45; color: var(--ink-2); }
 .berri-home-how { margin: 0 6px; }
