@@ -107,7 +107,7 @@ export default function AppStart() {
     const y = d.aboutYou;
     return (
       <main className="berri-stage app-start app-start--ready">
-        <BerriStill className="app-start-berri" />
+        <BerriStill pose="care" className="app-start-berri" />
         <section className="berri-intro-card" aria-labelledby="as-young">
           <h1 id="as-young">{y.under16Title}</h1>
           <p>{y.under16Body}</p>
@@ -123,7 +123,7 @@ export default function AppStart() {
     return (
       <main className="berri-stage app-start app-start--ready">
         <Confetti pieces={40} />
-        <BerriStill className="app-start-berri" />
+        <BerriStill pose="celebrate" className="app-start-berri" />
         <section className="berri-intro-card" aria-labelledby="as-ready">
           <div className="app-start-progress is-full" aria-hidden><span style={{ width: "100%" }} /></div>
           <h1 id="as-ready">{t(s.readyTitle, { name: clean })}</h1>
@@ -146,7 +146,7 @@ export default function AppStart() {
 
   return (
     <main className="berri-stage app-start">
-      <BerriStill className="app-start-berri" />
+      <BerriStill pose={q === "name" ? "hi" : "wonder"} className="app-start-berri" />
       <form className="berri-intro-card app-start-card" aria-labelledby="as-title" onSubmit={e => { e.preventDefault(); if (q === "name") submitName(e); else if (done(q)) next(); }}>
         <div className="app-start-top">
           <button type="button" className="app-start-back" onClick={back} aria-label={s.back}><ArrowLeft size={20} aria-hidden /></button>

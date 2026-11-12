@@ -34,8 +34,8 @@ export function PhoneMock() {
           </div>
         </div>
         <div className="lp-phone-app">
-          {/* eslint-disable-next-line @next/next/no-img-element -- transparent still from public/berri, same as BerriVideo */}
-          <img className="lp-phone-berri" src="/berri/berri-peckish.png" alt="" width={1080} height={1080} />
+          {/* eslint-disable-next-line @next/next/no-img-element -- transparent still from public/berri/pose, same as BerriStill */}
+          <img className="lp-phone-berri" src="/berri/pose/peckish.png" alt="" width={720} height={796} />
           <p className="lp-phone-says">{w.phoneSays}</p>
           <div className="lp-phone-bowl"><span className="berri-bowl-dots"><i className="is-on" /><i /><i /></span> {b.bowl.replace("{n}", "1").replace("{total}", "3")}</div>
           <div className="lp-phone-meals">

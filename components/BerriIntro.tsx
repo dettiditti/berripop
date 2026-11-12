@@ -5,10 +5,10 @@ import { ArrowRight } from "lucide-react";
 import type { Snapshot } from "@/lib/domain/types";
 import { useI18n } from "@/lib/i18n/client";
 import { setDisplayNameAction } from "@/lib/server/actions";
-import BerriVideo, { type BerriClip } from "./berripop/BerriVideo";
+import { BerriStill, type BerriPose } from "./berripop/BerriVideo";
 
 type Step = "hello" | "name" | "nice";
-const CLIP: Record<Step, BerriClip> = { hello: "wave", name: "wonder", nice: "joy" };
+const POSE: Record<Step, BerriPose> = { hello: "hi", name: "wonder", nice: "joy" };
 const MAX_NAME = 40;
 
 /**
@@ -48,7 +48,7 @@ export default function BerriIntro({ name: initial, onSnapshot, onDone }: { name
 
   return (
     <main className="berri-stage berri-intro">
-      <BerriVideo clip={CLIP[step]} className="berri-intro-berri" />
+      <BerriStill pose={POSE[step]} className="berri-intro-berri" />
       {step === "hello" && (
         <section className="berri-intro-card" aria-labelledby="bi-title">
           <h1 id="bi-title">{c.helloTitle}</h1>

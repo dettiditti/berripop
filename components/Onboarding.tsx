@@ -85,7 +85,7 @@ function ContinueFromStart({ name, onSnapshot, terms, start, onRestart }: Props 
 
   return (
     <main className="berri-stage app-start app-start--ready">
-      <BerriStill className="app-start-berri" />
+      <BerriStill pose="joy" className="app-start-berri" />
       <section className="berri-intro-card" aria-live="polite">
         {failed ? (
           <>

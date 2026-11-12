@@ -8,20 +8,20 @@ import { useI18n } from "@/lib/i18n/client";
 import { hapticSuccess } from "@/lib/nativeBridge";
 import { deriveWorld } from "@/lib/world";
 import type { BerripopMood } from "../berripop/BerripopMascot";
-import BerriVideo, { type BerriClip } from "../berripop/BerriVideo";
+import { BerriStill, type BerriPose } from "../berripop/BerriVideo";
 import BerripopSpeechBubble from "../berripop/BerripopSpeechBubble";
 import WorldScene from "./WorldScene";
 
 const MOOD: Record<Hunger, BerripopMood> = { full: "proud", peckish: "curious", hungry: "encouraging", missing: "happy" };
-/** Berri's clip for each appetite: munching happily when full, patting a rumbling tummy when hungry. */
-const CLIP: Record<Hunger, BerriClip> = { full: "joy", peckish: "peckish", hungry: "hungry", missing: "missed" };
+/** Berri's pose for each appetite: happy when full, dreaming of a snack when peckish, holding a rumbling tummy when hungry. */
+const POSE: Record<Hunger, BerriPose> = { full: "joy", peckish: "peckish", hungry: "hungry", missing: "missed" };
 const ICON = { question: Sparkles, checkin: HeartHandshake, moment: Star } as const;
 
 const SEEN = "berripop.berriBites";
-/** About as long as the "eat" clip (a star drops in and Berri munches it). */
+/** How long Berri shows the "eat" pose (munching the star) after a new bite. */
 const FEED_MS = 4200;
-/** Once Berri is fed, a short happy clip now and then, so Berri never freezes on one frame. */
-const IDLE: BerriClip[] = ["joy", "wonder", "joy2"];
+/** Once Berri is fed, another contented pose now and then, so Berri never looks frozen. */
+const IDLE: BerriPose[] = ["calm", "joy", "wonder", "celebrate"];
 const IDLE_MS = 11000;
 
 /** How many bites the member has already watched Berri eat today (this phone only). */
@@ -74,12 +74,12 @@ export default function BerriHome({ view, onWorld, onFeed, fullMessage, covered 
   const bites = eaten.size;
 
   // A new bite since the member last looked: once nothing covers Today any more, Berri eats it
-  // (the "eat" clip: a star drops in and Berri munches it; "Yum!", and the new dot lights up).
+  // (the "eat" pose: Berri munches a star; "Yum!", and the new dot lights up).
   const [feeding, setFeeding] = useState(false);
   const [replay, setReplay] = useState(0);
-  // After eating, Berri stays on the eating clip's happy last frame instead of starting another clip.
+  // After eating, Berri keeps munching until the next contented pose comes round.
   const [ate, setAte] = useState(false);
-  // Which happy clip Berri plays while resting after a meal (-1: still the meal itself).
+  // Which contented pose Berri shows while resting after a meal (-1: still the meal itself).
   const [idle, setIdle] = useState(-1);
   useEffect(() => {
     if (covered) return;
@@ -98,7 +98,7 @@ export default function BerriHome({ view, onWorld, onFeed, fullMessage, covered 
     const t = window.setInterval(() => setIdle(i => i + 1), IDLE_MS);
     return () => window.clearInterval(t);
   }, [resting, feeding, covered]);
-  const clip: BerriClip = resting && idle >= 0 ? IDLE[idle % IDLE.length] : ate ? "eat" : CLIP[appetite.hunger];
+  const pose: BerriPose = resting && idle >= 0 ? IDLE[idle % IDLE.length] : ate ? "eat" : POSE[appetite.hunger];
   useEffect(() => {
     if (!feeding) return;
     const t = window.setTimeout(() => setFeeding(false), FEED_MS);
@@ -108,7 +108,7 @@ export default function BerriHome({ view, onWorld, onFeed, fullMessage, covered 
   return (
     <section className={`card berri-home is-${appetite.hunger} ${feeding ? "is-feeding" : ""}`} aria-labelledby="berri-home-title">
       <button type="button" className="berri-home-world" onClick={onWorld} aria-label={b.open}>
-        <WorldScene world={world} label={d.innerWorld.homeBody} compact mood={MOOD[appetite.hunger]} berri={<BerriVideo key={`${clip}-${replay}-${idle}`} clip={clip} className="world-berri-video" />} />
+        <WorldScene world={world} label={d.innerWorld.homeBody} compact mood={MOOD[appetite.hunger]} berri={<BerriStill key={`${pose}-${replay}-${idle}`} pose={pose} className="world-berri-video" />} />
         <span className="berri-home-open pill">{b.open} <ArrowRight size={14} aria-hidden /></span>
       </button>
       <h2 id="berri-home-title" className="sr-only">{b.eyebrow}</h2>

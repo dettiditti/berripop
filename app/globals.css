@@ -1622,6 +1622,10 @@ html:has(.lp) { scroll-behavior: smooth; }
 .berri-video--clear canvas { position: relative; }
 /* The still picture is already trimmed to Berri: shown whole, feet on the shadow. */
 .berri-video--still img { box-sizing: border-box; object-fit: contain; object-position: 50% 100%; padding: 12% 8% 6%; }
+/* A new pose pops in softly (the individual scale property leaves room for the idle breathing transform). */
+.berri-pose { animation: berri-pose-in 0.45s cubic-bezier(0.34, 1.4, 0.64, 1) both; transform-origin: 50% 92%; }
+@keyframes berri-pose-in { from { opacity: 0; scale: 0.9; } }
+@media (prefers-reduced-motion: reduce) { .berri-pose { animation: none; } }
 /* The stacked clip's source video only feeds the canvas. */
 .berri-video .berri-video-source { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .berri-video img + .berri-video-pending { position: absolute; inset: 0; opacity: 0; }
@@ -1990,8 +1994,9 @@ html[data-app] body:has(.berri-stage)::before { content: none; }
 .world-scene .world-berri-video { position: absolute; left: 50%; bottom: -4%; transform: translateX(-50%); width: auto; height: 82%; }
 /* Berri breathes softly, so a clip resting on its last frame never looks frozen. */
 .world-scene .berri-video--clear > :is(video, canvas, img) { transform-origin: 50% 92%; animation: berri-idle-breathe 3.8s ease-in-out infinite; }
+.world-scene .berri-video--clear > img.berri-pose { animation: berri-pose-in 0.45s cubic-bezier(0.34, 1.4, 0.64, 1) both, berri-idle-breathe 3.8s ease-in-out 0.45s infinite; }
 @keyframes berri-idle-breathe { 50% { transform: translateY(-1.5%) scale(1.02, 0.985); } }
-@media (prefers-reduced-motion: reduce) { .world-scene .berri-video--clear > :is(video, canvas, img) { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .world-scene .berri-video--clear > :is(video, canvas, img), .world-scene .berri-video--clear > img.berri-pose { animation: none; } }
 .berri-home-intro { margin: 0 6px; font-weight: 700; font-size: 15px; line-height: 1.45; color: var(--ink-2); }
 .berri-home-how { margin: 0 6px; }
 .berri-home-how summary { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 800; font-size: 14px; color: var(--purple-dark); list-style: none; min-height: 32px; }

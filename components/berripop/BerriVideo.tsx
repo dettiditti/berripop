@@ -83,16 +83,25 @@ export default function BerriVideo({ clip, className }: { clip: BerriClip; class
   );
 }
 
+/** Berri's still poses (public/berri/pose), each a transparent picture. */
+export type BerriPose = "hi" | "joy" | "celebrate" | "wonder" | "care" | "calm" | "sleepy" | "peckish" | "hungry" | "eat" | "missed";
+const POSE_SIZE: Record<BerriPose, [number, number]> = {
+  hi: [808, 872], joy: [720, 719], celebrate: [720, 780], wonder: [720, 836], care: [720, 1033], calm: [720, 802],
+  sleepy: [720, 808], peckish: [720, 796], hungry: [720, 808], eat: [720, 965], missed: [720, 799],
+};
+export const poseSrc = (pose: BerriPose) => `/berri/pose/${pose}.png`;
+
 /**
- * Berri as a sharp still picture (waving hello), standing on the page like
- * the transparent clips. Used where a crisp figure matters more than motion:
- * the app's first screen and its questions. Decorative.
+ * Berri as a sharp still picture in one of the poses, standing on the page
+ * like the transparent clips. A new pose pops in gently (not with reduced
+ * motion). Decorative: the text next to it carries the meaning.
  */
-export function BerriStill({ className }: { className?: string }) {
+export function BerriStill({ pose = "hi", className }: { pose?: BerriPose; className?: string }) {
+  const [w, h] = POSE_SIZE[pose];
   return (
     <div className={`berri-video berri-video--clear berri-video--still${className ? ` ${className}` : ""}`} aria-hidden>
-      {/* eslint-disable-next-line @next/next/no-img-element -- transparent still from public/berri */}
-      <img src="/berri/berri-hi.png" alt="" width={808} height={872} decoding="async" fetchPriority="high" />
+      {/* eslint-disable-next-line @next/next/no-img-element -- transparent still from public/berri/pose */}
+      <img key={pose} className="berri-pose" src={poseSrc(pose)} alt="" width={w} height={h} decoding="async" fetchPriority="high" />
     </div>
   );
 }
