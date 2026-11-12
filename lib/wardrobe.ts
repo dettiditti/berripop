@@ -21,6 +21,13 @@ export const PRICES: Record<ItemId, number> = {
   bench: 6, sunflowers: 10, birdhouse: 12, swing: 15, lights: 18, mushroom: 22, rainbow: 30,
 };
 
+/**
+ * Dressing Berri is switched off for now: the hats are not offered, and Berri
+ * wears none, until each pose has its own hatted picture. Anything a member
+ * already picked stays theirs and comes back when this is switched on.
+ */
+export const DRESSING_ENABLED = false;
+
 /** Things for Berri to wear, each with its own picture in public/berri/wear; a head item is offered only when listed here. */
 export const WEAR_READY: Record<HeadItemId, boolean> = { capblue: true, cappink: true, beanie: true, cowboy: true, aviator: true };
 
@@ -29,7 +36,7 @@ export const isWorldItem = (id: string): id is WorldItemId => (WORLD_ITEMS as re
 export const isItem = (id: string): id is ItemId => isHeadItem(id) || isWorldItem(id);
 export const kindOf = (id: ItemId): ItemKind => (isHeadItem(id) ? "head" : "world");
 /** Offered in the chest right now. */
-export const isOffered = (id: ItemId) => !isHeadItem(id) || WEAR_READY[id];
+export const isOffered = (id: ItemId) => !isHeadItem(id) || (DRESSING_ENABLED && WEAR_READY[id]);
 
 /** Stars earned: one for each day with each kind of food (question, check-in, moment). */
 export function starsEarned(input: { questionDates: Iterable<string>; checkinDates: Iterable<string>; momentDates: Iterable<string> }): number {
@@ -69,5 +76,6 @@ export function canBuy(w: WardrobeDTO, id: string): BuyCheck {
 
 /** The head item Berri wears, if any. */
 export function wornHeadItem(w: Pick<WardrobeDTO, "equipped"> | null | undefined): HeadItemId | null {
+  if (!DRESSING_ENABLED) return null;
   return (w?.equipped.find(isHeadItem) as HeadItemId | undefined) ?? null;
 }

@@ -70,11 +70,11 @@ export default function TreasureChest({ view, run, notify }: { view: View; run: 
       </div>
       <p className="chest-how">{c.howTo}</p>
 
-      <div className="chest-tabs" role="tablist" aria-label={c.title}>
+      {headOffered.length > 0 && <div className="chest-tabs" role="tablist" aria-label={c.title}>
         {(["world", "head"] as const).map(k => (
           <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? "is-on" : ""} onClick={() => setTab(k)}>{c.tabs[k]}</button>
         ))}
-      </div>
+      </div>}
 
       {list.length === 0 ? (
         <div className="chest-soon">

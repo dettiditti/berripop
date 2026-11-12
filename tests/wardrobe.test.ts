@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canBuy, PRICES, starsEarned, wardrobeOf, wornHeadItem } from "../lib/wardrobe";
+import { canBuy, DRESSING_ENABLED, HEAD_ITEMS, isOffered, PRICES, starsEarned, wardrobeOf, wornHeadItem } from "../lib/wardrobe";
 import { en } from "../lib/i18n/dictionaries/en";
 import { hu } from "../lib/i18n/dictionaries/hu";
 
@@ -14,16 +14,23 @@ describe("Berri's treasure chest", () => {
     expect(w.spent).toBe(PRICES.bench + PRICES.capblue);
     expect(w.balance).toBe(40 - 16);
     expect(w.owned).toEqual(["bench", "capblue"]);
-    expect(wornHeadItem(w)).toBe("capblue");
+    expect(wornHeadItem(w)).toBe(DRESSING_ENABLED ? "capblue" : null);
     expect(wardrobeOf(3, [{ itemId: "rainbow", equipped: false }]).balance).toBe(0);
   });
 
   it("lets the member pick only real things they do not have yet and have enough stars for", () => {
     const w = wardrobeOf(12, [{ itemId: "bench", equipped: false }]);
-    expect(canBuy(w, "capblue")).toEqual({ ok: false, reason: "stars" });
+    expect(canBuy(w, "rainbow")).toEqual({ ok: false, reason: "stars" });
     expect(canBuy(w, "bench")).toEqual({ ok: false, reason: "owned" });
     expect(canBuy(w, "jetpack")).toEqual({ ok: false, reason: "unknown" });
-    expect(canBuy(wardrobeOf(16, [{ itemId: "bench", equipped: false }]), "capblue")).toEqual({ ok: true });
+    expect(canBuy(wardrobeOf(16, [{ itemId: "bench", equipped: false }]), "sunflowers")).toEqual({ ok: true });
+  });
+
+  it("offers no hats while dressing Berri is switched off", () => {
+    for (const id of HEAD_ITEMS) {
+      expect(isOffered(id)).toBe(DRESSING_ENABLED);
+      if (!DRESSING_ENABLED) expect(canBuy(wardrobeOf(99, []), id)).toEqual({ ok: false, reason: "unknown" });
+    }
   });
 
   it("names every thing in both languages", () => {
