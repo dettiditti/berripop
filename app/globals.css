@@ -1565,7 +1565,9 @@ html:has(.lp) { scroll-behavior: smooth; }
 .terms-step { width: 100%; max-width: 520px; margin: 0 auto; }
 .terms-consent { display: flex; flex-direction: column; gap: 14px; text-align: left; font-family: var(--font-body); }
 .terms-consent-head { display: flex; align-items: center; gap: 14px; }
-.terms-consent-head > :first-child { flex: none; }
+/* The mascot keeps its size; the text takes the rest and wraps (also when there is no mascot, as in onboarding). */
+.terms-consent-head > :first-child:not(:last-child) { flex: none; }
+.terms-consent-head > :last-child { flex: 1; min-width: 0; }
 .terms-consent h2 { font-size: 22px; line-height: 1.2; color: var(--ink); }
 .terms-consent-head p { margin-top: 4px; color: var(--ink-2); font-size: 15px; line-height: 1.45; }
 .terms-consent a { color: var(--purple-dark); font-weight: 800; text-decoration: underline; text-underline-offset: 2px; }
