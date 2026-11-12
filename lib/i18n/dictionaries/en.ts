@@ -836,6 +836,18 @@ export const en = {
     grow: { name: "Grow", tagline: "Take one small step forward." },
   },
 
+  widgetTip: {
+    title: "Take Berri with you!",
+    body: "Put Berri on your Home Screen. At a glance you'll see whether Berri is hungry and how long your spark is.",
+    steps: [
+      "Touch and hold an empty spot on your Home Screen.",
+      "Tap the + button (or Edit › Add Widget).",
+      "Find Berripop, pick a size and tap “Add Widget”.",
+    ],
+    cta: "I'll do it!",
+    later: "Maybe later",
+    sr: "What Berri looks like on the Home Screen",
+  },
   wardrobe: {
     title: "Berri's treasure chest",
     intro: "Every bite you give Berri is a star. Spend your stars on little treasures for Berri and Berri's world.",

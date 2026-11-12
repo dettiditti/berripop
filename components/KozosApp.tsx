@@ -47,6 +47,11 @@ import type { JourneyMode } from "./screens/types";
 import { useRun } from "./useRun";
 import Celebration, { type CelebrationItem } from "./Celebration";
 import StreakWelcome from "./StreakWelcome";
+import WidgetTip from "./WidgetTip";
+import { useAppetite } from "./world/BerriHome";
+import { hasWidget } from "@/lib/nativeBridge";
+import { widgetTipDone, widgetTipDue, widgetTipLater } from "@/lib/widgetTip";
+import { wornHeadItem } from "@/lib/wardrobe";
 import { claimStreakWelcome, streakWelcomeKind, type StreakWelcomeKind } from "@/lib/streakWelcome";
 import { OfferContext } from "./billing/UpgradePrompt";
 import { reportTransactions } from "./billing/AppStorePaywall";
@@ -226,11 +231,25 @@ function AppShell({ snapshot, setSnapshot }: { snapshot: Snapshot; setSnapshot: 
   // Once a day, the first time Today is free: Berri greets the member with their spark (or a welcome back).
   const [streakWelcome, setStreakWelcome] = useState<StreakWelcomeKind | null>(null);
   const todayFree = tab === "home" && !askReminder && !quest && !reward && !detail && !nextCelebration && !inviteOpen && !composerOpen;
+  // In the iPhone app, on a later visit (never right after the greeting): Berri can live on the Home Screen too.
+  const [widgetTip, setWidgetTip] = useState(false);
+  const tipChecked = useRef(false);
+  const scenePicked = snapshot.me.scenePicked;
   useEffect(() => {
-    if (!todayFree || !claimStreakWelcome(meId, view.today)) return;
-    setStreakWelcome(streakWelcomeKind(view.streak));
-  }, [todayFree, meId, view.today, view.streak]);
+    if (!todayFree) return;
+    if (claimStreakWelcome(meId, view.today)) {
+      tipChecked.current = true;
+      setStreakWelcome(streakWelcomeKind(view.streak));
+      return;
+    }
+    if (tipChecked.current) return;
+    tipChecked.current = true;
+    if (scenePicked && hasWidget() && widgetTipDue(meId, view.today)) setWidgetTip(true);
+  }, [todayFree, meId, view.today, view.streak, scenePicked]);
   const closeStreakWelcome = useCallback(() => setStreakWelcome(null), []);
+  const tipDone = useCallback(() => { widgetTipDone(meId); setWidgetTip(false); }, [meId]);
+  const tipLater = useCallback(() => { widgetTipLater(meId, view.today); setWidgetTip(false); }, [meId, view.today]);
+  const appetite = useAppetite(view);
 
   const refresh = useCallback(async () => {
     const r = await getSnapshotAction().catch(() => null);
@@ -397,7 +416,7 @@ function AppShell({ snapshot, setSnapshot }: { snapshot: Snapshot; setSnapshot: 
     journeyMode, openJourney, buildJourney: () => buildJourney(), journeyBuilding,
     assessmentStatus: assessment?.assessment?.status ?? null, openAssessment: () => setAssessing(true),
     writeInJournal, milestoneCounts,
-    covered: !!quest || !!reward || !!detail || !!streakWelcome,
+    covered: !!quest || !!reward || !!detail || !!streakWelcome || widgetTip,
   };
   const questQuestion = quest ? view.question(quest.ref) : null;
   const offerRules = useMemo(() => ({ activeDays: new Set(snapshot.progress.activeDates).size, account: snapshot.account, notify }), [snapshot.progress.activeDates, snapshot.account, notify]);
@@ -506,6 +525,9 @@ function AppShell({ snapshot, setSnapshot }: { snapshot: Snapshot; setSnapshot: 
       )}
       {streakWelcome && todayFree && (
         <StreakWelcome kind={streakWelcome} streak={view.streak} active={view.facts.myActiveDates} today={view.today} onDone={closeStreakWelcome} />
+      )}
+      {widgetTip && todayFree && !streakWelcome && (
+        <WidgetTip streak={view.streak.current} bites={appetite.mealsToday.length} wear={wornHeadItem(snapshot.wardrobe)} onDone={tipDone} onLater={tipLater} />
       )}
       {toast && <Toast key={toast.id} message={toast.message} />}
       {nextCelebration && !quest && !reward && <Celebration key={`${nextCelebration.kind}:${nextCelebration.id}`} item={nextCelebration} onDone={finishCelebration} />}

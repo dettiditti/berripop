@@ -830,6 +830,18 @@ export const hu: Dictionary = {
     grow: { name: "Fejlődés", tagline: "Tegyél egy apró lépést előre." },
   },
 
+  widgetTip: {
+    title: "Vidd magaddal Berrit!",
+    body: "Tedd ki Berrit a kezdőképernyődre. Egy pillantással látod, éhes-e, és hány napos a szikrád.",
+    steps: [
+      "Tarts nyomva egy üres részt a kezdőképernyőn.",
+      "Koppints a + jelre (vagy: Szerkesztés › Widget hozzáadása).",
+      "Keresd meg a Berripopot, válassz méretet, és koppints a „Widget hozzáadása” gombra.",
+    ],
+    cta: "Megcsinálom!",
+    later: "Majd később",
+    sr: "Így néz ki Berri a kezdőképernyőn",
+  },
   wardrobe: {
     title: "Berri kincsesládája",
     intro: "Minden falat, amit Berrinek adsz, egy csillag. A csillagokból apró kincseket választhatsz Berrinek és a világának.",

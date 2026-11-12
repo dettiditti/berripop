@@ -129,6 +129,11 @@ export type BerriWidgetState = {
   text: Record<"full" | "peckish" | "hungry" | "missing", string>;
 };
 
+/** True inside an iPhone app version that has the home-screen widget. */
+export function hasWidget(): boolean {
+  return !!plugins()?.BerripopWidget;
+}
+
 let lastWidget = "";
 /** Hands Berri's state to the home-screen widget, when this page runs inside an iPhone app version that has one. */
 export function widgetUpdate(state: BerriWidgetState): void {
