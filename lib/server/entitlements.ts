@@ -71,8 +71,9 @@ export async function canAccessWeeklySummary(userId: string): Promise<boolean> {
 /**
  * The AI allowances (PLAN_QUOTAS in lib/billing/plans.ts): "assist" (follow-up
  * questions, weekly summary), "journal" (journal reflections, check-ins,
- * Gondolatboncoló patterns), "assessment" (My Path, goal journeys) and
- * "thought" (Gondolatboncoló sessions, see lib/server/thought.ts).
+ * Gondolatboncoló patterns), "assessment" (My Path, goal journeys),
+ * "thought" (Gondolatboncoló sessions, see lib/server/thought.ts) and
+ * "relationship" (Kapcsolati világ, see lib/server/relationship.ts).
  */
 export type AiBucket = Exclude<QuotaKey, "thought">;
 

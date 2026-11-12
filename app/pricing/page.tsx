@@ -4,11 +4,12 @@ import PricingPage from "@/components/billing/PricingPage";
 import { publicSalesInfo } from "@/lib/billing/sales";
 import { isTestMode } from "@/lib/billing/stripe";
 import { isNativeApp } from "@/lib/native";
+import { relationshipEnabled } from "@/lib/server/relationship";
 import { thoughtEnabled } from "@/lib/server/thought";
 
 export default async function Pricing({ searchParams }: { searchParams: Promise<{ from?: string }> }) {
   // Nothing is sold inside the phone app (App Store rules).
   if (isNativeApp((await headers()).get("user-agent"))) redirect("/");
   const { from } = await searchParams;
-  return <PricingPage from={from} testMode={isTestMode()} sales={publicSalesInfo(process.env)} thoughtEnabled={thoughtEnabled()} />;
+  return <PricingPage from={from} testMode={isTestMode()} sales={publicSalesInfo(process.env)} thoughtEnabled={thoughtEnabled()} relationshipEnabled={relationshipEnabled()} />;
 }

@@ -12,6 +12,7 @@ import { goalNodes, goalRef } from "@/lib/journey/goal";
 import type { Meal } from "@/lib/berriHunger";
 import { prefersReducedMotion } from "@/lib/motion";
 import AchievementBadge from "../AchievementBadge";
+import RelationshipHomeCard from "../relationship/RelationshipHomeCard";
 import CheckinCard from "../checkin/CheckinCard";
 import Feed from "../Feed";
 import StarChip from "../StarChip";
@@ -47,7 +48,7 @@ function Avatar({ name, tone = "purple", done }: { name: string; tone?: string; 
 const TONES = ["purple", "coral", "mint", "sky", "sun"];
 
 /** Today ("Ma"): one recommended step first, the other options in one row, then progress and the circle. */
-export default function HomeScreen({ view, run, notify, go, startQuest, openQuestion, onInvite, openJourney, assessmentStatus, openAssessment, journeyBuilding, writeInJournal, covered }: ScreenProps) {
+export default function HomeScreen({ view, run, notify, go, startQuest, openQuestion, onInvite, openJourney, assessmentStatus, openAssessment, journeyBuilding, writeInJournal, covered, relationshipEnabled }: ScreenProps) {
   const { d, t, num, plural } = useI18n();
   const h = d.dashboard;
   const td = d.today;
@@ -192,6 +193,8 @@ export default function HomeScreen({ view, run, notify, go, startQuest, openQues
         </span>
         <span className="bar bar--thin tone-mint"><span style={{ width: `${(jDone / jNodes.length) * 100}%` }} /></span>
       </button>
+
+      {relationshipEnabled && <RelationshipHomeCard onOpen={() => go("relationship")} />}
 
       <section className="card progress-card">
         <span className="eyebrow">{td.progressTitle}</span>

@@ -11,7 +11,7 @@ import { willRenew } from "../account/policy";
 import { getStripe, isTestMode } from "../billing/stripe";
 import { snapshotFromStripe, type SubscriptionSnapshot } from "../billing/subscription";
 import { processStripeEvent, subscriptionIdFromInvoice } from "../billing/webhook";
-import { track } from "./analytics";
+import { track, trackRelationshipConversion } from "./analytics";
 import { getUserEntitlements } from "./entitlements";
 import { enqueueInvoice, enqueueReversal } from "./invoicing";
 import { recordCheckoutDisclosure } from "./legal";
@@ -153,7 +153,10 @@ export async function storeSubscriptionSnapshot(snap: SubscriptionSnapshot): Pro
     .where(eq(subscriptions.userId, row.userId));
   const after = await getUserEntitlements(row.userId);
 
-  if (before.plan === "free" && isPaidPlan(after.plan)) await track(row.userId, "checkout_completed", { plan: after.plan, interval: after.interval ?? undefined });
+  if (before.plan === "free" && isPaidPlan(after.plan)) {
+    await track(row.userId, "checkout_completed", { plan: after.plan, interval: after.interval ?? undefined });
+    await trackRelationshipConversion(row.userId, { plan: after.plan, interval: after.interval ?? undefined });
+  }
   if (isPaidPlan(before.plan) && isPaidPlan(after.plan) && before.plan !== after.plan) await track(row.userId, "plan_changed", { plan: after.plan, interval: after.interval ?? undefined });
   if ((!before.cancelAtPeriodEnd && after.cancelAtPeriodEnd) || (isPaidPlan(before.plan) && after.ended)) {
     await track(row.userId, "subscription_canceled", { plan: before.plan, interval: before.interval ?? undefined });

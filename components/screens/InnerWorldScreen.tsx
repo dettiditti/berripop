@@ -14,6 +14,7 @@ import MoodCalendar from "../world/MoodCalendar";
 import { calendarMoods } from "@/lib/checkin/moodCalendar";
 import WorldScene from "../world/WorldScene";
 import TreasureChest from "../world/TreasureChest";
+import RelationshipHomeCard from "../relationship/RelationshipHomeCard";
 import type { ScreenProps } from "./types";
 
 const CHIP_TONES = ["purple", "coral", "mint", "sky", "sun"] as const;
@@ -21,7 +22,7 @@ const CHIP_TONES = ["purple", "coral", "mint", "sky", "sun"] as const;
 /** Finds which companion offers a prompt (prompt ids are "<companion>-<n>"). */
 const companionOf = (promptId: string) => promptId.split("-")[0] as CompanionId;
 
-export default function InnerWorldScreen({ view, run, notify, go }: ScreenProps) {
+export default function InnerWorldScreen({ view, run, notify, go, relationshipEnabled }: ScreenProps) {
   const moments = view.snapshot.progress.moments;
   const today = view.today;
   const { d, t, plural, relativeDay } = useI18n();
@@ -113,6 +114,8 @@ export default function InnerWorldScreen({ view, run, notify, go }: ScreenProps)
           </ul>
         </details>
       </section>
+
+      {relationshipEnabled && <RelationshipHomeCard onOpen={() => go("relationship")} />}
 
       <TreasureChest view={view} run={run} notify={notify} />
 

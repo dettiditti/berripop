@@ -13,8 +13,8 @@ export type BillingInterval = "month" | "year";
 export type PriceId = "monthly" | "annual" | "plus_monthly" | "plus_annual";
 export type CurrencyCode = "HUF";
 
-/** The four AI allowances. Each AI request counts against exactly one of them. */
-export type QuotaKey = "assist" | "journal" | "assessment" | "thought";
+/** The five AI allowances. Each AI request counts against exactly one of them. */
+export type QuotaKey = "assist" | "journal" | "assessment" | "thought" | "relationship";
 
 /**
  * How long an allowance lasts: a week (resets Monday 00:00, Europe/Budapest),
@@ -45,17 +45,23 @@ const month = (limit: number): QuotaPool[] => [{ window: "month", limit }];
 const FIRST_THOUGHT: QuotaPool = { window: "once", limit: 1, name: "first" };
 /** One more Gondolatboncoló during the trial week, once per account. */
 const TRIAL_THOUGHT: QuotaPool = { window: "once", limit: 1, name: "trial" };
+/**
+ * Kapcsolati világ: one AI insight (the communication translator) free once
+ * per account, so Free members can taste it. Paid: weekly, about USD 0.002 a
+ * call with the default model (lib/relationship/ai.ts caps the output).
+ */
+const FIRST_RELATIONSHIP: QuotaPool = { window: "once", limit: 1, name: "first" };
 
 /**
  * THE central allowance configuration. Change numbers here only; the server
  * enforces exactly these (lib/server/quota.ts) and the UI only displays them.
  */
 export const PLAN_QUOTAS: Record<Tier, Record<QuotaKey, readonly QuotaPool[]>> = {
-  free: { assist: week(2), journal: week(1), assessment: week(6), thought: [FIRST_THOUGHT] },
+  free: { assist: week(2), journal: week(1), assessment: week(6), thought: [FIRST_THOUGHT], relationship: [FIRST_RELATIONSHIP] },
   // Enough to try every feature during the week, never unlimited.
-  trial: { assist: week(10), journal: week(5), assessment: week(12), thought: [FIRST_THOUGHT, TRIAL_THOUGHT] },
-  premium: { assist: week(60), journal: week(15), assessment: week(12), thought: month(10) },
-  premium_plus: { assist: week(120), journal: week(30), assessment: week(20), thought: month(20) },
+  trial: { assist: week(10), journal: week(5), assessment: week(12), thought: [FIRST_THOUGHT, TRIAL_THOUGHT], relationship: week(6) },
+  premium: { assist: week(60), journal: week(15), assessment: week(12), thought: month(10), relationship: week(25) },
+  premium_plus: { assist: week(120), journal: week(30), assessment: week(20), thought: month(20), relationship: week(50) },
 };
 
 /** The sum of a quota's pools (what the member can use at most in the current windows). */

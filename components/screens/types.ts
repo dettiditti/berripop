@@ -30,6 +30,8 @@ export type ScreenProps = {
   writeInJournal: (starter: string) => void;
   /** Personal milestone counts (undefined: loading, null: unavailable). */
   milestoneCounts?: MilestoneCounts | null;
+  /** The Kapcsolati világ is switched on (server flag). */
+  relationshipEnabled?: boolean;
   /** A full-screen layer (a question being answered, the celebration…) covers the screen right now. */
   covered?: boolean;
 };

@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import { boolean, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { encryptedJson, encryptedText } from "./encryption";
 import type { ThoughtMap, ThoughtMessage, ThoughtSummary, ViewpointId } from "../thought/types";
+import type { RelationshipRecordData, RelationshipRecordInsight } from "../relationship/records";
 
 /**
  * Berripop data model. Privacy rule: answer text is only ever read by its author,
@@ -429,6 +430,28 @@ export const thoughtSessions = pgTable("thought_sessions", {
   uniqueIndex("thought_sessions_start_key_idx").on(t.userId, t.startKey),
   index("thought_sessions_user_idx").on(t.userId, t.updatedAt),
   index("thought_sessions_entry_idx").on(t.journalEntryId),
+]);
+
+/* ---------- Kapcsolati világ (relationship self-knowledge) ---------- */
+
+/**
+ * The member's relationship test results, trigger-map entries and
+ * translations. Kept apart from the journal and encrypted at rest: answers
+ * and AI text are sensitive. Never analysed automatically, never used for
+ * marketing; exported with the account and deleted with it (cascade).
+ */
+export const relationshipRecords = pgTable("relationship_records", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  kind: text("kind", { enum: ["love_language", "attachment", "trigger", "translation"] }).notNull(),
+  /** The member's own input (test answers, a trigger entry, a sentence) and the computed result. */
+  data: encryptedJson<RelationshipRecordData>()("data").notNull(),
+  /** AI text for this record (a reflection, a trigger insight), when the member asked for one. */
+  insight: encryptedJson<RelationshipRecordInsight | null>()("insight"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [
+  index("relationship_records_user_idx").on(t.userId, t.kind, t.createdAt),
 ]);
 
 /* ---------- My Path: initial assessment and steps ---------- */

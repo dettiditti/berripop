@@ -9,6 +9,7 @@ import {
 import { deletionBlock, isDeleteConfirmation, type DeletionBlock } from "../account/policy";
 import { exportJournal } from "./journal";
 import { exportThoughts } from "./thought";
+import { exportRelationship } from "./relationship";
 import { liveRenewalCheck, stopRenewal } from "./billing";
 import { getUserEntitlements } from "./entitlements";
 import { invoicesForUser } from "./invoicing";
@@ -29,7 +30,7 @@ export type DeleteError = "unauthorized" | "confirmation" | "billing_unavailable
 /** Everything we store about the member, for download (their own data only). */
 export async function exportAccount(userId: string) {
   const db = getDb();
-  const [[user], [prefs], [sub], memberships, myAnswers, myQuestions, goals, steps, [assessment], journal, usage, events, activity, xp, badges, moments, legal, invoiceRows, checkins, phones, thoughts] = await Promise.all([
+  const [[user], [prefs], [sub], memberships, myAnswers, myQuestions, goals, steps, [assessment], journal, usage, events, activity, xp, badges, moments, legal, invoiceRows, checkins, phones, thoughts, relationship] = await Promise.all([
     db.select().from(users).where(eq(users.id, userId)).limit(1),
     db.select().from(userPrefs).where(eq(userPrefs.userId, userId)).limit(1),
     db.select().from(subscriptions).where(eq(subscriptions.userId, userId)).limit(1),
@@ -56,6 +57,7 @@ export async function exportAccount(userId: string) {
       remind: pushDevices.remind, remindHour: pushDevices.remindHour, lastReminder: pushDevices.lastSentDate, createdAt: pushDevices.createdAt,
     }).from(pushDevices).where(eq(pushDevices.userId, userId)),
     exportThoughts(userId),
+    exportRelationship(userId),
   ]);
   return {
     exportedAt: new Date().toISOString(),
@@ -70,6 +72,7 @@ export async function exportAccount(userId: string) {
     journal: { entries: journal.entries, reflections: journal.reflections, insights: journal.insights },
     /** Gondolatboncoló sessions: problem, conversation, summary and map. */
     thoughtSessions: thoughts,
+    relationshipWorld: relationship,
     aiUsage: usage,
     productEvents: events,
     progress: { activity, xp, badges },

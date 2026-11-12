@@ -134,6 +134,13 @@
       "when": 1794475700685,
       "tag": "0018_berri_items",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1794498219168,
+      "tag": "0019_relationship_records",
+      "breakpoints": true
     }
   ]
 }

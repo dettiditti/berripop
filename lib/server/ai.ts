@@ -55,7 +55,7 @@ export function aiConfigured() {
 /** The configured default model (AI_GATEWAY_MODEL overrides it). */
 export const defaultAiModel = () => process.env.AI_GATEWAY_MODEL || DEFAULT_AI_MODEL;
 
-const TRACK_CONTEXT: Record<AiBucket, string> = { assist: "ai", journal: "journal", assessment: "assessment" };
+const TRACK_CONTEXT: Record<AiBucket, string> = { assist: "ai", journal: "journal", assessment: "assessment", relationship: "relationship" };
 
 /**
  * Runs one AI request against the user's allowance bucket. The use is

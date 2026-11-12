@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@clerk/nextjs";
 import { Check, Info, Lock, Minus } from "lucide-react";
-import { isPaidPlan, PLAN_LIMITS, priceFor, type BillingInterval, type PaidPlanId, type PlanId } from "@/lib/billing/plans";
+import { isPaidPlan, PLAN_LIMITS, PLAN_QUOTAS, priceFor, quotaTotal, quotaWindow, type BillingInterval, type PaidPlanId, type PlanId } from "@/lib/billing/plans";
 import type { BuyerRegion, PublicSalesInfo } from "@/lib/billing/sales";
 import type { AccountDTO } from "@/lib/domain/types";
 import { useI18n } from "@/lib/i18n/client";
@@ -71,8 +71,10 @@ function TrialBox({ account, signedIn, busy, note, onStart, thoughtEnabled }: {
  * New subscriptions go through Stripe Checkout; a member who already pays
  * switches plans in the Stripe Customer Portal.
  */
-export default function PricingPage({ from, testMode, sales, thoughtEnabled = false }: {
+export default function PricingPage({ from, testMode, sales, thoughtEnabled = false, relationshipEnabled = false }: {
   from?: string; testMode: boolean; sales: PublicSalesInfo;
+  /** Kapcsolati világ rows only while the module is on. */
+  relationshipEnabled?: boolean;
   /** Gondolatboncoló rows only while the feature is on, so a plan never lists what members can't use. */
   thoughtEnabled?: boolean;
 }) {
@@ -130,6 +132,19 @@ export default function PricingPage({ from, testMode, sales, thoughtEnabled = fa
         { label: c.thoughtViewpoints, value: num(l.thoughtViewpoints) },
         { label: c.thoughtDeep, hint: c.thoughtDeepHint, value: l.thoughtDeep },
       ] : []),
+      ...(relationshipEnabled ? relationshipRows(plan) : []),
+    ];
+  }
+
+  /** Kapcsolati világ: the tests are free for everyone; Premium adds the deeper layer (limits from PLAN_QUOTAS.relationship). */
+  function relationshipRows(plan: PlanId): Row[] {
+    const q = PLAN_QUOTAS[plan].relationship;
+    const paid = isPaidPlan(plan);
+    return [
+      { label: c.relTests, hint: c.relTestsHint, value: true },
+      { label: c.relDetail, hint: c.relDetailHint, value: paid },
+      { label: c.relTrigger, hint: c.relTriggerHint, value: paid },
+      { label: c.relAi, hint: c.relAiHint, value: quotaWindow(q) === "once" ? t(c.relAiOnce, { n: num(quotaTotal(q)) }) : t(c.relAiWeekly, { n: num(quotaTotal(q)) }) },
     ];
   }
 

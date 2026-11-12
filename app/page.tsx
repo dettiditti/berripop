@@ -7,6 +7,7 @@ import Welcome from "@/components/Welcome";
 import { defaultLocale, isLocale, LOCALE_COOKIE } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { APP_HOME, isNativeApp } from "@/lib/native";
+import { relationshipEnabled } from "@/lib/server/relationship";
 import { thoughtEnabled } from "@/lib/server/thought";
 
 /** Title and description in the visitor's language (crawlers without the cookie get Hungarian). */
@@ -40,5 +41,5 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function HomePage() {
   const { userId } = await auth();
   if (!userId && isNativeApp((await headers()).get("user-agent"))) redirect(APP_HOME);
-  return userId ? <KozosApp /> : <Welcome thoughtEnabled={thoughtEnabled()} />;
+  return userId ? <KozosApp relationshipEnabled={relationshipEnabled()} /> : <Welcome thoughtEnabled={thoughtEnabled()} />;
 }

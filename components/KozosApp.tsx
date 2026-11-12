@@ -38,6 +38,7 @@ import CircleScreen from "./screens/CircleScreen";
 import ExploreScreen from "./screens/ExploreScreen";
 import HomeScreen from "./screens/HomeScreen";
 import InnerWorldScreen from "./screens/InnerWorldScreen";
+import RelationshipScreen from "./relationship/RelationshipScreen";
 import JournalScreen from "./journal/JournalScreen";
 import JourneyScreen from "./screens/JourneyScreen";
 import ProfileScreen from "./screens/ProfileScreen";
@@ -71,7 +72,8 @@ function Splash({ label }: { label: string }) {
   );
 }
 
-export default function KozosApp() {
+/** `relationshipEnabled`: the Kapcsolati világ is switched on (RELATIONSHIP_WORLD_ENABLED, decided on the server). */
+export default function KozosApp({ relationshipEnabled = false }: { relationshipEnabled?: boolean } = {}) {
   const { isLoaded, isSignedIn } = useAuth();
   const { locale, d } = useI18n();
 
@@ -84,10 +86,10 @@ export default function KozosApp() {
   // Signed out inside the phone app (e.g. just after signing out): keep the
   // splash while the server sends the visitor to the app's own welcome.
   if (isLoaded && !isSignedIn && typeof navigator !== "undefined" && isNativeApp(navigator.userAgent)) return <Splash label={d.common.loading} />;
-  return !isLoaded ? <Splash label={d.common.loading} /> : isSignedIn ? <SignedInApp /> : <Welcome />;
+  return !isLoaded ? <Splash label={d.common.loading} /> : isSignedIn ? <SignedInApp relationshipEnabled={relationshipEnabled} /> : <Welcome />;
 }
 
-function SignedInApp() {
+function SignedInApp({ relationshipEnabled }: { relationshipEnabled: boolean }) {
   const { d, locale } = useI18n();
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [failed, setFailed] = useState(false);
@@ -136,7 +138,7 @@ function SignedInApp() {
   if (newMember) return <div className="app app--onboarding"><Onboarding name={snapshot.me.name} onSnapshot={setSnapshot} terms={prompt === "onboarding" ? { version: legal.termsVersion, onAccepted: accepted } : null} /></div>;
   return (
     <AiConsentProvider initial={legal}>
-      <AppShell snapshot={snapshot} setSnapshot={setSnapshot} />
+      <AppShell snapshot={snapshot} setSnapshot={setSnapshot} relationshipEnabled={relationshipEnabled} />
       {prompt === "dialog" && <TermsGate version={legal.termsVersion} context="update" onAccepted={accepted} />}
     </AiConsentProvider>
   );
@@ -149,7 +151,7 @@ type ActiveQuest = { ref: QuestionRef; context: AnswerContext };
  * journal, journey, inner world and explore are personal; the circle
  * ("Közös út") is the shared layer on top.
  */
-function AppShell({ snapshot, setSnapshot }: { snapshot: Snapshot; setSnapshot: (s: Snapshot) => void }) {
+function AppShell({ snapshot, setSnapshot, relationshipEnabled }: { snapshot: Snapshot; setSnapshot: (s: Snapshot) => void; relationshipEnabled: boolean }) {
   const { d } = useI18n();
   // `?tab=profile` (e.g. returning from the billing portal) opens that tab.
   const [tab, setTab] = useState<Tab>(() => {
@@ -415,7 +417,7 @@ function AppShell({ snapshot, setSnapshot }: { snapshot: Snapshot; setSnapshot: 
     view, run, notify, go, startQuest, openQuestion: setDetail, onInvite: () => setInviteOpen(true),
     journeyMode, openJourney, buildJourney: () => buildJourney(), journeyBuilding,
     assessmentStatus: assessment?.assessment?.status ?? null, openAssessment: () => setAssessing(true),
-    writeInJournal, milestoneCounts,
+    writeInJournal, milestoneCounts, relationshipEnabled,
     covered: !!quest || !!reward || !!detail || !!streakWelcome || widgetTip,
   };
   const questQuestion = quest ? view.question(quest.ref) : null;
@@ -437,7 +439,7 @@ function AppShell({ snapshot, setSnapshot }: { snapshot: Snapshot; setSnapshot: 
   return (
     <OfferContext.Provider value={offerRules}>
     <div className="app">
-      <BottomNavigation active={tab} onChange={go} />
+      <BottomNavigation active={tab} onChange={go} hidden={relationshipEnabled ? [] : ["relationship"]} />
       <div className="app-topbar"><AccountMenu /></div>
       <main className="screen" key={tab}>
         {tab === "home" && <HomeScreen {...screenProps} />}
@@ -450,6 +452,7 @@ function AppShell({ snapshot, setSnapshot }: { snapshot: Snapshot; setSnapshot: 
         {tab === "journal" && <JournalScreen account={snapshot.account} today={view.today} notify={notify} starter={starter} reflectRequest={reflectRequest} onJournalState={setJournal} />}
         {tab === "journey" && <JourneyScreen {...screenProps} />}
         {tab === "world" && <InnerWorldScreen {...screenProps} />}
+        {tab === "relationship" && (relationshipEnabled ? <RelationshipScreen {...screenProps} /> : <HomeScreen {...screenProps} />)}
         {tab === "explore" && <ExploreScreen {...screenProps} onCompose={() => setComposerOpen(true)} />}
         {tab === "circle" && (circle ? <CircleScreen {...screenProps} /> : <TogetherSetup onSnapshot={s => { setSnapshot(s); setTab("circle"); }} />)}
         {tab === "profile" && <ProfileScreen {...screenProps} />}

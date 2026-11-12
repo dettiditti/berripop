@@ -13,7 +13,7 @@ import { useNativeApp } from "../useNativeApp";
 import { Sheet } from "../Modals";
 import AppStorePaywall from "./AppStorePaywall";
 
-export type UpgradeKind = "goals" | "ai" | "summary" | "circles" | "journal" | "start" | "path";
+export type UpgradeKind = "goals" | "ai" | "summary" | "circles" | "journal" | "start" | "path" | "relationship";
 
 const key = (kind: UpgradeKind) => `kozos-upgrade-dismissed:${kind}`;
 
@@ -67,7 +67,11 @@ function wasDismissed(kind: UpgradeKind) {
  * Apple's own prices. Without the store (an older app version) a limit is
  * still explained in a neutral note.
  */
-export default function UpgradePrompt({ kind, vars = {}, force = false, atLimit = false }: { kind: UpgradeKind; vars?: Record<string, string | number>; force?: boolean; atLimit?: boolean }) {
+export default function UpgradePrompt({ kind, vars = {}, force = false, atLimit = false, onAction }: {
+  kind: UpgradeKind; vars?: Record<string, string | number>; force?: boolean; atLimit?: boolean;
+  /** Called when the member starts the trial, a checkout or the App Store plans from this offer (for attribution). */
+  onAction?: () => void;
+}) {
   const { d, t, money, date } = useI18n();
   const p = d.billing.prompts;
   const [hidden, setHidden] = useState(true);
@@ -86,6 +90,7 @@ export default function UpgradePrompt({ kind, vars = {}, force = false, atLimit 
   const [trialBusy, setTrialBusy] = useState(false);
 
   async function startTrial() {
+    onAction?.();
     setTrialBusy(true);
     setError(null);
     try {
@@ -129,6 +134,7 @@ export default function UpgradePrompt({ kind, vars = {}, force = false, atLimit 
   }
 
   async function checkout() {
+    onAction?.();
     setBusy(true);
     setError(null);
     try {
@@ -160,7 +166,7 @@ export default function UpgradePrompt({ kind, vars = {}, force = false, atLimit 
           </>
         ) : sellsInApp ? (
           <div className="upgrade-actions">
-            <button type="button" className="btn btn--primary btn--sm" onClick={() => setStoreOpen(true)}>{d.billing.appStore.openStore}</button>
+            <button type="button" className="btn btn--primary btn--sm" onClick={() => { onAction?.(); setStoreOpen(true); }}>{d.billing.appStore.openStore}</button>
           </div>
         ) : (
           <>

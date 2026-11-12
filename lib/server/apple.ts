@@ -6,7 +6,7 @@ import { appleNotifications, appleSubscriptions } from "../db/schema";
 import { APPLE_BUNDLE_ID, APPLE_PRODUCTS, appleStateFrom, isAppleProduct } from "../billing/apple";
 import { appAccountToken } from "../billing/apple-token";
 import { APPLE_ROOT_CA_G3 } from "../billing/apple-root";
-import { track } from "./analytics";
+import { track, trackRelationshipConversion } from "./analytics";
 
 /*
  * App Store purchases on the server. Nothing from the app is trusted as is:
@@ -113,7 +113,10 @@ export async function recordApplePurchase(userId: string, signedTransaction: unk
   if (env === Environment.XCODE) return { ok: true, stored: false, plan };
   const r = await applyState({ userId, tx, renewal: null, env });
   if (r === "other_account") return { ok: false, error: "wrong_account" };
-  if (r === "stored") await track(userId, "apple_purchase_recorded", { plan, context: env === Environment.SANDBOX ? "sandbox" : "production" });
+  if (r === "stored") {
+    await track(userId, "apple_purchase_recorded", { plan, context: env === Environment.SANDBOX ? "sandbox" : "production" });
+    if (env !== Environment.SANDBOX) await trackRelationshipConversion(userId, { plan });
+  }
   return { ok: true, stored: r === "stored", plan };
 }
 

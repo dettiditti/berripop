@@ -19,6 +19,8 @@ import * as growth from "./growth";
 import * as journal from "./journal";
 import * as thought from "./thought";
 import type { ThoughtResult, ThoughtSessionDTO, ThoughtState } from "../thought/types";
+import * as relationship from "./relationship";
+import { PREMIUM_FEATURES, type RelationshipReflection, type RelationshipResult, type RelationshipState, type TranslationRecordDTO, type TriggerRecordDTO } from "../relationship/types";
 import * as legal from "./legal";
 import { loadMilestoneCounts } from "./milestones";
 import type { MilestoneCounts } from "../milestones";
@@ -702,4 +704,73 @@ export async function joinAppWaitlistAction(input: WaitlistInput): Promise<{ ok:
 export async function nativeSignInAction(provider: "apple" | "google", idToken: string, firstName?: string, lastName?: string): Promise<NativeSignInResult> {
   if (provider !== "apple" && provider !== "google") return { ok: false, code: "bad_provider" };
   return nativeSignIn(provider, idToken, firstName, lastName);
+}
+
+/* ---------- Kapcsolati világ ---------- */
+
+const noRelUser = { ok: false, error: "unauthorized" } as const;
+
+/** The module's state; also counts the visit (relationship_module_opened, once a day). */
+export async function getRelationshipStateAction(opts: { opened?: boolean } = {}): Promise<{ ok: true; state: RelationshipState } | typeof noRelUser> {
+  const userId = await requireUserId();
+  if (!userId) return noRelUser;
+  const state = await relationship.loadRelationshipState(userId);
+  if (opts.opened && state.enabled) await trackDaily(userId, "relationship_module_opened", { context: "relationship" });
+  return { ok: true, state };
+}
+
+export async function saveLoveLanguageAction(input: { receive: string[]; give: string[] }): Promise<RelationshipResult<{ id: string }>> {
+  const userId = await requireUserId();
+  if (!userId) return noRelUser;
+  const r = await relationship.saveLoveLanguage(userId, input);
+  if (r.ok) await track(userId, "love_language_test_completed", { context: "relationship" });
+  return r;
+}
+
+export async function saveAttachmentAction(input: { answers: number[] }): Promise<RelationshipResult<{ id: string }>> {
+  const userId = await requireUserId();
+  if (!userId) return noRelUser;
+  const r = await relationship.saveAttachment(userId, input);
+  if (r.ok) await track(userId, "attachment_test_completed", { context: "relationship" });
+  return r;
+}
+
+export async function relationshipReflectionAction(recordId: string): Promise<RelationshipResult<RelationshipReflection>> {
+  const userId = await requireUserId();
+  if (!userId) return noRelUser;
+  return relationship.reflectOnResult(userId, recordId, await locale());
+}
+
+export async function analyzeTriggerAction(input: { situation: string; feelings: string[]; thought: string; reactions: string[]; reactionNote: string }): Promise<RelationshipResult<TriggerRecordDTO>> {
+  const userId = await requireUserId();
+  if (!userId) return noRelUser;
+  return relationship.analyzeTrigger(userId, input, await locale());
+}
+
+export async function translateSentenceAction(input: { original: string; who: string | null }): Promise<RelationshipResult<TranslationRecordDTO>> {
+  const userId = await requireUserId();
+  if (!userId) return noRelUser;
+  return relationship.translateSentence(userId, input, await locale());
+}
+
+export async function deleteRelationshipRecordAction(id: string): Promise<RelationshipResult> {
+  const userId = await requireUserId();
+  if (!userId) return noRelUser;
+  return relationship.deleteRelationshipRecord(userId, id);
+}
+
+export async function deleteAllRelationshipAction(): Promise<RelationshipResult> {
+  const userId = await requireUserId();
+  if (!userId) return noRelUser;
+  return relationship.deleteAllRelationship(userId);
+}
+
+const RELATIONSHIP_CLIENT_EVENTS = new Set<string>(["love_language_test_started", "attachment_test_started", "premium_feature_previewed", "premium_paywall_viewed", "premium_checkout_started"]);
+const RELATIONSHIP_CONTEXTS = new Set<string>(PREMIUM_FEATURES);
+
+/** Module events from the app: an allowlisted name and a feature context, never content. */
+export async function relationshipEventAction(event: string, context: string = "relationship"): Promise<void> {
+  if (!RELATIONSHIP_CLIENT_EVENTS.has(event) || !RELATIONSHIP_CONTEXTS.has(context)) return;
+  const userId = await requireUserId();
+  if (userId) await track(userId, event as FunnelEvent, { context });
 }

@@ -79,6 +79,16 @@ export const FUNNEL_EVENTS = [
   "plan_selected",
   "free_quota_exhausted",
   "ai_cost_cap_reached",
+  // Kapcsolati világ (event names and a feature context only; never answers or results).
+  "relationship_module_opened",
+  "love_language_test_started",
+  "love_language_test_completed",
+  "attachment_test_started",
+  "attachment_test_completed",
+  "premium_feature_previewed",
+  "premium_paywall_viewed",
+  "premium_checkout_started",
+  "premium_subscription_completed",
 ] as const;
 export type FunnelEvent = (typeof FUNNEL_EVENTS)[number];
 
@@ -87,6 +97,8 @@ const CONTEXTS = new Set([
   "personal", "circle", "daily", "journey", "goal", "assessment", "building", "rest", "thought",
   "sandbox", "production", "app", "settings", "converted", "not_converted",
   "google", "apple", "social",
+  // Kapcsolati világ features (PREMIUM_FEATURES in lib/relationship/types.ts).
+  "relationship", "love_detail", "attachment_detail", "reflection", "trigger", "translator", "growth",
 ]);
 export const isTrackContext = (c: string | undefined) => !!c && CONTEXTS.has(c);
 
@@ -99,6 +111,24 @@ export async function track(userId: string | null, event: FunnelEvent, props: { 
       interval: props.interval === "month" || props.interval === "year" ? props.interval : null,
       context: props.context && CONTEXTS.has(props.context) ? props.context : null,
     });
+  } catch {
+    // Analytics must never break the product.
+  }
+}
+
+/**
+ * Called when a member's subscription starts: if they started a checkout from
+ * a Kapcsolati világ paywall in the last 7 days, the subscription is credited
+ * to that feature (premium_subscription_completed, with the feature as context).
+ */
+export async function trackRelationshipConversion(userId: string, props: { plan?: string; interval?: string } = {}) {
+  try {
+    const res = await getDb().execute(sql`
+      select context from funnel_events
+      where user_id = ${userId} and event = 'premium_checkout_started' and created_at > now() - interval '7 days'
+      order by created_at desc limit 1`);
+    const context = (res.rows[0] as { context?: unknown } | undefined)?.context;
+    if (typeof context === "string") await track(userId, "premium_subscription_completed", { ...props, context });
   } catch {
     // Analytics must never break the product.
   }

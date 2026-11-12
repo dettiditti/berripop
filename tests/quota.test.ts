@@ -13,7 +13,7 @@ import { memoryQuota } from "./helpers/memory-quota";
  */
 
 const NOW = new Date("2026-11-11T10:00:00Z"); // a Wednesday
-const KEYS: QuotaKey[] = ["assist", "journal", "assessment", "thought"];
+const KEYS: QuotaKey[] = ["assist", "journal", "assessment", "thought", "relationship"];
 
 describe("central configuration", () => {
   it("every allowance is finite, and paid plans never get less than Free", () => {
