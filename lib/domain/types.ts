@@ -1,4 +1,5 @@
 import type { CheckinNeed, CheckinState, CheckinTopic } from "../checkin/checkin";
+import type { WardrobeDTO } from "../wardrobe";
 import type { Entitlements } from "../billing/entitlements";
 import type { GoalJourneyDay, GoalJourneyWeek } from "../journey/goal";
 
@@ -189,6 +190,8 @@ export type Snapshot = {
   saved: QuestionRef[];
   account: AccountDTO;
   progress: ProgressDTO;
+  /** Berri's stars and the things picked with them (lib/wardrobe). */
+  wardrobe: WardrobeDTO;
 };
 
 export type AnswerContext = { kind: "daily" } | { kind: "journey"; day: number } | { kind: "goal"; day: number } | { kind: "bonus" };
@@ -227,4 +230,5 @@ export type ActionError =
   | "already_premium"
   | "billing_unavailable"
   | "ai_unavailable"
-  | "ai_consent_required";
+  | "ai_consent_required"
+  | "not_enough_stars";

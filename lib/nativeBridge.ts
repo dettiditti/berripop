@@ -28,6 +28,7 @@ type Bridge = {
     };
     BerripopStore?: StorePlugin;
     BerripopAuth?: AuthPlugin;
+    BerripopWidget?: { update: (o: { state: BerriWidgetState }) => Promise<void> };
   };
 };
 
@@ -111,4 +112,30 @@ export function appStore(): StorePlugin | null {
 /** Sign in with Apple / Google, when this page runs inside an iPhone app version that has them; otherwise null. */
 export function nativeAuth(): AuthPlugin | null {
   return plugins()?.BerripopAuth ?? null;
+}
+
+/**
+ * What the home-screen widget shows of Berri: when Berri last ate, today's
+ * bites, the spark, the hat and Berri's lines in the member's language. No
+ * personal content: the widget works out the rest by the date.
+ */
+export type BerriWidgetState = {
+  date: string;
+  lastFed: string | null;
+  bites: number;
+  streak: number;
+  lastActive: string | null;
+  wear: string | null;
+  text: Record<"full" | "peckish" | "hungry" | "missing", string>;
+};
+
+let lastWidget = "";
+/** Hands Berri's state to the home-screen widget, when this page runs inside an iPhone app version that has one. */
+export function widgetUpdate(state: BerriWidgetState): void {
+  const w = plugins()?.BerripopWidget;
+  if (!w) return;
+  const key = JSON.stringify(state);
+  if (key === lastWidget) return;
+  lastWidget = key;
+  w.update({ state }).catch(() => { lastWidget = ""; });
 }

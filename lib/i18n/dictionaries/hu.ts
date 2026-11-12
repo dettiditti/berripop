@@ -739,6 +739,18 @@ export const hu: Dictionary = {
       waitingBody: "A mai küldetéssel tovább ragyog. Semmi sietség.",
       best: pl("Rekord: {n} nap.", "Rekord: {n} nap."),
       rule: "Pihenőnap: egyetlen kihagyott nap sosem oltja ki a szikrádat.",
+      welcome: {
+        label: pl("napos szikra", "napos szikra"),
+        todayLit: "Ma is itt voltál. Szuper vagy!",
+        keepGoing: "Ma egy apró lépéssel {n} napos lesz. Berri már vár!",
+        rested: "Tegnap pihenőnap volt, a szikrád mégis ég. Ma egy apró lépéssel {n} napos lesz.",
+        record: "Ez az eddigi rekordod!",
+        backTitle: "Újra itt vagy!",
+        backBody: "Berrinek hiányoztál. Az XP-d és a jelvényeid mind megvannak. Gyújtsunk ma egy új szikrát?",
+        cta: "Gyerünk!",
+        days: ["V", "H", "K", "Sz", "Cs", "P", "Sz"],
+        srWeek: "Az elmúlt hét nap: a kipipált napokon itt voltál.",
+      },
     },
     badgeProgress: "{current} / {target}",
     badges: {
@@ -818,6 +830,29 @@ export const hu: Dictionary = {
     grow: { name: "Fejlődés", tagline: "Tegyél egy apró lépést előre." },
   },
 
+  wardrobe: {
+    title: "Berri kincsesládája",
+    intro: "Minden falat, amit Berrinek adsz, egy csillag. A csillagokból apró kincseket választhatsz Berrinek és a világának.",
+    howTo: "Naponta legfeljebb három csillagot kapsz: egyet a kérdésért, egyet a „Hogy vagy?” válaszért, egyet egy elmentett pillanatért. Csillagot pénzért nem lehet venni.",
+    balance: pl("{n} csillag", "{n} csillag"),
+    tabs: { head: "Berrinek", world: "A világba" },
+    buy: "Kiválasztom",
+    need: pl("Még {n} csillag kell", "Még {n} csillag kell"),
+    wear: "Felveszi",
+    takeOff: "Leveszi",
+    worn: "Ezt viseli",
+    place: "Kiteszem",
+    remove: "Elrakom",
+    out: "Kint van",
+    bought: "Berri nagyon örül neki! 💜",
+    notEnough: "Ehhez még gyűjtened kell egy kis csillagot.",
+    wearSoon: "Berri ruhatára hamarosan megérkezik!",
+    open: "Kincsesláda",
+    items: {
+      capblue: "Kék baseballsapka", cappink: "Rózsaszín baseballsapka", beanie: "Kötött sapka", cowboy: "Cowboykalap", aviator: "Pilótasapka",
+      bench: "Pad", sunflowers: "Napraforgók", birdhouse: "Madárodú", swing: "Hinta", lights: "Lampionfüzér", mushroom: "Gombaház", rainbow: "Szivárvány",
+    },
+  },
   berriHome: {
     eyebrow: "Berri és a világod",
     hunger: {

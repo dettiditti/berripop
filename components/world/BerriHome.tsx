@@ -2,11 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, Check, HeartHandshake, Info, Sparkles, Star } from "lucide-react";
+import { addDays } from "@/lib/dates";
 import { appetiteOf, MEALS_PER_DAY, type Hunger, type Meal } from "@/lib/berriHunger";
 import type { View } from "@/lib/domain/view";
 import { useI18n } from "@/lib/i18n/client";
-import { hapticSuccess } from "@/lib/nativeBridge";
+import { hapticSuccess, widgetUpdate } from "@/lib/nativeBridge";
 import { deriveWorld } from "@/lib/world";
+import { wornHeadItem } from "@/lib/wardrobe";
 import type { BerripopMood } from "../berripop/BerripopMascot";
 import { BerriStill, type BerriPose } from "../berripop/BerriVideo";
 import BerripopSpeechBubble from "../berripop/BerripopSpeechBubble";
@@ -98,7 +100,24 @@ export default function BerriHome({ view, onWorld, onFeed, fullMessage, covered 
     const t = window.setInterval(() => setIdle(i => i + 1), IDLE_MS);
     return () => window.clearInterval(t);
   }, [resting, feeding, covered]);
-  const pose: BerriPose = resting && idle >= 0 ? IDLE[idle % IDLE.length] : ate ? "eat" : POSE[appetite.hunger];
+  // What Berri wears from the treasure chest; the party-hat pose already has its own hat, so then plain joy instead.
+  const wear = wornHeadItem(view.snapshot.wardrobe);
+  const picked: BerriPose = resting && idle >= 0 ? IDLE[idle % IDLE.length] : ate ? "eat" : POSE[appetite.hunger];
+  const pose: BerriPose = wear && picked === "celebrate" ? "joy" : picked;
+  // The home-screen widget (iPhone app only) shows the same Berri, worked out by the date from here.
+  const lastActive = useMemo(() => [...view.facts.myActiveDates].filter(x => x <= view.today).sort().pop() ?? null, [view.facts.myActiveDates, view.today]);
+  useEffect(() => {
+    const fed = appetite.daysSinceFed;
+    widgetUpdate({
+      date: view.today,
+      lastFed: fed === null ? null : addDays(view.today, -fed),
+      bites,
+      streak: view.streak.current,
+      lastActive,
+      wear,
+      text: b.hunger,
+    });
+  }, [view.today, appetite.daysSinceFed, bites, view.streak, lastActive, wear, b.hunger]);
   useEffect(() => {
     if (!feeding) return;
     const t = window.setTimeout(() => setFeeding(false), FEED_MS);
@@ -108,7 +127,7 @@ export default function BerriHome({ view, onWorld, onFeed, fullMessage, covered 
   return (
     <section className={`card berri-home is-${appetite.hunger} ${feeding ? "is-feeding" : ""}`} aria-labelledby="berri-home-title">
       <button type="button" className="berri-home-world" onClick={onWorld} aria-label={b.open}>
-        <WorldScene world={world} label={d.innerWorld.homeBody} compact mood={MOOD[appetite.hunger]} berri={<BerriStill key={`${pose}-${replay}-${idle}`} pose={pose} className="world-berri-video" />} />
+        <WorldScene world={world} label={d.innerWorld.homeBody} compact mood={MOOD[appetite.hunger]} berri={<BerriStill key={`${pose}-${replay}-${idle}`} pose={pose} wear={wear} className="world-berri-video" />} />
         <span className="berri-home-open pill">{b.open} <ArrowRight size={14} aria-hidden /></span>
       </button>
       <h2 id="berri-home-title" className="sr-only">{b.eyebrow}</h2>

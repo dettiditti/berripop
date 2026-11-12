@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { prefersReducedMotion } from "@/lib/motion";
+import type { HeadItemId } from "@/lib/wardrobe";
 
 /** Short silent clips of Berri, all starting in the same smiling pose. */
 export type BerriClip = "hello" | "wave" | "wonder" | "joy" | "joy2" | "care" | "peckish" | "hungry" | "missed" | "eat";
@@ -92,16 +93,35 @@ const POSE_SIZE: Record<BerriPose, [number, number]> = {
 export const poseSrc = (pose: BerriPose) => `/berri/pose/${pose}.png`;
 
 /**
+ * Where Berri's head top is in each pose (the foot of the stem), as a share of
+ * the picture's width and height. A hat sits there, over the stem (each hat's
+ * own size and fit is in CSS, .berri-wear--<id>). The "celebrate" pose already
+ * wears a party hat, so it shows nothing else.
+ */
+const HEAD_TOP: Record<BerriPose, [number, number] | null> = {
+  hi: [0.406, 0.233], joy: [0.457, 0.289], celebrate: null, wonder: [0.336, 0.24], care: [0.388, 0.258], calm: [0.417, 0.278],
+  sleepy: [0.315, 0.274], peckish: [0.26, 0.28], hungry: [0.246, 0.283], eat: [0.331, 0.299], missed: [0.286, 0.308],
+};
+export const wearSrc = (item: HeadItemId) => `/berri/wear/${item}.png`;
+
+/**
  * Berri as a sharp still picture in one of the poses, standing on the page
  * like the transparent clips. A new pose pops in gently (not with reduced
  * motion). Decorative: the text next to it carries the meaning.
  */
-export function BerriStill({ pose = "hi", className }: { pose?: BerriPose; className?: string }) {
+export function BerriStill({ pose = "hi", wear, className }: { pose?: BerriPose; wear?: HeadItemId | null; className?: string }) {
   const [w, h] = POSE_SIZE[pose];
+  const top = wear ? HEAD_TOP[pose] : null;
   return (
     <div className={`berri-video berri-video--clear berri-video--still${className ? ` ${className}` : ""}`} aria-hidden>
-      {/* eslint-disable-next-line @next/next/no-img-element -- transparent still from public/berri/pose */}
-      <img key={pose} className="berri-pose" src={poseSrc(pose)} alt="" width={w} height={h} decoding="async" fetchPriority="high" />
+      <span key={pose} className="berri-pose" style={{ ["--r" as string]: w / h }}>
+        {/* eslint-disable-next-line @next/next/no-img-element -- transparent still from public/berri/pose */}
+        <img src={poseSrc(pose)} alt="" width={w} height={h} decoding="async" fetchPriority="high" />
+        {wear && top && (
+          // eslint-disable-next-line @next/next/no-img-element -- transparent still from public/berri/wear
+          <img className={`berri-wear berri-wear--${wear}`} src={wearSrc(wear)} alt="" style={{ left: `${top[0] * 100}%`, top: `${top[1] * 100}%` }} decoding="async" />
+        )}
+      </span>
     </div>
   );
 }

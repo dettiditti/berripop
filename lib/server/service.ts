@@ -1,11 +1,11 @@
 import "server-only";
 
 import { randomBytes } from "crypto";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { getDb } from "../db";
 import {
   achievements, answerReactions, answers, circleEvents, circleMembers, circleMilestones, circleQuestions, circles,
-  customQuestions, participations, savedQuestions, sharedJourneyDays, userPrefs, users, xpEvents,
+  berriItems, customQuestions, participations, savedQuestions, sharedJourneyDays, userPrefs, users, xpEvents,
 } from "../db/schema";
 import { categoryTheme, CHAPTER_DAYS, journeyNodes } from "../content";
 import { isLocale } from "../i18n/config";
@@ -18,6 +18,8 @@ import {
 import { REACTIONS, type ActionResult, type AnswerContext, type QuestionRef, type RewardDTO } from "../domain/types";
 import type { CategoryId, QuestTheme } from "../types";
 import { loadSnapshot } from "./snapshot";
+import { loadWardrobe } from "./wardrobe";
+import { canBuy, HEAD_ITEMS, isHeadItem, isItem, type ItemId } from "../wardrobe";
 import { roleIn } from "./membership";
 import { canOwnAnotherCircle } from "./entitlements";
 import { track } from "./analytics";
@@ -117,6 +119,38 @@ export async function setLocale(userId: string, locale: string): Promise<{ ok: b
 export async function setScene(userId: string, scene: string): Promise<ActionResult> {
   if (!isScene(scene)) return fail("invalid");
   await getDb().insert(userPrefs).values({ userId, scene, scenePicked: true }).onConflictDoUpdate({ target: userPrefs.userId, set: { scene, scenePicked: true } });
+  return result(userId);
+}
+
+/**
+ * Picks something from Berri's treasure chest with stars. The server counts
+ * the stars itself; a second buy of the same item is refused by the key, and
+ * if two buys race past the balance check the later one is taken back.
+ * A head item is put on straight away (and any other taken off).
+ */
+export async function buyItem(userId: string, itemId: string): Promise<ActionResult> {
+  const check = canBuy(await loadWardrobe(userId), itemId);
+  if (!check.ok) return fail(check.reason === "stars" ? "not_enough_stars" : "invalid");
+  const id = itemId as ItemId;
+  const db = getDb();
+  const added = await db.insert(berriItems).values({ userId, itemId: id, equipped: true }).onConflictDoNothing().returning({ itemId: berriItems.itemId });
+  if (!added.length) return fail("invalid");
+  const after = await loadWardrobe(userId);
+  if (after.spent > after.earned) {
+    await db.delete(berriItems).where(and(eq(berriItems.userId, userId), eq(berriItems.itemId, id)));
+    return fail("not_enough_stars");
+  }
+  if (isHeadItem(id)) await db.update(berriItems).set({ equipped: false }).where(and(eq(berriItems.userId, userId), inArray(berriItems.itemId, HEAD_ITEMS.filter(h => h !== id))));
+  return result(userId);
+}
+
+/** Puts an owned item on (or out in the world) or takes it off. Berri wears one head item at a time. */
+export async function equipItem(userId: string, itemId: string, on: boolean): Promise<ActionResult> {
+  if (!isItem(itemId)) return fail("invalid");
+  const db = getDb();
+  if (on && isHeadItem(itemId)) await db.update(berriItems).set({ equipped: false }).where(and(eq(berriItems.userId, userId), inArray(berriItems.itemId, HEAD_ITEMS.filter(h => h !== itemId))));
+  const changed = await db.update(berriItems).set({ equipped: on }).where(and(eq(berriItems.userId, userId), eq(berriItems.itemId, itemId))).returning({ itemId: berriItems.itemId });
+  if (!changed.length) return fail("invalid");
   return result(userId);
 }
 

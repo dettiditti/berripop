@@ -127,6 +127,13 @@
       "when": 1794404974478,
       "tag": "0017_push_schedule",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1794475700685,
+      "tag": "0018_berri_items",
+      "breakpoints": true
     }
   ]
 }

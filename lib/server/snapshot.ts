@@ -8,6 +8,7 @@ import {
 import { aiConfigured } from "./ai";
 import { getAiUsage, getUserEntitlements } from "./entitlements";
 import { loadProgress } from "./progress";
+import { loadWardrobe } from "./wardrobe";
 import { circleToday, dateOf, pickDailyQuestion } from "../domain/rules";
 import { REACTIONS, type AccountDTO, type CircleDTO, type FeedEventType, type Reaction, type ReactionSummary, type Snapshot } from "../domain/types";
 
@@ -33,10 +34,11 @@ export async function loadSnapshot(userId: string, requestedCircleId?: string | 
     myCircles.find(c => c.id === prefs?.lastCircleId) ??
     myCircles[0];
 
-  const [circle, account, progress] = await Promise.all([
+  const [circle, account, progress, wardrobe] = await Promise.all([
     pick ? loadCircle(userId, pick.id) : Promise.resolve(null),
     loadAccount(userId, myCircles.filter(c => c.role === "owner").length),
     loadProgress(userId, myCircles.length > 0),
+    loadWardrobe(userId),
   ]);
   return {
     me: { id: userId, name: meRow?.displayName ?? "", locale: prefs?.locale ?? null, personalPath: prefs?.onboarded ?? false, scene: prefs?.scene ?? "meadow", scenePicked: prefs?.scenePicked ?? false },
@@ -45,6 +47,7 @@ export async function loadSnapshot(userId: string, requestedCircleId?: string | 
     saved: saved.map(s => s.ref),
     account,
     progress,
+    wardrobe,
   };
 }
 

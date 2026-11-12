@@ -153,6 +153,19 @@ export const circleEvents = pgTable("circle_events", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, t => [index("circle_events_circle_idx").on(t.circleId, t.createdAt)]);
 
+/**
+ * Things the member picked for Berri with stars (lib/wardrobe): one row per
+ * item. Stars themselves are not stored: they are counted from activity, and
+ * what was spent is the price of the items here. Never holds personal content.
+ */
+export const berriItems = pgTable("berri_items", {
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  itemId: text("item_id").notNull(),
+  /** Worn by Berri (head items: at most one) or out in the world. */
+  equipped: boolean("equipped").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [primaryKey({ columns: [t.userId, t.itemId] })]);
+
 export const userPrefs = pgTable("user_prefs", {
   userId: text("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
   locale: text("locale").notNull().default("hu"),

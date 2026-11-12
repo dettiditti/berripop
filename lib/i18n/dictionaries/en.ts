@@ -744,6 +744,18 @@ export const en = {
       waitingBody: "Today's quest keeps it glowing. No rush.",
       best: pl("Best: {n} day.", "Best: {n} days."),
       rule: "Rest days: missing a single day never breaks your spark.",
+      welcome: {
+        label: pl("day spark", "day spark"),
+        todayLit: "You showed up today. You're doing great!",
+        keepGoing: "One tiny step today makes it {n} days. Berri is waiting!",
+        rested: "Yesterday was a rest day, and your spark is still glowing. One tiny step today makes it {n} days.",
+        record: "That's your best so far!",
+        backTitle: "You're back!",
+        backBody: "Berri missed you. Your XP and badges are all still here. Shall we light a fresh spark today?",
+        cta: "Let's go!",
+        days: ["S", "M", "T", "W", "T", "F", "S"],
+        srWeek: "The last seven days: you showed up on the ticked ones.",
+      },
     },
     badgeProgress: "{current} of {target}",
     badges: {
@@ -824,6 +836,29 @@ export const en = {
     grow: { name: "Grow", tagline: "Take one small step forward." },
   },
 
+  wardrobe: {
+    title: "Berri's treasure chest",
+    intro: "Every bite you give Berri is a star. Spend your stars on little treasures for Berri and Berri's world.",
+    howTo: "You get up to three stars a day: one for a question, one for answering \"How are you?\", one for a saved moment. Stars can't be bought with money.",
+    balance: pl("{n} star", "{n} stars"),
+    tabs: { head: "For Berri", world: "For the world" },
+    buy: "Pick it",
+    need: pl("{n} more star needed", "{n} more stars needed"),
+    wear: "Put on",
+    takeOff: "Take off",
+    worn: "Wearing it",
+    place: "Put out",
+    remove: "Put away",
+    out: "Out in the world",
+    bought: "Berri loves it! 💜",
+    notEnough: "Collect a few more stars for this one.",
+    wearSoon: "Berri's wardrobe is coming soon!",
+    open: "Treasure chest",
+    items: {
+      capblue: "Blue cap", cappink: "Pink cap", beanie: "Knitted beanie", cowboy: "Cowboy hat", aviator: "Aviator cap",
+      bench: "Bench", sunflowers: "Sunflowers", birdhouse: "Birdhouse", swing: "Swing", lights: "String lights", mushroom: "Mushroom house", rainbow: "Rainbow",
+    },
+  },
   berriHome: {
     eyebrow: "Berri and your world",
     hunger: {

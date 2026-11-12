@@ -46,6 +46,8 @@ import GoalsScreen from "./screens/GoalsScreen";
 import type { JourneyMode } from "./screens/types";
 import { useRun } from "./useRun";
 import Celebration, { type CelebrationItem } from "./Celebration";
+import StreakWelcome from "./StreakWelcome";
+import { claimStreakWelcome, streakWelcomeKind, type StreakWelcomeKind } from "@/lib/streakWelcome";
 import { OfferContext } from "./billing/UpgradePrompt";
 import { reportTransactions } from "./billing/AppStorePaywall";
 import { appStore, removeListener } from "@/lib/nativeBridge";
@@ -221,6 +223,15 @@ function AppShell({ snapshot, setSnapshot }: { snapshot: Snapshot; setSnapshot: 
     });
   }, []);
 
+  // Once a day, the first time Today is free: Berri greets the member with their spark (or a welcome back).
+  const [streakWelcome, setStreakWelcome] = useState<StreakWelcomeKind | null>(null);
+  const todayFree = tab === "home" && !askReminder && !quest && !reward && !detail && !nextCelebration && !inviteOpen && !composerOpen;
+  useEffect(() => {
+    if (!todayFree || !claimStreakWelcome(meId, view.today)) return;
+    setStreakWelcome(streakWelcomeKind(view.streak));
+  }, [todayFree, meId, view.today, view.streak]);
+  const closeStreakWelcome = useCallback(() => setStreakWelcome(null), []);
+
   const refresh = useCallback(async () => {
     const r = await getSnapshotAction().catch(() => null);
     if (r?.ok) setSnapshot(r.snapshot);
@@ -386,7 +397,7 @@ function AppShell({ snapshot, setSnapshot }: { snapshot: Snapshot; setSnapshot: 
     journeyMode, openJourney, buildJourney: () => buildJourney(), journeyBuilding,
     assessmentStatus: assessment?.assessment?.status ?? null, openAssessment: () => setAssessing(true),
     writeInJournal, milestoneCounts,
-    covered: !!quest || !!reward || !!detail,
+    covered: !!quest || !!reward || !!detail || !!streakWelcome,
   };
   const questQuestion = quest ? view.question(quest.ref) : null;
   const offerRules = useMemo(() => ({ activeDays: new Set(snapshot.progress.activeDates).size, account: snapshot.account, notify }), [snapshot.progress.activeDates, snapshot.account, notify]);
@@ -490,8 +501,11 @@ function AppShell({ snapshot, setSnapshot }: { snapshot: Snapshot; setSnapshot: 
       <PushTimeZoneSync />
       {askReminder && <ReminderPrompt notify={notify} onClose={() => setAskReminder(false)} />}
       {/* Once per account: "New: Berri can move!", on Today when nothing else is open. */}
-      {!snapshot.me.scenePicked && tab === "home" && !askReminder && !quest && !reward && !detail && !nextCelebration && !inviteOpen && !composerOpen && (
+      {!snapshot.me.scenePicked && todayFree && !streakWelcome && (
         <ScenePrompt current={snapshot.me.scene} run={run} notify={notify} />
+      )}
+      {streakWelcome && todayFree && (
+        <StreakWelcome kind={streakWelcome} streak={view.streak} active={view.facts.myActiveDates} today={view.today} onDone={closeStreakWelcome} />
       )}
       {toast && <Toast key={toast.id} message={toast.message} />}
       {nextCelebration && !quest && !reward && <Celebration key={`${nextCelebration.kind}:${nextCelebration.id}`} item={nextCelebration} onDone={finishCelebration} />}

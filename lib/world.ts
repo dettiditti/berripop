@@ -1,10 +1,12 @@
 import type { CompanionId } from "./content";
+import { isWorldItem, type WorldItemId } from "./wardrobe";
 import type { View } from "./domain/view";
 import type { BadgeId } from "./progress";
 
 /**
  * The little world in "My Inner World". It only ever grows from real
- * participation: nothing here can be bought, rolled for, or taken away.
+ * participation: nothing here costs money, is rolled for, or is taken away
+ * (treasure-chest things are picked with stars earned by taking part).
  */
 
 export type RegionId = "meadow" | "pond" | "isles";
@@ -45,6 +47,8 @@ export type World = {
   themesExplored: number;
   /** The chosen backdrop (meadow by default). */
   scene: SceneId;
+  /** Things from the treasure chest that are out in the world (lib/wardrobe). */
+  items: Partial<Record<WorldItemId, boolean>>;
 };
 
 export function deriveWorld(view: View, moments: { date: string }[]): World {
@@ -67,5 +71,6 @@ export function deriveWorld(view: View, moments: { date: string }[]): World {
     grewToday: view.myAnswers.some(a => a.date === today) || Object.values(view.myJourney).includes(today) || moments.some(m => m.date === today),
     themesExplored,
     scene: isScene(view.snapshot.me.scene) ? view.snapshot.me.scene : "meadow",
+    items: Object.fromEntries((view.snapshot.wardrobe?.equipped ?? []).filter(isWorldItem).map(id => [id, true])),
   };
 }

@@ -4,6 +4,7 @@ import { useId, type ReactNode } from "react";
 import type { SceneId, World } from "@/lib/world";
 import BerripopMascot, { type BerripopMood } from "../berripop/BerripopMascot";
 import Companion from "./Companion";
+import { WorldItemsBack, WorldItemsFront } from "./WorldItems";
 
 const FLOWERS = ["#FFB59A", "#FFE08A", "#A9D3FF", "#CDB8FF", "#9EEBC8"];
 const PLANT_SLOTS: [number, number][] = [
@@ -150,6 +151,7 @@ export default function WorldScene({ world, label, mood = "happy", compact = fal
           <ellipse cx="190" cy="34" rx="20" ry="8" fill="#E0EEFF" opacity="0.9" />
         </g>
 
+        <WorldItemsBack items={world.items} />
         {scene === "city" && <Skyline />}
         {scene === "exotic" && (
           <g>
@@ -310,6 +312,8 @@ export default function WorldScene({ world, label, mood = "happy", compact = fal
         {GLOW_SPOTS.slice(0, world.glows).map(([x, y], i) => (
           <circle key={i} cx={x} cy={y} r="6" fill={`url(#${id}-glow)`} className="w-firefly" style={{ animationDelay: `${i * -0.9}s` }} />
         ))}
+
+        <WorldItemsFront items={world.items} />
 
         {/* Plants: one per answer. */}
         {world.plants.map((stage, i) => (

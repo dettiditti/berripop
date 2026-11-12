@@ -209,6 +209,18 @@ export async function setSceneAction(scene: string): Promise<ActionResult> {
   return service.setScene(userId, scene);
 }
 
+export async function buyBerriItemAction(itemId: string): Promise<ActionResult> {
+  const userId = await requireUserId();
+  if (!userId) return { ok: false, error: "unauthorized" } as const;
+  return service.buyItem(userId, itemId);
+}
+
+export async function equipBerriItemAction(itemId: string, on: boolean): Promise<ActionResult> {
+  const userId = await requireUserId();
+  if (!userId) return { ok: false, error: "unauthorized" } as const;
+  return service.equipItem(userId, itemId, on === true);
+}
+
 export async function dismissScenePromptAction(): Promise<ActionResult> {
   const userId = await requireUserId();
   if (!userId) return { ok: false, error: "unauthorized" } as const;

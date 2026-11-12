@@ -13,6 +13,7 @@ import ThemeGlyph from "../world/ThemeGlyph";
 import MoodCalendar from "../world/MoodCalendar";
 import { calendarMoods } from "@/lib/checkin/moodCalendar";
 import WorldScene from "../world/WorldScene";
+import TreasureChest from "../world/TreasureChest";
 import type { ScreenProps } from "./types";
 
 const CHIP_TONES = ["purple", "coral", "mint", "sky", "sun"] as const;
@@ -112,6 +113,8 @@ export default function InnerWorldScreen({ view, run, notify, go }: ScreenProps)
           </ul>
         </details>
       </section>
+
+      <TreasureChest view={view} run={run} notify={notify} />
 
       <MoodCalendar moods={calendar} today={today} />
 

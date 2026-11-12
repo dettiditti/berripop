@@ -15,6 +15,7 @@ const preview = (scene: SceneId): World => ({
   grewToday: false,
   themesExplored: 0,
   scene,
+  items: {},
 });
 
 /** Three tappable backdrop cards (meadow, city, exotic) for the start flow and Settings. */
