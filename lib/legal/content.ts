@@ -30,7 +30,7 @@ type LegalSet = {
 
 const hu: LegalSet = {
   back: "Vissza a Berripophoz",
-  updated: "Utolsó módosítás: 2026. november 9.",
+  updated: "Utolsó módosítás: 2026. november 12.",
   version: "Dokumentumverzió: {v}",
   nav: { privacy: "Adatkezelési tájékoztató", terms: "Felhasználási feltételek", cookies: "Cookie-tájékoztató", contact: "Kapcsolat" },
   docs: {
@@ -51,7 +51,7 @@ const hu: LegalSet = {
           "Számlázási adatok: a fizetéskor a Stripe-nál megadott neved, számlázási címed és e-mail-címed, amelyekkel a számlát kiállítjuk. A saját adatbázisunkban a számlák azonosítóját, összegét, állapotát és sorszámát tároljuk.",
           "Nyilatkozatok: a Felhasználási feltételek elfogadása és az AI-feldolgozáshoz adott vagy visszavont hozzájárulás, a szöveg verziójával és az időponttal; valamint az, hogy a fizetés előtt melyik tájékoztató-változatot láttad.",
           "AI-használat: funkció, modell, tokenszám, becsült költség és időpont, valamint a keretek felhasználása (melyik keretből, mikor). A kérések és válaszok szövegét ezekben nem tároljuk.",
-          "Ismerkedő hét: a 7 napos próba kezdete és vége, hogy fiókonként egyszer legyen elindítható.",
+          "Próbaidőszak: a 4 napos próba kezdete és vége, hogy fiókonként egyszer legyen elindítható.",
           "Termékesemények: például regisztráció, első cél, az alkalmazás napi megnyitása vagy előfizetés indítása. Az esemény neve és időpontja, és ahol releváns, a csomag és az alkalmazásnak az a része, ahol történt. Tartalmat nem tárolunk benne.",
           "Mobilapp-értesítő: ha a honlapon feliratkozol, hogy szóljunk, amikor megjelenik a mobilapp, az e-mail-címed, a választott nyelv, a feliratkozás időpontja és annak a hozzájárulási szövegnek a verziója, amelyet elfogadtál. Ehhez nem kell fiók, és a címet nem kapcsoljuk fiókhoz.",
           "Telefonos értesítések (iPhone-app, csak ha bekapcsolod): a telefonod értesítési azonosítója (push token) és időzónája (ezt az app indításakor frissítjük, hogy utazás után is helyi idő szerint jöjjenek), hogy melyik értesítést kéred, hány órakor, és hozzád igazítva kéred-e a reggeli gondolatot. Ezen felül egy küldési napló arról, hogy melyik értesítés melyik napon és mikor ment ki neked, hogy egyik se jöjjön kétszer; ezt 3 nap után töröljük. A délutáni emlékeztető előtt csak azt nézzük meg, hogy aznap történt-e valami az alkalmazásban (például naplóbejegyzés, „Hogy vagy?”, napi kérdés vagy lépés), azt nem, hogy mi. A hozzád igazított gondolathoz kizárólag a kiválasztott témáidat (amelyeket a kezdő kérdéseknél vagy az utad tervezésekor jelöltél be) és a legutóbbi „Hogy vagy?” hangulatodat (az elmúlt másfél napból) használjuk. A naplódat, a beírt szövegeidet és az AI-elemzéseket ehhez soha. Ez a beállításokban kikapcsolható. Az értesítéseket az Apple értesítési szolgáltatása (APNs) kézbesíti, és sosem tartalmazzák, amit írtál, vagy a céljaidat. Ha kikapcsolod őket, a telefonod adatait töröljük; a fiókod törlésekor a küldési naplót is.",
@@ -84,7 +84,7 @@ const hu: LegalSet = {
         { heading: "Adattovábbítás az EGT-n kívülre", body: ["Több szolgáltató (Vercel, Neon, Clerk, Stripe, Apple, OpenAI, Google) az Egyesült Államokban is kezel adatot, és az adatbázisunk is ott található. A továbbítás az EU által elismert garanciák, az EU–USA adatvédelmi keretrendszer vagy az Európai Bizottság általános szerződési feltételei (SCC) alapján történik, az adott szolgáltató feltételei szerint."] },
         { heading: "Meddig őrizzük az adatokat", body: [
           "A fiókodat és a tartalmaidat addig őrizzük, amíg nem törlöd őket vagy a fiókodat. A naplóbejegyzések egyenként és egyben is törölhetők.",
-          "Az AI-használati adatokat és az ismerkedő hét adatait a fiók törléséig őrizzük. A termékeseményeket és a körök tevékenységnaplóját a fiók törlésekor leválasztjuk a fiókodról: ezután a fiókodhoz nem kapcsolva, összesített statisztikához maradnak meg.",
+          "Az AI-használati adatokat és a próba adatait a fiók törléséig őrizzük. A termékeseményeket és a körök tevékenységnaplóját a fiók törlésekor leválasztjuk a fiókodról: ezután a fiókodhoz nem kapcsolva, összesített statisztikához maradnak meg.",
           "A számlákat és a kiállításukhoz szükséges adatokat 8 évig őrizzük (ez lefedi az adójogszabályok szerinti elévülési időt), a fiók törlése után is, a fiókhoz nem kapcsolva. A Stripe a fizetési adatokat a saját feltételei és a jogszabályok szerint is tárolja; a Berripop-fiók törlése ezeket nem törli.",
           "Az App Store-előfizetés adatait a fiók törléséig őrizzük. Az Apple a vásárlásaidat a saját feltételei szerint tárolja; a Berripop-fiók törlése ezeket nem törli, és az App Store-előfizetést sem mondja le.",
           "A Feltételek elfogadásáról és az AI-hozzájárulásról szóló nyilvántartást a fiók törléséig őrizzük.",
@@ -128,10 +128,10 @@ const hu: LegalSet = {
           "Minden fizetésről számlát állítunk ki a Számlázz.hu rendszerében, és e-mailben elküldjük. A Stripe fizetési visszaigazolása nem számla.",
           "A fizetős funkciók a sikeres fizetés után azonnal elérhetők.",
         ] },
-        { heading: "Ismerkedő hét (ingyenes próba)", list: [
-          "Fiókonként egyszer elindíthatsz egy 7 napos ismerkedő hetet. Ilyenkor a Premium funkcióit a próbahét kereteivel használhatod; ezek az Árak oldalon láthatók, és nem korlátlanok.",
-          "Az ismerkedő hét ingyenes: nem kell hozzá bankkártya vagy fizetési mód, és nem alakul át magától fizetős előfizetéssé. A hét végén az ingyenes csomagban folytatod; amit közben létrehoztál, megmarad.",
-          "Az ismerkedő hét alatt egy további Gondolatboncoló-alkalom is jár (amikor a funkció elérhető). Az ismerkedő hét nem indítható újra, kijelentkezés vagy az app újratelepítése után sem.",
+        { heading: "4 napos próba (ingyenes)", list: [
+          "Fiókonként egyszer elindíthatsz egy 4 napos próbát. Ilyenkor a Premium funkcióit a próba kereteivel használhatod; ezek az Árak oldalon láthatók, és nem korlátlanok.",
+          "A próba ingyenes: nem kell hozzá bankkártya vagy fizetési mód, és nem alakul át magától fizetős előfizetéssé. A 4 nap végén az ingyenes csomagban folytatod; amit közben létrehoztál, megmarad.",
+          "A próba alatt egy további Gondolatboncoló-alkalom is jár (amikor a funkció elérhető). A próba nem indítható újra, kijelentkezés vagy az app újratelepítése után sem.",
         ] },
         { heading: "Vásárlás az iPhone-appban (App Store)", list: [
           "Az iPhone-appban ugyanezeket a csomagokat az App Store-on keresztül, az Apple-fiókoddal fizetheted. Az árat az App Store mutatja vásárlás előtt; ez az Apple árszintjei miatt kis mértékben eltérhet a weboldalon látható ártól.",
@@ -209,7 +209,7 @@ const hu: LegalSet = {
 
 const en: LegalSet = {
   back: "Back to Berripop",
-  updated: "Last updated: 9 November 2026",
+  updated: "Last updated: 12 November 2026",
   version: "Document version: {v}",
   nav: { privacy: "Privacy policy", terms: "Terms of service", cookies: "Cookie policy", contact: "Contact" },
   docs: {
@@ -230,7 +230,7 @@ const en: LegalSet = {
           "Billing details: the name, billing address and email address you give Stripe at checkout, which the invoice is issued with. Our own database stores each invoice's ID, amount, status and number.",
           "Statements: your acceptance of the Terms of Use and the consent to AI processing you gave or withdrew, with the text version and time; and which notice version you saw before paying.",
           "AI usage: feature, model, token counts, estimated cost and time, and how the allowances were used (which allowance, when). These don't store the text of requests or responses.",
-          "Trial week: when the 7-day trial started and ends, so it can be started once per account.",
+          "Trial: when the 4-day trial started and ends, so it can be started once per account.",
           "Product events: for example sign-up, first goal, opening the app on a given day or starting a subscription. The event name and time and, where relevant, the plan and the part of the app where it happened. No content is stored in them.",
           "Phone-app notice: if you sign up on the website to hear when the phone app launches, your email address, the chosen language, the time you signed up and the version of the consent wording you agreed to. No account is needed, and the address is not linked to an account.",
           "Phone notifications (iPhone app, only if you turn them on): your phone's notification identifier (push token) and time zone (refreshed when the app starts, so they stay on local time after travel), which notifications you want, at what time, and whether the morning thought should be fitted to you. Also a send log of which notification went out to you on which day and when, so none arrives twice; it is deleted after 3 days. Before the afternoon reminder we only check whether something happened in the app that day (for example a journal entry, a \"How are you?\" check-in, the daily question or a step), not what it was. A thought fitted to you uses only the topics you picked (in the first questions or when planning your path) and your latest \"How are you?\" mood (from the last day and a half). Never your journal, anything you typed or AI reflections. You can turn this off in Settings. Notifications are delivered by Apple's notification service (APNs) and never contain what you wrote or your goals. Turning them off deletes your phone's data; deleting your account also deletes the send log.",
@@ -263,7 +263,7 @@ const en: LegalSet = {
         { heading: "Transfers outside the EEA", body: ["Several providers (Vercel, Neon, Clerk, Stripe, Apple, OpenAI, Google) also process data in the United States, where our database is also located. Transfers rely on safeguards recognised by the EU, the EU–US Data Privacy Framework or the European Commission's standard contractual clauses (SCC), under each provider's terms."] },
         { heading: "Retention", body: [
           "We keep your account and content until you delete them or your account. Journal entries can be deleted one by one or all at once.",
-          "AI usage data and trial week data are kept until your account is deleted. When you delete your account, product events and circle activity entries are unlinked from it: they remain, no longer linked to your account, for aggregate statistics.",
+          "AI usage data and trial data are kept until your account is deleted. When you delete your account, product events and circle activity entries are unlinked from it: they remain, no longer linked to your account, for aggregate statistics.",
           "Invoices and the data needed to issue them are kept for 8 years (which covers the limitation period under tax law), also after your account is deleted, no longer linked to it. Stripe also stores payment data under its own terms and the law; deleting your Berripop account doesn't delete it.",
           "App Store subscription data is kept until your account is deleted. Apple keeps your purchases under its own terms; deleting your Berripop account doesn't delete them, and doesn't cancel the App Store subscription.",
           "Records of your acceptance of the Terms and of your AI consent are kept until your account is deleted.",
@@ -307,10 +307,10 @@ const en: LegalSet = {
           "We issue an invoice for every payment in Számlázz.hu and email it to you. Stripe's payment confirmation is not an invoice.",
           "Paid features are available immediately after a successful payment.",
         ] },
-        { heading: "Trial week (free trial)", list: [
-          "Once per account you can start a 7-day trial week. During it you use Premium features within the trial week's allowances; these are shown on the Pricing page and are not unlimited.",
-          "The trial week is free: it needs no card or payment method, and it never turns into a paid subscription by itself. After the week you continue on Free; everything you created stays.",
-          "The trial week includes one more Thought Dissector session (when the feature is available). It can't be started again, not after signing out or reinstalling the app either.",
+        { heading: "4-day trial (free)", list: [
+          "Once per account you can start a 4-day trial. During it you use Premium features within the trial's allowances; these are shown on the Pricing page and are not unlimited.",
+          "The trial is free: it needs no card or payment method, and it never turns into a paid subscription by itself. After the 4 days you continue on Free; everything you created stays.",
+          "The trial includes one more Thought Dissector session (when the feature is available). It can't be started again, not after signing out or reinstalling the app either.",
         ] },
         { heading: "Buying in the iPhone app (App Store)", list: [
           "In the iPhone app you can pay for the same plans through the App Store, with your Apple account. The App Store shows the price before you buy; because of Apple's price tiers it can differ slightly from the price on the website.",

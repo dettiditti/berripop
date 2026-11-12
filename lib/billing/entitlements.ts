@@ -20,9 +20,9 @@ export type Entitlements = {
   paymentIssue: boolean;
   /** The subscription ended (canceled, unpaid or expired); the user is back on Free. */
   ended: boolean;
-  /** Which limits apply: the plan, or "trial" while a Free member's 7-day trial runs. */
+  /** Which limits apply: the plan, or "trial" while a Free member's 4-day trial runs. */
   tier: Tier;
-  /** The one-time 7-day trial: not started yet, running (until endsAt), or used. */
+  /** The one-time 4-day trial: not started yet, running (until endsAt), or used. */
   trial: TrialState;
   limits: PlanLimits;
   /** Where the paid plan is bought and managed: the website (Stripe) or the App Store. Null on Free. */

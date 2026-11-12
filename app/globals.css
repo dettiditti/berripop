@@ -1108,7 +1108,7 @@ button.avatar:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ton
 .plan-rows--premium .plan-row dd { color: var(--purple-dark); }
 .plan-checkout { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 16px; background: var(--lavender); font-size: 13px; color: var(--ink-2); font-weight: 600; }
 .plan-checkout strong { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--ink); }
-/* The one-time 7-day trial on the Free card: no card, nothing renews. */
+/* The one-time 4-day trial on the Free card: no card, nothing renews. */
 .plan-trial { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 16px; background: var(--lavender); font-size: 13px; color: var(--ink-2); font-weight: 600; }
 .plan-trial strong { font-size: 14px; color: var(--ink); }
 .plan-trial p { margin: 0; }
@@ -3005,3 +3005,22 @@ html[data-app]:has(.berri-video--clear), html[data-app] body:has(.berri-video--c
 }
 .rel-world .chip { --chip-bg: var(--lavender); --chip-border: 2px solid var(--lavender-line); text-align: left; flex-shrink: 1; }
 .rel-world .chip:disabled { opacity: 0.45; }
+
+/* Growth path */
+.rel-weeks { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; align-items: end; }
+.rel-weeks li { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
+.rel-weeks-bar { display: flex; align-items: flex-end; width: 100%; max-width: 56px; height: 96px; border-radius: 14px; background: var(--lavender); overflow: hidden; }
+.rel-weeks-bar i { display: block; width: 100%; border-radius: 14px; background: linear-gradient(180deg, #a98bff, #7654d9); }
+.rel-weeks li.is-now .rel-weeks-bar i { background: linear-gradient(180deg, #ff9f7a, #ff7a45); }
+.rel-weeks strong { font-size: 16px; font-weight: 900; }
+.rel-weeks small { font-size: 12px; font-weight: 800; color: var(--ink-2); }
+.rel-weeks-top { margin: 4px 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.rel-weeks-top div { padding: 10px 12px; border-radius: 16px; background: var(--lavender); }
+.rel-weeks-top dt { font-size: 12px; font-weight: 800; color: var(--ink-2); }
+.rel-weeks-top dd { margin: 2px 0 0; font-weight: 900; }
+.rel-bars h3 small { font-weight: 700; font-size: 12px; margin-left: 6px; }
+.rel-past summary { display: flex; align-items: center; gap: 8px; font-weight: 900; cursor: pointer; list-style: none; }
+.rel-past summary::-webkit-details-marker { display: none; }
+.rel-past[open] summary { margin-bottom: 10px; }
+.rel-retest-note { max-width: 140px; text-align: right; font-size: 12px; font-weight: 700; line-height: 1.35; }
+.rel-delta { display: block; font-size: 11px; font-weight: 800; text-align: right; }

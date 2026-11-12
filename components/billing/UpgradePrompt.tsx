@@ -85,7 +85,7 @@ export default function UpgradePrompt({ kind, vars = {}, force = false, atLimit 
   const [storeReady, setStoreReady] = useState(false);
   useEffect(() => { setStoreReady(!!appStore()); }, []);
   const sellsInApp = inApp && storeReady && !!account;
-  // A Free member who never had the trial week is offered that first: free, no card, nothing renews.
+  // A Free member who never had the trial is offered that first: free, no card, nothing renews.
   const trialOpen = account?.entitlements.plan === "free" && account.entitlements.trial.status === "available";
   const [trialBusy, setTrialBusy] = useState(false);
 

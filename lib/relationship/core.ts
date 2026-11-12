@@ -3,17 +3,20 @@ import type { AiOutcome } from "../ai/run";
 import type { Locale } from "../i18n/config";
 import {
   attachmentReflectionPrompt, loveReflectionPrompt, MAX_OUTPUT, parseReflection, parseTranslation, parseTriggerInsight,
-  reflectionInstructions, translateInstructions, translatePrompt, triggerInstructions, triggerPrompt, type Safety,
+  parseSummary, reflectionInstructions, summaryInstructions, summaryPrompt, translateInstructions, translatePrompt,
+  triggerInstructions, triggerPrompt, type Safety,
 } from "./ai";
 import { RELATIONSHIP_COPY } from "./copy";
-import type { RelationshipKind, RelationshipRecordData, RelationshipRecordInsight } from "./records";
+import type { RelationshipKind, RelationshipRecordData, RelationshipRecordInsight, SummaryStats } from "./records";
 import {
-  attachmentDetail, loveLanguageDetail, scoreAttachment, scoreLoveLanguages, triggerPatterns, validAttachmentAnswers, validLoveAnswers,
+  attachmentDetail, growthWeeks, isoWeek, loveLanguageDetail, retestFrom, scoreAttachment, scoreLoveLanguages, triggerPatterns,
+  validAttachmentAnswers, validLoveAnswers, weeklyQuestion,
 } from "./scoring";
 import {
   isFeeling, isReaction, isTranslateWho, NEEDS,
   type AttachmentRecordDTO, type LoveLanguageRecordDTO, type RelationshipError, type RelationshipReflection, type RelationshipResult,
-  type RelationshipState, type TranslationRecordDTO, type TriggerInput, type TriggerInsight, type TriggerRecordDTO,
+  type GrowthState, type RelationshipState, type SummaryRecordDTO, type TranslationRecordDTO, type TriggerInput, type TriggerInsight,
+  type TriggerRecordDTO, type WeeklySummary,
 } from "./types";
 
 /*
@@ -26,6 +29,9 @@ import {
  *   AI reflections and the trigger map; checked here, never trusted from the client.
  * - The translator is Premium, with one free try per account (PLAN_QUOTAS.relationship).
  * - Texts that look like a crisis never go to the AI; the safety card is shown instead.
+ * - Each test can be taken again once a month (RETEST_DAYS); earlier results are kept for comparison.
+ * - The growth path is Premium; its weekly AI summary is made only on request, at most once a week,
+ *   from counts and labels (never the member's own text), and it uses the weekly AI allowance.
  */
 
 export type StoredRow = { id: string; kind: RelationshipKind; data: RelationshipRecordData; insight: RelationshipRecordInsight | null; createdAt: Date };
@@ -50,9 +56,14 @@ export type RelationshipDeps = {
   quota: (userId: string) => Promise<RelationshipState["quota"]>;
   /** One metered AI call against the "relationship" allowance (reserved before, given back on failure). */
   ai: <T>(userId: string, ask: AiAsk<T>) => Promise<AiOutcome<T>>;
+  /** The current time (tests set it). */
+  now?: () => Date;
 };
 
-export const LIMITS = { triggers: 30, translations: 10, situation: 800, thought: 500, note: 300, original: 600 } as const;
+export const LIMITS = { triggers: 30, translations: 10, translationsCounted: 40, summaries: 12, situation: 800, thought: 500, note: 300, original: 600 } as const;
+
+const DAY = 86_400_000;
+const now = (deps: RelationshipDeps) => (deps.now ? deps.now() : new Date());
 
 const fail = (error: RelationshipError): { ok: false; error: RelationshipError } => ({ ok: false, error });
 
@@ -79,19 +90,53 @@ function translationDTO(row: StoredRow): TranslationRecordDTO | null {
   return { id: row.id, createdAt: iso(row.createdAt), original: row.data.original, who: row.data.who, result: row.data.result };
 }
 
+function summaryDTO(row: StoredRow): SummaryRecordDTO | null {
+  if (row.data.kind !== "summary" || !row.insight) return null;
+  return { id: row.id, createdAt: iso(row.createdAt), week: row.data.week, summary: row.insight as WeeklySummary };
+}
+
 const nonNull = <T,>(xs: (T | null)[]) => xs.filter((x): x is T => x !== null);
+
+function growthState(at: Date, rows: { love: StoredRow[]; attach: StoredRow[]; triggers: StoredRow[]; translations: StoredRow[]; summaries: StoredRow[] }): GrowthState {
+  const week = isoWeek(at);
+  const love = rows.love[0] ? loveDTO(rows.love[0], true) : null;
+  const attach = rows.attach[0] ? attachmentDTO(rows.attach[0], true) : null;
+  const triggers = nonNull(rows.triggers.map(triggerDTO));
+  const summaries = nonNull(rows.summaries.map(summaryDTO));
+  const weekAgo = at.getTime() - 7 * DAY;
+  const prevLove = rows.love[1] ? loveDTO(rows.love[1], false) : null;
+  const prevAttach = rows.attach[1] ? attachmentDTO(rows.attach[1], false) : null;
+  return {
+    week,
+    question: weeklyQuestion(week, love?.result.top[0] ?? null, attach?.result.main ?? null),
+    weeks: growthWeeks(
+      at,
+      triggers.map(t => ({ at: new Date(t.createdAt), feelings: t.input.feelings, needs: t.insight?.needs ?? [] })),
+      rows.translations.map(t => ({ at: t.createdAt })),
+    ),
+    summaries,
+    doneThisWeek: summaries.some(x => x.week === week),
+    hasActivity: rows.triggers.some(r => r.createdAt.getTime() >= weekAgo) || rows.translations.some(r => r.createdAt.getTime() >= weekAgo),
+    previousLove: prevLove ? { createdAt: prevLove.createdAt, result: prevLove.result } : null,
+    previousAttachment: prevAttach ? { createdAt: prevAttach.createdAt, result: prevAttach.result } : null,
+  };
+}
 
 export async function loadState(deps: RelationshipDeps, userId: string): Promise<RelationshipState> {
   const access = await deps.access(userId);
   const quota = await deps.quota(userId);
   const base = { enabled: deps.enabled(), aiConfigured: deps.aiConfigured(), premium: access.premium, plan: access.plan, tier: access.tier, quota };
-  if (!base.enabled) return { ...base, loveLanguage: null, attachment: null, triggers: [], patterns: null, translations: [], freeTranslationLeft: false };
-  const [love, attach, triggers, translations] = await Promise.all([
-    deps.store.latest(userId, "love_language"),
-    deps.store.latest(userId, "attachment"),
+  if (!base.enabled) return { ...base, loveLanguage: null, attachment: null, triggers: [], patterns: null, translations: [], freeTranslationLeft: false, retest: { love: null, attachment: null }, growth: null };
+  const [loves, attaches, triggers, translations, summaries] = await Promise.all([
+    deps.store.list(userId, "love_language", 2),
+    deps.store.list(userId, "attachment", 2),
     deps.store.list(userId, "trigger", LIMITS.triggers),
-    deps.store.list(userId, "translation", LIMITS.translations),
+    deps.store.list(userId, "translation", LIMITS.translationsCounted),
+    access.premium ? deps.store.list(userId, "summary", LIMITS.summaries) : Promise.resolve([]),
   ]);
+  const love = loves[0] ?? null;
+  const attach = attaches[0] ?? null;
+  const at = now(deps);
   const triggerDTOs = nonNull(triggers.map(triggerDTO));
   return {
     ...base,
@@ -100,8 +145,10 @@ export async function loadState(deps: RelationshipDeps, userId: string): Promise
     // The member's own entries stay visible after a plan ends; only new ones need Premium.
     triggers: triggerDTOs,
     patterns: access.premium ? triggerPatterns(triggerDTOs.map(t => ({ feelings: t.input.feelings, reactions: t.input.reactions, needs: t.insight?.needs ?? [] }))) : null,
-    translations: nonNull(translations.map(translationDTO)),
+    translations: nonNull(translations.slice(0, LIMITS.translations).map(translationDTO)),
     freeTranslationLeft: !access.premium && quota.remaining > 0,
+    retest: { love: retestFrom(love?.createdAt ?? null, at), attachment: retestFrom(attach?.createdAt ?? null, at) },
+    growth: access.premium ? growthState(at, { love: loves, attach: attaches, triggers, translations, summaries }) : null,
   };
 }
 
@@ -114,6 +161,7 @@ async function withState<T>(deps: RelationshipDeps, userId: string, data: T): Pr
 export async function saveLoveLanguage(deps: RelationshipDeps, userId: string, input: { receive?: unknown; give?: unknown }): Promise<RelationshipResult<{ id: string }>> {
   if (!deps.enabled()) return fail("disabled");
   if (!validLoveAnswers(input.receive, input.give)) return fail("invalid");
+  if (retestFrom((await deps.store.latest(userId, "love_language"))?.createdAt ?? null, now(deps))) return fail("too_soon");
   const row = await deps.store.insert(userId, { v: 1, kind: "love_language", receive: input.receive, give: input.give as typeof input.receive }, null);
   return withState(deps, userId, { id: row.id });
 }
@@ -121,6 +169,7 @@ export async function saveLoveLanguage(deps: RelationshipDeps, userId: string, i
 export async function saveAttachment(deps: RelationshipDeps, userId: string, input: { answers?: unknown }): Promise<RelationshipResult<{ id: string }>> {
   if (!deps.enabled()) return fail("disabled");
   if (!validAttachmentAnswers(input.answers)) return fail("invalid");
+  if (retestFrom((await deps.store.latest(userId, "attachment"))?.createdAt ?? null, now(deps))) return fail("too_soon");
   const row = await deps.store.insert(userId, { v: 1, kind: "attachment", answers: input.answers }, null);
   return withState(deps, userId, { id: row.id });
 }
@@ -210,6 +259,64 @@ export async function translate(deps: RelationshipDeps, userId: string, raw: { o
   if (err || !out.ok) return fail(err ?? "ai_failed");
   const row = await deps.store.insert(userId, { v: 1, kind: "translation", original, who, result: out.value.value }, null);
   return withState(deps, userId, translationDTO(row)!);
+}
+
+/* ---------- Growth path (Premium) ---------- */
+
+const withCounts = (xs: { id: string; count: number }[], label: (id: string) => string) => xs.map(x => `${label(x.id)} ×${x.count}`);
+
+/**
+ * The weekly growth summary, on request. One per week: asked again, the saved
+ * one is returned without a new charge. Made from the last seven days' counts
+ * and labels only, so nothing the member wrote leaves for it.
+ */
+export async function summarize(deps: RelationshipDeps, userId: string, locale: Locale): Promise<RelationshipResult<SummaryRecordDTO>> {
+  const blocked = await gate(deps, userId, true);
+  if (blocked) return fail(blocked);
+  const at = now(deps);
+  const week = isoWeek(at);
+  const existing = (await deps.store.list(userId, "summary", LIMITS.summaries)).map(summaryDTO).find(x => x?.week === week);
+  if (existing) return withState(deps, userId, existing);
+  const [triggers, translations, love, attach] = await Promise.all([
+    deps.store.list(userId, "trigger", LIMITS.triggers),
+    deps.store.list(userId, "translation", LIMITS.translationsCounted),
+    deps.store.latest(userId, "love_language"),
+    deps.store.latest(userId, "attachment"),
+  ]);
+  const t = at.getTime();
+  const since = (rows: StoredRow[], from: number, to: number) => rows.filter(r => r.createdAt.getTime() >= from && r.createdAt.getTime() < to);
+  const recent = nonNull(since(triggers, t - 7 * DAY, Infinity).map(triggerDTO));
+  const recentTranslations = since(translations, t - 7 * DAY, Infinity).length;
+  if (recent.length === 0 && recentTranslations === 0) return fail("nothing_yet");
+  const c = RELATIONSHIP_COPY.en;
+  const p = triggerPatterns(recent.map(e => ({ feelings: e.input.feelings, reactions: e.input.reactions, needs: e.insight?.needs ?? [] })));
+  // Counted from all entries this week, not only the repeated ones.
+  const all = <K extends string>(lists: K[][]) => {
+    const m = new Map<K, number>();
+    for (const l of lists) for (const id of new Set(l)) m.set(id, (m.get(id) ?? 0) + 1);
+    return [...m].map(([id, count]) => ({ id, count })).sort((a, b) => b.count - a.count).slice(0, 5);
+  };
+  const stats: SummaryStats = {
+    entries: p.entries,
+    translations: recentTranslations,
+    feelings: withCounts(all(recent.map(e => e.input.feelings)), id => c.feelings[id as keyof typeof c.feelings]),
+    reactions: withCounts(all(recent.map(e => e.input.reactions)), id => c.reactions[id as keyof typeof c.reactions]),
+    needs: withCounts(all(recent.map(e => e.insight?.needs ?? [])), id => c.needs[id as keyof typeof c.needs]),
+    previousEntries: since(triggers, t - 14 * DAY, t - 7 * DAY).length,
+  };
+  const loveTop = love?.data.kind === "love_language" ? scoreLoveLanguages(love.data.receive, love.data.give).top[0] : null;
+  const attachMain = attach?.data.kind === "attachment" ? scoreAttachment(attach.data.answers).main : null;
+  const out = await deps.ai(userId, {
+    feature: "relationship_summary",
+    instructions: summaryInstructions(locale),
+    prompt: summaryPrompt(stats, { love: loveTop ? c.love.langs[loveTop].name : null, attachment: attachMain ? c.attach.patterns[attachMain].name : null }),
+    maxOutputTokens: MAX_OUTPUT.summary,
+    parse: parseSummary,
+  });
+  const err = aiError(out);
+  if (err || !out.ok) return fail(err ?? "ai_failed");
+  const row = await deps.store.insert(userId, { v: 1, kind: "summary", week, stats }, out.value.value);
+  return withState(deps, userId, summaryDTO(row)!);
 }
 
 /* ---------- The member's data ---------- */

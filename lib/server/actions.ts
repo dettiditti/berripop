@@ -20,7 +20,7 @@ import * as journal from "./journal";
 import * as thought from "./thought";
 import type { ThoughtResult, ThoughtSessionDTO, ThoughtState } from "../thought/types";
 import * as relationship from "./relationship";
-import { PREMIUM_FEATURES, type RelationshipReflection, type RelationshipResult, type RelationshipState, type TranslationRecordDTO, type TriggerRecordDTO } from "../relationship/types";
+import { PREMIUM_FEATURES, type RelationshipReflection, type RelationshipResult, type RelationshipState, type SummaryRecordDTO, type TranslationRecordDTO, type TriggerRecordDTO } from "../relationship/types";
 import * as legal from "./legal";
 import { loadMilestoneCounts } from "./milestones";
 import type { MilestoneCounts } from "../milestones";
@@ -100,7 +100,7 @@ export async function startCheckoutAction(interval: BillingInterval, plan: PaidP
   return billing.createCheckoutSession(userId, plan, interval, await origin(), { email: user?.primaryEmailAddress?.emailAddress, locale: await locale(), region });
 }
 
-/** Starts the one-time 7-day trial (no card, no renewal). */
+/** Starts the one-time 4-day trial (no card, no renewal). */
 export async function startTrialAction() {
   const userId = await requireUserId();
   if (!userId) return { ok: false as const, error: "unauthorized" as const };
@@ -751,6 +751,13 @@ export async function translateSentenceAction(input: { original: string; who: st
   const userId = await requireUserId();
   if (!userId) return noRelUser;
   return relationship.translateSentence(userId, input, await locale());
+}
+
+/** The weekly growth summary, on request (Premium; at most one a week). */
+export async function relationshipSummaryAction(): Promise<RelationshipResult<SummaryRecordDTO>> {
+  const userId = await requireUserId();
+  if (!userId) return noRelUser;
+  return relationship.weeklySummary(userId, await locale());
 }
 
 export async function deleteRelationshipRecordAction(id: string): Promise<RelationshipResult> {

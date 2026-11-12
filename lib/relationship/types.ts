@@ -138,10 +138,46 @@ export type TriggerPatterns = {
   needs: { id: Need; count: number }[];
 };
 
+/** AI weekly growth summary (Premium, on request, at most one per week). */
+export type WeeklySummary = {
+  v: 1;
+  summary: string;
+  noticed: string[];
+  progress: string;
+  nextStep: string;
+};
+
+/** One week of the member's own activity, counted (never guessed). `week` is an ISO week like 2026-W46. */
+export type GrowthWeek = { week: string; start: string; triggers: number; translations: number; topFeeling: Feeling | null; topNeed: Need | null };
+
+export type SummaryRecordDTO = { id: string; createdAt: string; week: string; summary: WeeklySummary };
+
+/** The weekly reflection question: a list in the copy and an index in it, chosen from the member's results. */
+export type GrowthQuestionTag = LoveLanguage | AttachmentPattern | "general";
+export type GrowthQuestion = { tag: GrowthQuestionTag; index: number };
+
+/** The growth path (Premium). */
+export type GrowthState = {
+  /** The current ISO week. */
+  week: string;
+  question: GrowthQuestion;
+  /** The last four weeks, oldest first. */
+  weeks: GrowthWeek[];
+  /** Saved summaries, newest first. */
+  summaries: SummaryRecordDTO[];
+  /** A summary for this week already exists. */
+  doneThisWeek: boolean;
+  /** There is something from the last seven days to summarise. */
+  hasActivity: boolean;
+  /** The previous results of each test, for comparison (null before the second test). */
+  previousLove: { createdAt: string; result: LoveLanguageResult } | null;
+  previousAttachment: { createdAt: string; result: AttachmentResult } | null;
+};
+
 export type RelationshipState = {
   enabled: boolean;
   aiConfigured: boolean;
-  /** Premium-like access: a paid plan or the running trial week. */
+  /** Premium-like access: a paid plan or the running trial. */
   premium: boolean;
   plan: string;
   tier: string;
@@ -154,10 +190,15 @@ export type RelationshipState = {
   translations: TranslationRecordDTO[];
   /** Free: whether the one free translation is still available. */
   freeTranslationLeft: boolean;
+  /** Each test can be taken again once a month: the date (YYYY-MM-DD) from when, or null when it can be taken now. */
+  retest: { love: string | null; attachment: string | null };
+  /** Premium only (null on Free). */
+  growth: GrowthState | null;
 };
 
 export type RelationshipError =
   | "unauthorized" | "disabled" | "invalid" | "not_found" | "premium_required"
-  | "limit_ai" | "ai_unavailable" | "ai_consent_required" | "ai_failed" | "safety";
+  | "limit_ai" | "ai_unavailable" | "ai_consent_required" | "ai_failed" | "safety"
+  | "too_soon" | "nothing_yet";
 
 export type RelationshipResult<T = undefined> = { ok: true; data: T; state: RelationshipState } | { ok: false; error: RelationshipError; state?: RelationshipState };

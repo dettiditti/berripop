@@ -95,7 +95,7 @@ export type ThoughtDeps = {
   createEntry: (userId: string, body: string) => Promise<string>;
   /**
    * The Gondolatboncoló allowance (PLAN_QUOTAS.thought): Free has one session
-   * for the lifetime of the account, the trial week one more, paid plans a
+   * for the lifetime of the account, the trial one more, paid plans a
    * monthly number. A session is charged once, ever: reserving the same
    * session again hands back its existing charge instead of a second one.
    */

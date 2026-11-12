@@ -25,25 +25,25 @@ export type QuotaWindow = "week" | "month" | "once";
 /**
  * One allowance pool. A quota is a list of pools used in order: the first one
  * with room is charged. "once" pools are named so two one-time allowances
- * (e.g. the first free Gondolatboncoló and the one from the trial week) stay
+ * (e.g. the first free Gondolatboncoló and the one from the trial) stay
  * separate and each is used at most once.
  */
 export type QuotaPool = { window: QuotaWindow; limit: number; name?: string };
 
 /**
- * Who the limits are for: the three plans, plus the one-time 7-day trial
+ * Who the limits are for: the three plans, plus the one-time 4-day trial
  * (Premium-like but capped, see TRIAL_DAYS). The trial is not a plan: billing
  * still says Free, only the limits change.
  */
 export type Tier = PlanId | "trial";
 
-export const TRIAL_DAYS = 7;
+export const TRIAL_DAYS = 4;
 
 const week = (limit: number): QuotaPool[] => [{ window: "week", limit }];
 const month = (limit: number): QuotaPool[] => [{ window: "month", limit }];
 /** The first Gondolatboncoló, free once per account. */
 const FIRST_THOUGHT: QuotaPool = { window: "once", limit: 1, name: "first" };
-/** One more Gondolatboncoló during the trial week, once per account. */
+/** One more Gondolatboncoló during the trial, once per account. */
 const TRIAL_THOUGHT: QuotaPool = { window: "once", limit: 1, name: "trial" };
 /**
  * Kapcsolati világ: one AI insight (the communication translator) free once
@@ -101,7 +101,7 @@ export type PlanLimits = {
   /**
    * Safety net: estimated AI cost per member per calendar month (micro-USD,
    * from ai_calls). Set well above the most the allowances can use (about
-   * USD 0.03 Free, 0.7 Premium, 2.3 Plus), so it only stops anomalies.
+   * USD 0.03 Free, 0.9 Premium, 2.7 Plus, the Kapcsolati világ included), so it only stops anomalies.
    */
   aiMonthlyCostCapMicroUsd: number;
 };

@@ -36,8 +36,8 @@ describe("public legal texts", () => {
     }
     const f = PLAN_LIMITS.free;
     expect(hu).toContain(`${f.activeGoals} aktív cél, ${f.ownedCircles} saját kör, hetente ${f.aiPerPeriod} AI-segítség és ${f.journalAiPerPeriod} napló-reflexió`);
-    expect(hu).toContain(`${TRIAL_DAYS} napos ismerkedő hetet`);
-    expect(en).toContain(`${TRIAL_DAYS}-day trial week`);
+    expect(hu).toContain(`${TRIAL_DAYS} napos próbát`);
+    expect(en).toContain(`${TRIAL_DAYS}-day trial`);
     expect(en).toContain(`${f.activeGoals} active goal, ${f.ownedCircles} circle of your own, ${f.aiPerPeriod} AI assists and ${f.journalAiPerPeriod} journal reflection a week`);
   });
 });

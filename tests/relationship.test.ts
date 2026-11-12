@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { parseReflection, parseTranslation, parseTriggerInsight } from "../lib/relationship/ai";
+import { parseReflection, parseSummary, parseTranslation, parseTriggerInsight, summaryPrompt } from "../lib/relationship/ai";
 import { RELATIONSHIP_COPY } from "../lib/relationship/copy";
 import * as core from "../lib/relationship/core";
 import type { AiAsk, RelationshipDeps, StoredRow } from "../lib/relationship/core";
 import {
-  ATTACHMENT_ITEMS, attachmentDetail, dailyQuestionIndex, GIVE_PAIRS, loveLanguageDetail, RECEIVE_PAIRS, scoreAttachment, scoreLoveLanguages, toPercents, triggerPatterns,
+  ATTACHMENT_ITEMS, attachmentDetail, dailyQuestionIndex, GIVE_PAIRS, GROWTH_QUESTION_COUNTS, growthWeeks, isoWeek, retestFrom, weekStart, weeklyQuestion, loveLanguageDetail, RECEIVE_PAIRS, scoreAttachment, scoreLoveLanguages, toPercents, triggerPatterns,
 } from "../lib/relationship/scoring";
 import { LOVE_LANGUAGES, type Likert, type PairChoice } from "../lib/relationship/types";
 import { PLAN_QUOTAS } from "../lib/billing/plans";
@@ -150,7 +150,9 @@ function setup(opts: { premium?: boolean; freeLeft?: number; enabled?: boolean; 
   let n = 0;
   let remaining = opts.freeLeft ?? (opts.premium ? 25 : 1);
   const aiCalls: AiAsk<unknown>[] = [];
+  const clock = { now: new Date(Date.UTC(2026, 10, 12, 10)) };
   const deps: RelationshipDeps = {
+    now: () => clock.now,
     enabled: () => opts.enabled ?? true,
     aiConfigured: () => true,
     access: async () => ({ premium: !!opts.premium, plan: opts.premium ? "premium" : "free", tier: opts.premium ? "premium" : "free" }),
@@ -168,7 +170,7 @@ function setup(opts: { premium?: boolean; freeLeft?: number; enabled?: boolean; 
       list: async (u, kind, limit) => [...rows].reverse().filter(r => r.userId === u && r.kind === kind).slice(0, limit),
       get: async (u, id) => rows.find(r => r.userId === u && r.id === id) ?? null,
       insert: async (u, data, insight) => {
-        const row = { userId: u, id: `id-${++n}`, kind: data.kind, data, insight, createdAt: new Date(2026, 10, 12, 10, n) };
+        const row = { userId: u, id: `id-${++n}`, kind: data.kind, data, insight, createdAt: new Date(clock.now.getTime() + n * 1000) };
         rows.push(row);
         return row;
       },
@@ -177,7 +179,7 @@ function setup(opts: { premium?: boolean; freeLeft?: number; enabled?: boolean; 
       removeAll: async u => { for (let i = rows.length - 1; i >= 0; i--) if (rows[i].userId === u) rows.splice(i, 1); },
     },
   };
-  return { deps, rows, aiCalls };
+  return { deps, rows, aiCalls, clock, later: (days: number) => { clock.now = new Date(clock.now.getTime() + days * 86_400_000); } };
 }
 
 const REFLECTION = JSON.stringify({ summary: "Úgy tűnik…", strengths: ["a"], tender: ["b"], tryThis: ["c"], safety: false });
@@ -285,5 +287,118 @@ describe("configuration", () => {
       // lib/server/analytics.ts is server-only, so its allowlist is read as text here.
       expect(readFileSync("lib/server/analytics.ts", "utf8")).toContain(`"${e}",`);
     }
+  });
+});
+
+const SUMMARY = JSON.stringify({ summary: "Ezen a héten…", noticed: ["a csend nehéz"], progress: "Többször szóltál.", nextStep: "Írd le előbb magadnak.", safety: false });
+const TRIGGER = JSON.stringify({ needs: ["closeness"], reflection: "Érthető.", alternative: "Kérdezz rá nyugodtan.", safety: false });
+const entry = { situation: "Nem válaszolt egész nap.", feelings: ["hurt"], thought: "Nem fontos neki", reactions: ["withdraw"], reactionNote: "" };
+
+describe("growth path: weeks, questions, retests", () => {
+  it("ISO weeks and Mondays are computed in UTC", () => {
+    expect(isoWeek(new Date(Date.UTC(2026, 10, 12)))).toBe("2026-W46");
+    expect(isoWeek(new Date(Date.UTC(2027, 0, 1)))).toBe("2026-W53");
+    expect(isoWeek(new Date(Date.UTC(2026, 0, 1)))).toBe("2026-W01");
+    expect(weekStart(new Date(Date.UTC(2026, 10, 15, 23)))).toBe("2026-11-09");
+  });
+
+  it("a test can be taken again 30 days after the last one", () => {
+    const last = new Date(Date.UTC(2026, 10, 1));
+    expect(retestFrom(null, last)).toBeNull();
+    expect(retestFrom(last, new Date(Date.UTC(2026, 10, 20)))).toBe("2026-12-01");
+    expect(retestFrom(last, new Date(Date.UTC(2026, 11, 1)))).toBeNull();
+  });
+
+  it("the weekly question follows the results and exists in both languages", () => {
+    for (const locale of ["hu", "en"] as const) {
+      const q = RELATIONSHIP_COPY[locale].growth.questions;
+      for (const [tag, n] of Object.entries(GROWTH_QUESTION_COUNTS)) expect(q[tag as keyof typeof q]).toHaveLength(n);
+    }
+    const a = weeklyQuestion("2026-W46", "time", "anxious");
+    const b = weeklyQuestion("2026-W47", "time", "anxious");
+    expect(new Set([a.tag, b.tag])).toEqual(new Set(["time", "anxious"]));
+    expect(weeklyQuestion("2026-W46", null, null).tag).toBe("general");
+    expect(weeklyQuestion("2026-W46", "time", "anxious")).toEqual(a);
+  });
+
+  it("weeks count the member's own entries, oldest first", () => {
+    const now = new Date(Date.UTC(2026, 10, 12));
+    const w = growthWeeks(now, [
+      { at: new Date(Date.UTC(2026, 10, 10)), feelings: ["hurt"], needs: ["closeness"] },
+      { at: new Date(Date.UTC(2026, 10, 11)), feelings: ["hurt", "angry"], needs: [] },
+      { at: new Date(Date.UTC(2026, 10, 3)), feelings: ["lonely"], needs: [] },
+    ], [{ at: new Date(Date.UTC(2026, 9, 20)) }]);
+    expect(w.map(x => x.start)).toEqual(["2026-10-19", "2026-10-26", "2026-11-02", "2026-11-09"]);
+    expect(w.map(x => x.triggers)).toEqual([0, 0, 1, 2]);
+    expect(w[0].translations).toBe(1);
+    expect(w[3].topFeeling).toBe("hurt");
+    expect(w[3].topNeed).toBe("closeness");
+  });
+
+  it("the summary is parsed strictly, and its prompt carries labels only", () => {
+    expect(parseSummary(SUMMARY)?.value.noticed).toEqual(["a csend nehéz"]);
+    expect(parseSummary(JSON.stringify({ summary: "x" }))).toBeNull();
+    expect(parseSummary("nem json")).toBeNull();
+    const prompt = summaryPrompt({ entries: 2, translations: 1, feelings: ["Hurt ×2"], reactions: [], needs: [], previousEntries: 0 }, { love: null, attachment: null });
+    expect(prompt).toContain("Hurt ×2");
+  });
+});
+
+describe("growth path rules (server side)", () => {
+  it("a test can only be taken again after a month; both results are kept for comparison", async () => {
+    const t = setup({ premium: true });
+    expect((await core.saveLoveLanguage(t.deps, "u1", love)).ok).toBe(true);
+    const again = await core.saveLoveLanguage(t.deps, "u1", { receive: pairs("b"), give: pairs("a") });
+    expect(again.ok ? null : again.error).toBe("too_soon");
+    const s = await core.loadState(t.deps, "u1");
+    expect(s.retest.love).toBe("2026-12-12");
+    expect(s.retest.attachment).toBeNull();
+    t.later(31);
+    const later = await core.saveLoveLanguage(t.deps, "u1", { receive: pairs("b"), give: pairs("a") });
+    expect(later.ok && later.state.growth?.previousLove?.result.top).toEqual(s.loveLanguage?.result.top);
+    expect(later.ok && later.state.retest.love).not.toBeNull();
+  });
+
+  it("the growth path is Premium: Free gets no growth data and the summary needs Premium", async () => {
+    const free = setup();
+    expect((await core.loadState(free.deps, "u1")).growth).toBeNull();
+    const r = await core.summarize(free.deps, "u1", "hu");
+    expect(r.ok ? null : r.error).toBe("premium_required");
+    expect(free.aiCalls).toHaveLength(0);
+  });
+
+  it("the summary needs something from the last seven days", async () => {
+    const t = setup({ premium: true, aiText: SUMMARY });
+    const r = await core.summarize(t.deps, "u1", "hu");
+    expect(r.ok ? null : r.error).toBe("nothing_yet");
+    expect(t.aiCalls).toHaveLength(0);
+    expect((await core.loadState(t.deps, "u1")).growth?.hasActivity).toBe(false);
+  });
+
+  it("one summary a week, on request: asked again it costs nothing; it never sends what the member wrote", async () => {
+    const t = setup({ premium: true, aiText: TRIGGER });
+    expect((await core.analyzeTrigger(t.deps, "u1", entry, "hu")).ok).toBe(true);
+    const before = await core.loadState(t.deps, "u1");
+    expect(before.growth?.hasActivity).toBe(true);
+    expect(before.growth?.doneThisWeek).toBe(false);
+
+    const sum = setup({ premium: true, aiText: SUMMARY });
+    sum.rows.push(...t.rows);
+    const first = await core.summarize(sum.deps, "u1", "hu");
+    expect(first.ok && first.data.week).toBe("2026-W46");
+    expect(first.ok && first.state.growth?.doneThisWeek).toBe(true);
+    expect(sum.aiCalls).toHaveLength(1);
+    const ask = sum.aiCalls[0];
+    expect(ask.prompt).toContain("Hurt ×1");
+    expect(ask.prompt).not.toContain(entry.situation);
+    expect(ask.prompt).not.toContain(entry.thought);
+
+    const second = await core.summarize(sum.deps, "u1", "hu");
+    expect(second.ok && second.data.id).toBe(first.ok && first.data.id);
+    expect(sum.aiCalls).toHaveLength(1);
+
+    sum.later(8);
+    const next = await core.summarize(sum.deps, "u1", "hu");
+    expect(next.ok ? null : next.error).toBe("nothing_yet");
   });
 });

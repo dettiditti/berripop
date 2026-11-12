@@ -2,7 +2,7 @@ import {
   ATTACHMENT_AREAS, ATTACHMENT_PATTERNS, FEELINGS, LOVE_LANGUAGES, NEEDS, REACTIONS,
   type AttachmentArea, type AttachmentDetail, type AttachmentPattern, type AttachmentResult, type Feeling, type Likert,
   type LoveLanguage, type LoveLanguageDetail, type LoveLanguageResult, type LoveLanguageScores, type Need, type PairChoice,
-  type Reaction, type TriggerPatterns,
+  type GrowthQuestion, type GrowthWeek, type Reaction, type TriggerPatterns,
 } from "./types";
 
 /*
@@ -195,4 +195,77 @@ const dayNumber = (date: string) => Math.floor(Date.UTC(+date.slice(0, 4), +date
 export function dailyQuestionIndex(date: string, count: number): number {
   if (count <= 0) return 0;
   return ((dayNumber(date) % count) + count) % count;
+}
+
+/* ---------- Growth path ---------- */
+
+const DAY = 86_400_000;
+const ymd = (t: number) => new Date(t).toISOString().slice(0, 10);
+
+/** Monday (YYYY-MM-DD, UTC) of the week a moment falls in. */
+export function weekStart(at: Date): string {
+  const t = Date.UTC(at.getUTCFullYear(), at.getUTCMonth(), at.getUTCDate());
+  const dow = (new Date(t).getUTCDay() + 6) % 7; // Monday = 0
+  return ymd(t - dow * DAY);
+}
+
+/** ISO 8601 week id, e.g. "2026-W46" (UTC). */
+export function isoWeek(at: Date): string {
+  const t = Date.UTC(at.getUTCFullYear(), at.getUTCMonth(), at.getUTCDate());
+  const dow = (new Date(t).getUTCDay() + 6) % 7;
+  const thursday = new Date(t + (3 - dow) * DAY);
+  const year = thursday.getUTCFullYear();
+  const week = Math.floor((thursday.getTime() - Date.UTC(year, 0, 1)) / DAY / 7) + 1;
+  return `${year}-W${String(week).padStart(2, "0")}`;
+}
+
+/** A test can be taken again this many days after the last one, so a comparison means something. */
+export const RETEST_DAYS = 30;
+
+/** The date (YYYY-MM-DD) from when a test can be taken again, or null when it can be taken now. */
+export function retestFrom(last: Date | null, now: Date): string | null {
+  if (!last) return null;
+  const from = last.getTime() + RETEST_DAYS * DAY;
+  return from > now.getTime() ? ymd(from) : null;
+}
+
+const top1 = <K extends string>(ids: readonly K[], lists: K[][]): K | null => counts(ids, lists)[0]?.id ?? null;
+
+/** The last `n` weeks of the member's own activity, oldest first: counted per Monday-to-Sunday week. */
+export function growthWeeks(
+  now: Date,
+  triggers: { at: Date; feelings: Feeling[]; needs: Need[] }[],
+  translations: { at: Date }[],
+  n = 4,
+): GrowthWeek[] {
+  const thisMonday = Date.parse(`${weekStart(now)}T00:00:00Z`);
+  return Array.from({ length: n }, (_, k) => {
+    const from = thisMonday - (n - 1 - k) * 7 * DAY;
+    const to = from + 7 * DAY;
+    const inWeek = <T extends { at: Date }>(xs: T[]) => xs.filter(x => x.at.getTime() >= from && x.at.getTime() < to);
+    const ts = inWeek(triggers);
+    return {
+      week: isoWeek(new Date(from)),
+      start: ymd(from),
+      triggers: ts.length,
+      translations: inWeek(translations).length,
+      topFeeling: top1(FEELINGS, ts.map(t => t.feelings)),
+      topNeed: top1(NEEDS, ts.map(t => t.needs)),
+    };
+  });
+}
+
+/** How many reflection questions each tag has in the copy (tests check the copy matches). */
+export const GROWTH_QUESTION_COUNTS = { words: 3, time: 3, gifts: 3, acts: 3, touch: 3, secure: 3, anxious: 3, avoidant: 3, fearful: 3, general: 6 } as const;
+
+/**
+ * This week's reflection question, from the member's own results: on even
+ * weeks about their strongest love language, on odd weeks about their
+ * attachment leaning, otherwise (or without results) a general one.
+ */
+export function weeklyQuestion(week: string, love: LoveLanguage | null, attachment: AttachmentPattern | null): GrowthQuestion {
+  const n = Number(week.slice(0, 4)) * 53 + Number(week.slice(6));
+  const tag = n % 2 === 0 ? (love ?? attachment ?? "general") : (attachment ?? love ?? "general");
+  const round = Math.floor(n / 2);
+  return { tag, index: round % GROWTH_QUESTION_COUNTS[tag] };
 }

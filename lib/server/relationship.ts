@@ -81,6 +81,7 @@ export const saveAttachment = (userId: string, input: { answers?: unknown }) => 
 export const reflectOnResult = (userId: string, id: unknown, locale: string) => core.reflect(deps, userId, id, loc(locale));
 export const analyzeTrigger = (userId: string, input: unknown, locale: string): Promise<RelationshipResult<TriggerRecordDTO>> => core.analyzeTrigger(deps, userId, input, loc(locale));
 export const translateSentence = (userId: string, input: { original?: unknown; who?: unknown }, locale: string): Promise<RelationshipResult<TranslationRecordDTO>> => core.translate(deps, userId, input, loc(locale));
+export const weeklySummary = (userId: string, locale: string) => core.summarize(deps, userId, loc(locale));
 export const deleteRelationshipRecord = (userId: string, id: unknown) => core.deleteRecord(deps, userId, id);
 export const deleteAllRelationship = (userId: string) => core.deleteAll(deps, userId);
 

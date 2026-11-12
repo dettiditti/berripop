@@ -8,12 +8,12 @@ import { relationshipReflectionAction } from "@/lib/server/actions";
 import { BerriStill } from "../berripop/BerriVideo";
 import { Bar, LockedPreview, PremiumBadge, QuotaNote, RelError, useRel, useRelCopy } from "./shared";
 
-const LANG_TONE: Record<LoveLanguage, string> = { words: "purple", time: "sky", gifts: "sun", acts: "mint", touch: "coral" };
+export const LANG_TONE: Record<LoveLanguage, string> = { words: "purple", time: "sky", gifts: "sun", acts: "mint", touch: "coral" };
 const PATTERN_TONE: Record<AttachmentPattern, string> = { secure: "mint", anxious: "coral", avoidant: "sky", fearful: "purple" };
 
 const sortedLangs = (s: LoveLanguageScores) => [...LOVE_LANGUAGES].sort((a, b) => s[b] - s[a]);
 
-function LangBars({ scores, label }: { scores: LoveLanguageScores; label: string }) {
+export function LangBars({ scores, label }: { scores: LoveLanguageScores; label: string }) {
   const c = useRelCopy();
   return (
     <div className="rel-bars">
@@ -100,7 +100,7 @@ function ReflectionList({ title, items }: { title: string; items: string[] }) {
   );
 }
 
-function ResultHead({ title, date, onBack, onRetake }: { title: string; date: string; onBack: () => void; onRetake: () => void }) {
+function ResultHead({ title, date, retestFrom, onBack, onRetake }: { title: string; date: string; retestFrom: string | null; onBack: () => void; onRetake: () => void }) {
   const c = useRelCopy();
   const { date: fmt } = useI18n();
   return (
@@ -112,7 +112,11 @@ function ResultHead({ title, date, onBack, onRetake }: { title: string; date: st
           <h1>{title}</h1>
           <p className="muted">{c.takenOn(fmt(date.slice(0, 10), "long"))}</p>
         </div>
-        <button type="button" className="btn btn--ghost btn--sm" onClick={onRetake}><RotateCcw size={15} /> {c.retake}</button>
+        {retestFrom ? (
+          <small className="muted rel-retest-note">{c.retakeFrom(fmt(retestFrom, "long"))}</small>
+        ) : (
+          <button type="button" className="btn btn--ghost btn--sm" onClick={onRetake}><RotateCcw size={15} /> {c.retake}</button>
+        )}
       </header>
     </>
   );
@@ -121,12 +125,13 @@ function ResultHead({ title, date, onBack, onRetake }: { title: string; date: st
 export function LoveLanguageResultView({ record, onBack, onRetake }: { record: LoveLanguageRecordDTO; onBack: () => void; onRetake: () => void }) {
   const c = useRelCopy();
   const l = c.love;
+  const { state } = useRel();
   const { result, detail } = record;
   const top = result.top.map(x => l.langs[x]);
   const first = result.top[0];
   return (
     <div className="stack rel-result">
-      <ResultHead title={l.resultTitle} date={record.createdAt} onBack={onBack} onRetake={onRetake} />
+      <ResultHead title={l.resultTitle} date={record.createdAt} retestFrom={state.retest.love} onBack={onBack} onRetake={onRetake} />
 
       <section className={`card rel-hero tone-${LANG_TONE[first]}`}>
         <BerriStill pose="joy" className="rel-hero-berri" />
@@ -216,13 +221,14 @@ function AttachmentMap({ anxiety, avoidance }: { anxiety: number; avoidance: num
 export function AttachmentResultView({ record, onBack, onRetake }: { record: AttachmentRecordDTO; onBack: () => void; onRetake: () => void }) {
   const c = useRelCopy();
   const a = c.attach;
+  const { state } = useRel();
   const { result, detail } = record;
   const order = [...ATTACHMENT_PATTERNS].sort((x, y) => result.leaning[y] - result.leaning[x]);
   const focus = result.main ?? order[0];
   const needs = result.main ? a.needs[result.main] : [...a.needs[order[0]].slice(0, 2), ...a.needs[order[1]].slice(0, 1)];
   return (
     <div className="stack rel-result">
-      <ResultHead title={a.resultTitle} date={record.createdAt} onBack={onBack} onRetake={onRetake} />
+      <ResultHead title={a.resultTitle} date={record.createdAt} retestFrom={state.retest.attachment} onBack={onBack} onRetake={onRetake} />
 
       <section className={`card rel-hero tone-${PATTERN_TONE[focus]}`}>
         <BerriStill pose={result.main === "secure" ? "calm" : "care"} className="rel-hero-berri" />

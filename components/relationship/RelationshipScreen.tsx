@@ -12,9 +12,10 @@ import { AttachmentQuiz, LoveLanguageQuiz } from "./Quizzes";
 import { AttachmentResultView, LoveLanguageResultView } from "./Results";
 import TriggerMap from "./TriggerMap";
 import Translator from "./Translator";
+import Growth from "./Growth";
 import { PremiumBadge, RelContext, RelationshipPaywall, trackOnce, useRel, useRelCopy, type RelCtx } from "./shared";
 
-type View = "home" | "love" | "loveQuiz" | "attach" | "attachQuiz" | "trigger" | "translator";
+type View = "home" | "love" | "loveQuiz" | "attach" | "attachQuiz" | "trigger" | "translator" | "growth";
 
 /**
  * Kapcsolati világ: two free self-discovery tests with result cards, a daily
@@ -65,6 +66,7 @@ export function RelationshipWorld({ initial, goToday, notify, writeInJournal, to
         {view === "attach" && (state.attachment ? <AttachmentResultView record={state.attachment} onBack={home} onRetake={() => show("attachQuiz")} /> : <AttachmentQuiz onBack={home} onDone={() => show("attach")} />)}
         {view === "trigger" && <TriggerMap onBack={home} />}
         {view === "translator" && <Translator onBack={home} />}
+        {view === "growth" && <Growth onBack={home} writeInJournal={writeInJournal} onTrigger={() => show("trigger")} />}
       </div>
       {paywall && !state.premium && <RelationshipPaywall feature={paywall} onClose={() => setPaywall(null)} />}
     </RelContext.Provider>
@@ -140,12 +142,13 @@ function PremiumSection({ onOpen }: { onOpen: (v: View) => void }) {
   const c = useRelCopy();
   const { state, paywall } = useRel();
   useEffect(() => { if (!state.premium) trackOnce("premium_feature_previewed", "relationship"); }, [state.premium]);
-  const tiles: { id: PremiumFeature; icon: ReactNode; name: string; short: string; view?: View; soon?: boolean }[] = [
+  const tiles: { id: PremiumFeature; icon: ReactNode; name: string; short: string; view?: View }[] = [
     { id: "trigger", icon: <Route size={20} />, name: c.trigger.name, short: c.trigger.lead, view: "trigger" },
     { id: "translator", icon: <Languages size={20} />, name: c.translator.name, short: c.translator.short, view: "translator" },
     { id: "reflection", icon: <Sparkles size={20} />, name: c.reflection.title, short: c.reflection.body, view: state.loveLanguage ? "love" : state.attachment ? "attach" : undefined },
-    { id: "growth", icon: <Crown size={20} />, name: c.growth.name, short: c.growth.lead, soon: true },
+    { id: "growth", icon: <Crown size={20} />, name: c.growth.name, short: c.growth.lead, view: "growth" },
   ];
+  const peekable = (v?: View) => v === "trigger" || v === "translator" || v === "growth";
   return (
     <section className="rel-tier rel-tier--premium" aria-labelledby="rel-premium-title">
       <div className="rel-premium-glow" aria-hidden />
@@ -156,19 +159,17 @@ function PremiumSection({ onOpen }: { onOpen: (v: View) => void }) {
       </div>
       <ul className="rel-premium-tiles">
         {tiles.map(t => (
-          <li key={t.id} className={`rel-premium-tile ${t.soon ? "is-soon" : ""}`}>
+          <li key={t.id} className="rel-premium-tile">
             <span className="rel-premium-tile-icon" aria-hidden>{t.icon}</span>
             <div>
               <h3>{t.name}</h3>
               <p>{t.short}</p>
-              {t.soon ? (
-                <small className="rel-soon">{state.premium ? c.growth.soonPremium : c.growth.soon}</small>
-              ) : state.premium || (t.id === "translator" && state.freeTranslationLeft) ? (
+              {state.premium || (t.id === "translator" && state.freeTranslationLeft) ? (
                 t.view ? <button type="button" className="btn btn--white btn--sm" onClick={() => onOpen(t.view!)}>{c.open} <ArrowRight size={15} /></button>
                   : <small className="rel-soon">{c.reflection.needTest}</small>
               ) : (
-                <button type="button" className="btn btn--white btn--sm" onClick={() => (t.view === "trigger" || t.view === "translator" ? onOpen(t.view) : paywall(t.id))}>
-                  <Lock size={14} aria-hidden /> {t.view === "trigger" || t.view === "translator" ? c.peek : c.unlock}
+                <button type="button" className="btn btn--white btn--sm" onClick={() => (peekable(t.view) ? onOpen(t.view!) : paywall(t.id))}>
+                  <Lock size={14} aria-hidden /> {peekable(t.view) ? c.peek : c.unlock}
                 </button>
               )}
               {!state.premium && t.id === "translator" && state.freeTranslationLeft && <small className="rel-soon">{c.translator.freeOnce}</small>}

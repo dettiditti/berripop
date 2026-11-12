@@ -1,4 +1,5 @@
-import { isNeed, type AttachmentDetail, type AttachmentResult, type LoveLanguageDetail, type LoveLanguageResult, type RelationshipReflection, type TranslateWho, type TranslationResult, type TriggerInput, type TriggerInsight } from "./types";
+import { isNeed, type AttachmentDetail, type AttachmentResult, type LoveLanguageDetail, type LoveLanguageResult, type RelationshipReflection, type TranslateWho, type TranslationResult, type TriggerInput, type TriggerInsight, type WeeklySummary } from "./types";
+import type { SummaryStats } from "./records";
 
 /*
  * Prompts and response parsing for the Kapcsolati világ AI features. Pure:
@@ -148,5 +149,38 @@ export function parseTranslation(text: string): Safety<TranslationResult> | null
   return { value: { v: 1, feeling, need, calm, direct, why }, safety: o.safety === true };
 }
 
+/* ---------- Weekly growth summary ---------- */
+
+export function summaryInstructions(locale: string) {
+  return `${RULES}
+${lang(locale)}
+You get counts and labels from one person's relationship self-reflection over the last seven days: which feelings, reactions and needs came up in their trigger-map entries, how many entries and translations they made, the week before for comparison, and their test leanings. You never see what they wrote.
+Write a short weekly summary addressed to the person ("you"). Notice patterns gently, name growth or effort you can see in the numbers, and suggest one small, concrete step for next week.
+Do not invent events, people or details that are not in the data. If there is little data, keep it short and encouraging.
+"summary": 2–3 sentences. "noticed": 1–3 short observations. "progress": one sentence on change or effort (compared with the week before or with earlier results). "nextStep": one concrete, small step for next week.
+Each field at most 300 characters. Return: {"summary": "...", "noticed": [], "progress": "...", "nextStep": "...", "safety": false}`;
+}
+
+export function summaryPrompt(stats: SummaryStats, tests: { love: string | null; attachment: string | null }) {
+  return [
+    `Trigger-map entries this week: ${stats.entries} (the week before: ${stats.previousEntries}). Translations this week: ${stats.translations}.`,
+    `Feelings that came up (with counts): ${stats.feelings.join(", ") || "none"}`,
+    `Reactions: ${stats.reactions.join(", ") || "none"}`,
+    `Needs behind them: ${stats.needs.join(", ") || "none"}`,
+    `Strongest love language (receiving): ${tests.love ?? "test not taken"}. Attachment leaning: ${tests.attachment ?? "test not taken or mixed"}.`,
+  ].join("\n");
+}
+
+export function parseSummary(text: string): Safety<WeeklySummary> | null {
+  const o = json(text);
+  if (!o) return null;
+  const summary = str(o.summary, MAX_TEXT);
+  const noticed = list(o.noticed, 320, 3);
+  const progress = str(o.progress, 360);
+  const nextStep = str(o.nextStep, 360);
+  if (!summary || !noticed || !progress || !nextStep) return null;
+  return { value: { v: 1, summary, noticed, progress, nextStep }, safety: o.safety === true };
+}
+
 /** Output caps (tokens) per feature: enough for the JSON, small enough to keep each call cheap. */
-export const MAX_OUTPUT = { reflection: 700, trigger: 500, translate: 500 } as const;
+export const MAX_OUTPUT = { reflection: 700, trigger: 500, translate: 500, summary: 600 } as const;

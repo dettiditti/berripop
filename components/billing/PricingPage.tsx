@@ -35,7 +35,7 @@ function PlanRows({ rows, highlight = false }: { rows: Row[]; highlight?: boolea
 }
 
 /**
- * The one-time 7-day trial on the Free card: what it gives (with its limits),
+ * The one-time 4-day trial on the Free card: what it gives (with its limits),
  * that no card is needed and nothing renews, and its state once started.
  */
 function TrialBox({ account, signedIn, busy, note, onStart, thoughtEnabled }: {

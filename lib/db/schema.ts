@@ -268,7 +268,7 @@ export const quotaUses = pgTable("quota_uses", {
 ]);
 
 /**
- * One-time grants per account, e.g. the 7-day Premium trial ("premium_trial").
+ * One-time grants per account, e.g. the 4-day Premium trial ("premium_trial").
  * The primary key makes each grant startable once per account; it does not
  * come back after signing out or reinstalling. No card, no renewal: when
  * `ends_at` passes the member is simply on Free again. `completed_at` marks
@@ -436,14 +436,14 @@ export const thoughtSessions = pgTable("thought_sessions", {
 
 /**
  * The member's relationship test results, trigger-map entries and
- * translations. Kept apart from the journal and encrypted at rest: answers
+ * translations and weekly growth summaries. Kept apart from the journal and encrypted at rest: answers
  * and AI text are sensitive. Never analysed automatically, never used for
  * marketing; exported with the account and deleted with it (cascade).
  */
 export const relationshipRecords = pgTable("relationship_records", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  kind: text("kind", { enum: ["love_language", "attachment", "trigger", "translation"] }).notNull(),
+  kind: text("kind", { enum: ["love_language", "attachment", "trigger", "translation", "summary"] }).notNull(),
   /** The member's own input (test answers, a trigger entry, a sentence) and the computed result. */
   data: encryptedJson<RelationshipRecordData>()("data").notNull(),
   /** AI text for this record (a reflection, a trigger insight), when the member asked for one. */

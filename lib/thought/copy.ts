@@ -11,7 +11,7 @@ type Copy = {
   cta: string;
   quota: (n: number) => string;
   quotaEmpty: string;
-  /** One-time allowance (Free, trial week): no monthly reset. */
+  /** One-time allowance (Free, trial): no monthly reset. */
   quotaOnce: (n: number) => string;
   quotaOnceEmpty: string;
   premiumBadge: string;

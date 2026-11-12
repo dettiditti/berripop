@@ -8,7 +8,7 @@ import { track } from "./analytics";
 import { getUserEntitlements } from "./entitlements";
 
 /*
- * The one-time 7-day Premium trial. No card and no subscription: the server
+ * The one-time 4-day Premium trial. No card and no subscription: the server
  * stores a grant (entitlement_grants) and, while it runs, a Free member gets
  * the trial limits (PLAN_QUOTAS.trial). It can be started once per account,
  * by the member, and never restarts (signing out or reinstalling changes

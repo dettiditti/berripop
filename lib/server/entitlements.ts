@@ -27,7 +27,7 @@ const missingTable = (err: unknown) => {
   return e?.code === "42P01" || e?.cause?.code === "42P01";
 };
 
-/** The member's 7-day trial, if it was ever started; none before the entitlement_grants migration has run. */
+/** The member's 4-day trial, if it was ever started; none before the entitlement_grants migration has run. */
 async function trialGrant(userId: string): Promise<TrialGrant | null> {
   try {
     const [g] = await getDb().select({ startedAt: entitlementGrants.startedAt, endsAt: entitlementGrants.endsAt }).from(entitlementGrants)
