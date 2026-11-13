@@ -19,7 +19,8 @@ import { REACTIONS, type ActionResult, type AnswerContext, type QuestionRef, typ
 import type { CategoryId, QuestTheme } from "../types";
 import { loadSnapshot } from "./snapshot";
 import { loadWardrobe } from "./wardrobe";
-import { canBuy, HEAD_ITEMS, isHeadItem, isItem, type ItemId } from "../wardrobe";
+import { todayKey } from "../dates";
+import { canBuy, HEAD_ITEMS, inSeason, isHeadItem, isItem, type ItemId } from "../wardrobe";
 import { roleIn } from "./membership";
 import { canOwnAnotherCircle } from "./entitlements";
 import { track } from "./analytics";
@@ -129,7 +130,7 @@ export async function setScene(userId: string, scene: string): Promise<ActionRes
  * A head item is put on straight away (and any other taken off).
  */
 export async function buyItem(userId: string, itemId: string): Promise<ActionResult> {
-  const check = canBuy(await loadWardrobe(userId), itemId);
+  const check = canBuy(await loadWardrobe(userId), itemId, todayKey());
   if (!check.ok) return fail(check.reason === "stars" ? "not_enough_stars" : "invalid");
   const id = itemId as ItemId;
   const db = getDb();
@@ -147,6 +148,8 @@ export async function buyItem(userId: string, itemId: string): Promise<ActionRes
 /** Puts an owned item on (or out in the world) or takes it off. Berri wears one head item at a time. */
 export async function equipItem(userId: string, itemId: string, on: boolean): Promise<ActionResult> {
   if (!isItem(itemId)) return fail("invalid");
+  // A seasonal thing waits in the chest until its season comes back.
+  if (on && !inSeason(itemId, todayKey())) return fail("invalid");
   const db = getDb();
   if (on && isHeadItem(itemId)) await db.update(berriItems).set({ equipped: false }).where(and(eq(berriItems.userId, userId), inArray(berriItems.itemId, HEAD_ITEMS.filter(h => h !== itemId))));
   const changed = await db.update(berriItems).set({ equipped: on }).where(and(eq(berriItems.userId, userId), eq(berriItems.itemId, itemId))).returning({ itemId: berriItems.itemId });

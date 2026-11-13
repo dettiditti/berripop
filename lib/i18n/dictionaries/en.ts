@@ -881,7 +881,10 @@ export const en = {
     items: {
       capblue: "Blue cap", cappink: "Pink cap", beanie: "Knitted beanie", cowboy: "Cowboy hat", aviator: "Aviator cap",
       bench: "Bench", sunflowers: "Sunflowers", birdhouse: "Birdhouse", swing: "Swing", lights: "String lights", mushroom: "Mushroom house", rainbow: "Rainbow",
+      snowfall: "Snowfall", sled: "Sled", snowman: "Snowman", firtree: "Decorated fir tree",
     },
+    season: { winter: "Winter", spring: "Spring", summer: "Summer", autumn: "Autumn" },
+    comesBack: { winter: "Comes back in winter", spring: "Comes back in spring", summer: "Comes back in summer", autumn: "Comes back in autumn" },
   },
   berriHome: {
     eyebrow: "Berri and your world",

@@ -1,5 +1,5 @@
 import type { CompanionId } from "./content";
-import { isWorldItem, type WorldItemId } from "./wardrobe";
+import { inSeason, isWorldItem, type WorldItemId } from "./wardrobe";
 import type { View } from "./domain/view";
 import type { BadgeId } from "./progress";
 
@@ -71,6 +71,7 @@ export function deriveWorld(view: View, moments: { date: string }[]): World {
     grewToday: view.myAnswers.some(a => a.date === today) || Object.values(view.myJourney).includes(today) || moments.some(m => m.date === today),
     themesExplored,
     scene: isScene(view.snapshot.me.scene) ? view.snapshot.me.scene : "meadow",
-    items: Object.fromEntries((view.snapshot.wardrobe?.equipped ?? []).filter(isWorldItem).map(id => [id, true])),
+    // Seasonal things are out only in their season.
+    items: Object.fromEntries((view.snapshot.wardrobe?.equipped ?? []).filter(isWorldItem).filter(id => inSeason(id, today)).map(id => [id, true])),
   };
 }

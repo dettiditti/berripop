@@ -10,7 +10,7 @@
 export type ItemKind = "head" | "world";
 
 export const HEAD_ITEMS = ["capblue", "cappink", "beanie", "cowboy", "aviator"] as const;
-export const WORLD_ITEMS = ["bench", "sunflowers", "birdhouse", "swing", "lights", "mushroom", "rainbow"] as const;
+export const WORLD_ITEMS = ["bench", "sunflowers", "birdhouse", "swing", "lights", "mushroom", "rainbow", "snowfall", "sled", "snowman", "firtree"] as const;
 export type HeadItemId = (typeof HEAD_ITEMS)[number];
 export type WorldItemId = (typeof WORLD_ITEMS)[number];
 export type ItemId = HeadItemId | WorldItemId;
@@ -19,7 +19,29 @@ export type ItemId = HeadItemId | WorldItemId;
 export const PRICES: Record<ItemId, number> = {
   capblue: 10, cappink: 10, beanie: 15, cowboy: 22, aviator: 30,
   bench: 6, sunflowers: 10, birdhouse: 12, swing: 15, lights: 18, mushroom: 22, rainbow: 30,
+  snowfall: 10, sled: 12, snowman: 15, firtree: 20,
 };
+
+/*
+ * Seasonal things: they can be picked only in their season, and they are out
+ * in Berri's world only then. A member keeps what they picked; it comes back
+ * with its season (a snowman in July would look lost).
+ */
+export type Season = "winter" | "spring" | "summer" | "autumn";
+
+/** Winter is November to February, so the winter things arrive with the first cold weeks. */
+export function seasonOf(date: string): Season {
+  const month = Number(date.slice(5, 7));
+  if (month >= 11 || month <= 2) return "winter";
+  if (month <= 5) return "spring";
+  if (month <= 8) return "summer";
+  return "autumn";
+}
+
+export const ITEM_SEASON: Partial<Record<ItemId, Season>> = { snowfall: "winter", sled: "winter", snowman: "winter", firtree: "winter" };
+
+/** True for everyday things, and for seasonal ones in their season. `date` is "YYYY-MM-DD". */
+export const inSeason = (id: ItemId, date: string) => !ITEM_SEASON[id] || ITEM_SEASON[id] === seasonOf(date);
 
 /**
  * Dressing Berri is switched off for now: the hats are not offered, and Berri
@@ -35,8 +57,8 @@ export const isHeadItem = (id: string): id is HeadItemId => (HEAD_ITEMS as reado
 export const isWorldItem = (id: string): id is WorldItemId => (WORLD_ITEMS as readonly string[]).includes(id);
 export const isItem = (id: string): id is ItemId => isHeadItem(id) || isWorldItem(id);
 export const kindOf = (id: ItemId): ItemKind => (isHeadItem(id) ? "head" : "world");
-/** Offered in the chest right now. */
-export const isOffered = (id: ItemId) => !isHeadItem(id) || (DRESSING_ENABLED && WEAR_READY[id]);
+/** Offered in the chest on `date` ("YYYY-MM-DD"). */
+export const isOffered = (id: ItemId, date: string) => inSeason(id, date) && (!isHeadItem(id) || (DRESSING_ENABLED && WEAR_READY[id]));
 
 /** Stars earned: one for each day with each kind of food (question, check-in, moment). */
 export function starsEarned(input: { questionDates: Iterable<string>; checkinDates: Iterable<string>; momentDates: Iterable<string> }): number {
@@ -67,8 +89,8 @@ export function wardrobeOf(earned: number, rows: { itemId: string; equipped: boo
 
 export type BuyCheck = { ok: true } | { ok: false; reason: "unknown" | "owned" | "stars" };
 
-export function canBuy(w: WardrobeDTO, id: string): BuyCheck {
-  if (!isItem(id) || !isOffered(id)) return { ok: false, reason: "unknown" };
+export function canBuy(w: WardrobeDTO, id: string, date: string): BuyCheck {
+  if (!isItem(id) || !isOffered(id, date)) return { ok: false, reason: "unknown" };
   if (w.owned.includes(id)) return { ok: false, reason: "owned" };
   if (w.earned - w.spent < PRICES[id]) return { ok: false, reason: "stars" };
   return { ok: true };

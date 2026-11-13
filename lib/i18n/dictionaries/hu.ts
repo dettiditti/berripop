@@ -875,7 +875,10 @@ export const hu: Dictionary = {
     items: {
       capblue: "Kék baseballsapka", cappink: "Rózsaszín baseballsapka", beanie: "Kötött sapka", cowboy: "Cowboykalap", aviator: "Pilótasapka",
       bench: "Pad", sunflowers: "Napraforgók", birdhouse: "Madárodú", swing: "Hinta", lights: "Lampionfüzér", mushroom: "Gombaház", rainbow: "Szivárvány",
+      snowfall: "Hóesés", sled: "Szánkó", snowman: "Hóember", firtree: "Feldíszített fenyő",
     },
+    season: { winter: "Téli", spring: "Tavaszi", summer: "Nyári", autumn: "Őszi" },
+    comesBack: { winter: "Télen újra előkerül", spring: "Tavasszal újra előkerül", summer: "Nyáron újra előkerül", autumn: "Ősszel újra előkerül" },
   },
   berriHome: {
     eyebrow: "Berri és a világod",
