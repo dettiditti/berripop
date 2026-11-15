@@ -336,6 +336,13 @@ export async function buildGoalJourneyAction(): Promise<ActionResult> {
   return goalJourney.buildGoalJourney(userId, await locale());
 }
 
+/** After a language switch: the member's own journey follows the new language. One AI call, not counted in the allowance. */
+export async function translateGoalJourneyAction(): Promise<ActionResult> {
+  const userId = await requireUserId();
+  if (!userId) return { ok: false, error: "unauthorized" } as const;
+  return goalJourney.translateGoalJourney(userId, await locale());
+}
+
 export async function deletePersonalAnswerAction(answerId: string): Promise<ActionResult> {
   const userId = await requireUserId();
   if (!userId) return { ok: false, error: "unauthorized" } as const;

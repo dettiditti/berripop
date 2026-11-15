@@ -587,6 +587,7 @@ export const hu: Dictionary = {
     outdatedBody: "Állítsd össze újra az utazást a mostani céljaidhoz. Az XP-d és a jelvényeid megmaradnak; az új utazás az 1. naptól indul.",
     outdatedCta: "Utazás újraépítése",
     building: "Berripop összeállítja az utazásodat… ez legfeljebb egy percig tart.",
+    translating: "Berri lefordítja az utazásodat az új nyelvre… ez legfeljebb egy percig tart.",
     built: "Kész az utazásod!",
     buildFailed: "Most nem sikerült összeállítani a saját utazásodat. Az Utazás fülön bármikor újrapróbálhatod, addig a beépített utazással folytathatod.",
     sharedLink: "Közös út megnyitása",

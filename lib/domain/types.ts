@@ -169,6 +169,8 @@ export type GoalJourneyDTO = {
   done: Record<number, string>;
   /** The member's goals changed since it was built: a rebuild is offered. */
   outdated: boolean;
+  /** The language it is written in; after a language switch it is translated (lib/server/goalJourney). */
+  locale: string;
 };
 
 /** A private "My Inner World" moment. Only its owner ever receives it. */

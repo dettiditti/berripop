@@ -151,6 +151,7 @@ export async function loadProgress(userId: string, inCircle: boolean, today = ci
     days: goalRow.days as GoalJourneyDay[],
     done: goalDone(goalRow.id, activityRows),
     outdated: goals.length > 0 && goalsKey(goals.map(g => g.title)) !== goalsKey(goalRow.goals),
+    locale: goalRow.locale,
   } : null;
   return {
     today,

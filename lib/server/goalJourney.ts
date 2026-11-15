@@ -5,8 +5,8 @@ import { goalJourneys, pathAssessments, userActivity } from "../db/schema";
 import { AREA_EN, areasOf, sanitizeAnswers, TIME_EN } from "../assessment/model";
 import type { ActionResult } from "../domain/types";
 import { isLocale } from "../i18n/config";
-import { describeGoals, GOAL_JOURNEY_DAYS, goalJourneyInstructions, goalsKey, parseGoalJourney, type GoalJourneyWeek } from "../journey/goal";
-import { runMeteredAi } from "./ai";
+import { describeGoals, GOAL_JOURNEY_DAYS, goalJourneyForTranslation, goalJourneyInstructions, goalJourneyTranslationInstructions, goalsKey, parseGoalJourney, type GoalJourneyDay, type GoalJourneyWeek } from "../journey/goal";
+import { runMeteredAi, runSlottedAi } from "./ai";
 import { track } from "./analytics";
 import { activeGoalJourney, activeGoalTitles, goalDone } from "./progress";
 import { loadSnapshot } from "./snapshot";
@@ -60,5 +60,33 @@ export async function buildGoalJourney(userId: string, localeInput: string): Pro
   // A parallel build may have just inserted one: the active-journey index keeps exactly one.
   await db.insert(goalJourneys).values({ userId, goals: goals.map(g => g.title), weeks: out.value.weeks, days: out.value.days, locale }).onConflictDoNothing();
   await track(userId, current ? "goal_journey_rebuilt" : "goal_journey_built", { context: finished ? "journey" : undefined });
+  return { ok: true, snapshot: await loadSnapshot(userId) };
+}
+
+/**
+ * After a language switch, translates the member's journey (written once, in
+ * the language of the day it was built) into the new language. It keeps the
+ * same days and progress, and takes nothing from the member's AI allowance:
+ * the language switch is ours to follow (the monthly cost cap still applies).
+ */
+export async function translateGoalJourney(userId: string, localeInput: string): Promise<ActionResult> {
+  if (!isLocale(localeInput)) return fail("invalid");
+  const locale = localeInput;
+  const current = await activeGoalJourney(userId);
+  if (!current) return fail("invalid");
+  if (current.locale !== locale) {
+    const out = await runSlottedAi(userId, {
+      feature: "goal_journey_translate",
+      instructions: goalJourneyTranslationInstructions(locale),
+      prompt: goalJourneyForTranslation({ weeks: current.weeks as GoalJourneyWeek[], days: current.days as GoalJourneyDay[] }),
+      maxOutputTokens: 6000,
+      timeoutMs: 90_000,
+      parse: parseGoalJourney,
+    }, { reserve: async () => true, release: async () => {} });
+    if (!out.ok) return fail(out.error);
+    // Only if nothing changed meanwhile (a rebuild, or a translation from another tab).
+    await getDb().update(goalJourneys).set({ weeks: out.value.weeks, days: out.value.days, locale })
+      .where(and(eq(goalJourneys.id, current.id), isNull(goalJourneys.archivedAt), eq(goalJourneys.locale, current.locale)));
+  }
   return { ok: true, snapshot: await loadSnapshot(userId) };
 }

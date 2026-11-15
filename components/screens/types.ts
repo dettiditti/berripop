@@ -23,6 +23,8 @@ export type ScreenProps = {
   /** Builds (or rebuilds, after goals changed) the journey from the member's goals. */
   buildJourney: () => void;
   journeyBuilding: boolean;
+  /** The member's own journey is being translated after a language switch. */
+  journeyTranslating: boolean;
   /** The member's assessment status (null: not started), and opening it. */
   assessmentStatus: AssessmentStatus | null;
   openAssessment: () => void;

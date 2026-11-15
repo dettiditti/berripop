@@ -65,6 +65,25 @@ export function goalJourneyInstructions(locale: string): string {
   ].join(" ");
 }
 
+/** Translating a finished journey into the member's new language, keeping its shape. */
+export function goalJourneyTranslationInstructions(locale: string): string {
+  return [
+    `You translate a personal growth journey into ${language(locale)}. Keep the warm, informal tone and address the person informally.`,
+    "Translate every week theme, tagline, day title, prompt and followup naturally, not word for word. Do not add, drop, merge or reorder anything; keep every day number and every theme value exactly as given.",
+    `Respond ONLY with JSON in exactly the same shape: {"weeks": [{"theme": string, "tagline": string, "days": [{"day": number, "title": string, "prompt": string, "theme": string, "followups": [string]}]}]}.`,
+  ].join(" ");
+}
+
+/** The journey as the AI gets it for translation: the same nested shape parseGoalJourney reads. */
+export function goalJourneyForTranslation(content: GoalJourneyContent): string {
+  return JSON.stringify({
+    weeks: content.weeks.map(w => ({
+      theme: w.theme, tagline: w.tagline,
+      days: content.days.filter(d => d.week === w.week).map(d => ({ day: d.day - (w.week - 1) * 7, title: d.title, prompt: d.prompt, theme: d.theme, followups: d.followups })),
+    })),
+  });
+}
+
 /**
  * What the AI gets: goal titles and reasons, plus the area and time they chose.
  * For a next chapter, also the week themes of the chapter they just finished

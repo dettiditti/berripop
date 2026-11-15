@@ -16,7 +16,7 @@ import type { ScreenProps } from "./types";
  * one, otherwise the built-in journey. In a circle, "shared" mode shows the
  * built-in journey the circle walks together.
  */
-export default function JourneyScreen({ view, notify, go, startQuest, openQuestion, journeyMode, openJourney, buildJourney, journeyBuilding }: ScreenProps) {
+export default function JourneyScreen({ view, notify, go, startQuest, openQuestion, journeyMode, openJourney, buildJourney, journeyBuilding, journeyTranslating }: ScreenProps) {
   const { d, t, num } = useI18n();
   const j = d.journey;
   const { circle, goalJourney, goalState } = view;
@@ -86,10 +86,10 @@ export default function JourneyScreen({ view, notify, go, startQuest, openQuesti
         </div>
       )}
 
-      {journeyBuilding ? (
+      {journeyBuilding || (goalMode && journeyTranslating) ? (
         <section className="card journey-nudge stack-sm" aria-live="polite">
           <span className="eyebrow"><Sparkles size={13} /> {j.eyebrowGoals}</span>
-          <p>{j.building}</p>
+          <p>{journeyBuilding ? j.building : j.translating}</p>
         </section>
       ) : goalDone ? (
         <section className="card journey-nudge stack-sm">

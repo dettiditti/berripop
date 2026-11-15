@@ -15,7 +15,7 @@ import { termsPrompt, type LegalStatus } from "@/lib/legal/records";
 import type { AssessmentState } from "@/lib/assessment/types";
 import type { JournalState } from "@/lib/journal/types";
 import {
-  aiFollowUpAction, appOpenedAction, buildGoalJourneyAction, getAssessmentAction, getJournalAction, getLegalStatusAction, getMilestonesAction, getSnapshotAction, importMomentsAction, saveAnswerAction,
+  aiFollowUpAction, appOpenedAction, buildGoalJourneyAction, translateGoalJourneyAction, getAssessmentAction, getJournalAction, getLegalStatusAction, getMilestonesAction, getSnapshotAction, importMomentsAction, saveAnswerAction,
   savePersonalAnswerAction, shareAnswerAction,
 } from "@/lib/server/actions";
 import { clearDeviceMoments, readDeviceMoments } from "@/lib/store";
@@ -152,7 +152,7 @@ type ActiveQuest = { ref: QuestionRef; context: AnswerContext };
  * ("Közös út") is the shared layer on top.
  */
 function AppShell({ snapshot, setSnapshot, relationshipEnabled }: { snapshot: Snapshot; setSnapshot: (s: Snapshot) => void; relationshipEnabled: boolean }) {
-  const { d } = useI18n();
+  const { d, locale } = useI18n();
   // `?tab=profile` (e.g. returning from the billing portal) opens that tab.
   const [tab, setTab] = useState<Tab>(() => {
     const wanted = new URLSearchParams(window.location.search).get("tab");
@@ -173,6 +173,7 @@ function AppShell({ snapshot, setSnapshot, relationshipEnabled }: { snapshot: Sn
   const [assessing, setAssessing] = useState(false);
   const [journeyMode, setJourneyMode] = useState<JourneyMode>("own");
   const [journeyBuilding, setJourneyBuilding] = useState(false);
+  const [journeyTranslating, setJourneyTranslating] = useState(false);
   const [askReminder, setAskReminder] = useState(false);
 
   const view = useMemo(() => buildView(snapshot, d.common.you), [snapshot, d.common.you]);
@@ -320,6 +321,24 @@ function AppShell({ snapshot, setSnapshot, relationshipEnabled }: { snapshot: Sn
     refresh();
   }, [refresh]);
 
+  // The member's own journey is written once, in the language of the day it was built:
+  // after a language switch Berri translates it (once per journey and language on this device visit).
+  const goalJourneyId = snapshot.progress.goalJourney?.id;
+  const goalJourneyLocale = snapshot.progress.goalJourney?.locale;
+  const translateTried = useRef(new Set<string>());
+  useEffect(() => {
+    if (!goalJourneyId || !goalJourneyLocale || goalJourneyLocale === locale) return;
+    const key = `${goalJourneyId}:${locale}`;
+    if (translateTried.current.has(key)) return;
+    translateTried.current.add(key);
+    // Not tied to this effect run: a re-render meanwhile must not leave the notice on or drop the result.
+    setJourneyTranslating(true);
+    translateGoalJourneyAction()
+      .then(r => { if (r.ok) setSnapshot(r.snapshot); })
+      .catch(() => {})
+      .finally(() => setJourneyTranslating(false));
+  }, [goalJourneyId, goalJourneyLocale, locale, setSnapshot]);
+
   const openJourney = useCallback((mode: JourneyMode) => {
     setJourneyMode(mode);
     go("journey");
@@ -415,7 +434,7 @@ function AppShell({ snapshot, setSnapshot, relationshipEnabled }: { snapshot: Sn
   const askFeedback = (entryId: string) => { setReflectRequest({ entryId, id: Date.now() }); setTab("journal"); };
   const screenProps = {
     view, run, notify, go, startQuest, openQuestion: setDetail, onInvite: () => setInviteOpen(true),
-    journeyMode, openJourney, buildJourney: () => buildJourney(), journeyBuilding,
+    journeyMode, openJourney, buildJourney: () => buildJourney(), journeyBuilding, journeyTranslating,
     assessmentStatus: assessment?.assessment?.status ?? null, openAssessment: () => setAssessing(true),
     writeInJournal, milestoneCounts, relationshipEnabled,
     covered: !!quest || !!reward || !!detail || !!streakWelcome || widgetTip,

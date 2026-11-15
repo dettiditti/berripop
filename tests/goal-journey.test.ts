@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { journeyNodes } from "../lib/content";
 import { personalFacts } from "../lib/domain/personal";
-import { describeGoals, goalJourneyInstructions, goalNodes, goalQuestion, goalRef, goalsKey, isGoalRef, parseGoalJourney, parseGoalRef } from "../lib/journey/goal";
+import { describeGoals, goalJourneyForTranslation, goalJourneyInstructions, goalJourneyTranslationInstructions, goalNodes, goalQuestion, goalRef, goalsKey, isGoalRef, parseGoalJourney, parseGoalRef } from "../lib/journey/goal";
 
 const ID = "0f8fad5b-d9cb-469f-a165-70867728950e";
 const raw = (days = 21) => JSON.stringify({
@@ -20,6 +20,15 @@ describe("goal journey content", () => {
     expect(j.days[0].theme).toBe("grow"); // unknown theme falls back
     expect(j.days[1].theme).toBe("feel");
     expect(j.days[0].followups).toEqual(["Mélyebben?", "Még?"]);
+  });
+  it("sends a journey for translation in the shape it is read back from, unchanged", () => {
+    const j = parseGoalJourney(raw())!;
+    const sent = goalJourneyForTranslation(j);
+    expect(parseGoalJourney(sent)).toEqual(j);
+    // Days are numbered 1-7 within each week, as the build prompt asks.
+    expect(JSON.parse(sent).weeks[1].days.map((d: { day: number }) => d.day)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(goalJourneyTranslationInstructions("en")).toContain("English");
+    expect(goalJourneyTranslationInstructions("hu")).toContain("Hungarian");
   });
   it("rejects incomplete or malformed output", () => {
     expect(parseGoalJourney(raw(20))).toBeNull();
