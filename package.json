@@ -22,6 +22,7 @@
     "verify:goal-journey": "dotenv -e .env.local -- tsx --conditions=react-server scripts/verify-goal-journey.ts",
     "invoices": "dotenv -e .env.local -- tsx --conditions=react-server scripts/invoices.ts",
     "funnel": "dotenv -e .env.local -- tsx scripts/funnel-report.ts",
+    "activity": "dotenv -e .env.local -- tsx scripts/activity-report.ts",
     "pricing-report": "dotenv -e .env.local -- tsx scripts/pricing-report.ts",
     "encrypt:content": "dotenv -e .env.local -- tsx --conditions=react-server scripts/encrypt-content.ts"
   },
