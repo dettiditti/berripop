@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assessmentOpen, recommendNext } from "../lib/domain/next";
+import { assessmentOpen, pathStartsToday, recommendNext } from "../lib/domain/next";
 import { journeyStateFor } from "../lib/domain/rules";
 import { goalNodes } from "../lib/journey/goal";
 import type { View } from "../lib/domain/view";
@@ -8,12 +8,17 @@ const TODAY = "2026-10-26";
 const YESTERDAY = "2026-10-25";
 const done = (n: number, date = YESTERDAY) => Object.fromEntries(Array.from({ length: n }, (_, i) => [i + 1, date]));
 
-type Args = { daily?: boolean; dailyDone?: boolean; circle?: boolean; journey?: Record<number, string>; goal?: Record<number, string> | null };
-const view = ({ daily = true, dailyDone = false, circle = false, journey = {}, goal = null }: Args = {}) => ({
+// A goal journey built at local noon on the given day (local time, like the app).
+const builtOn = (day: string) => new Date(`${day}T12:00:00`).toISOString();
+
+type Args = { daily?: boolean; dailyDone?: boolean; circle?: boolean; journey?: Record<number, string>; goal?: Record<number, string> | null; answered?: number; builtOnDay?: string };
+const view = ({ daily = true, dailyDone = false, circle = false, journey = {}, goal = null, answered = 3, builtOnDay = YESTERDAY }: Args = {}) => ({
+  today: TODAY,
+  facts: { answered },
   circle: circle ? ({ id: "c" } as unknown as View["circle"]) : null,
   dailyRef: daily ? "q:1" : null,
   dailyDoneByMe: dailyDone,
-  goalJourney: goal ? ({ id: "g", done: goal } as unknown as View["goalJourney"]) : null,
+  goalJourney: goal ? ({ id: "g", done: goal, createdAt: builtOn(builtOnDay) } as unknown as View["goalJourney"]) : null,
   goalState: goal ? journeyStateFor(goal, TODAY, goalNodes) : null,
   journey: journeyStateFor(journey, TODAY),
 });
@@ -30,7 +35,7 @@ describe("assessmentOpen", () => {
 });
 
 describe("recommendNext", () => {
-  it("puts the short daily question first, even before the assessment", () => {
+  it("puts the short daily question first for a member who has been here before, even before the assessment", () => {
     expect(recommendNext(view(), null, false)).toEqual({ kind: "daily" });
   });
 
@@ -70,6 +75,46 @@ describe("recommendNext", () => {
   });
 
   it("skips the daily step when there is no daily question", () => {
+    expect(recommendNext(view({ daily: false, circle: true }), null, false)).toEqual({ kind: "journey", day: 1 });
+  });
+});
+
+describe("the day the member's own path begins: one thing to do, not two", () => {
+  const fresh = (args: Args = {}) => view({ answered: 0, ...args });
+
+  it("sends a new member straight to the assessment, not the daily question", () => {
+    expect(recommendNext(fresh(), null, false)).toEqual({ kind: "assessment", resume: false });
+    expect(recommendNext(fresh(), "in_progress", false)).toEqual({ kind: "assessment", resume: true });
+  });
+
+  it("then shows the journey being built, then its first day", () => {
+    expect(recommendNext(fresh(), "accepted", true)).toEqual({ kind: "building" });
+    expect(recommendNext(fresh({ goal: {}, builtOnDay: TODAY }), "accepted", false)).toEqual({ kind: "goal", day: 1 });
+  });
+
+  it("rests once the first day is done, instead of asking the daily question too", () => {
+    expect(recommendNext(view({ goal: { 1: TODAY }, builtOnDay: TODAY }), "accepted", false)).toEqual({ kind: "rest" });
+  });
+
+  it("asks the daily question again from the next day", () => {
+    expect(recommendNext(view({ goal: { 1: YESTERDAY }, builtOnDay: YESTERDAY }), "accepted", false)).toEqual({ kind: "daily" });
+  });
+
+  it("keeps the daily question first for a new member who skipped the assessment or is in a circle", () => {
+    expect(recommendNext(fresh(), "skipped", false)).toEqual({ kind: "daily" });
+    expect(recommendNext(fresh({ circle: true }), null, false)).toEqual({ kind: "daily" });
+  });
+
+  it("knows when the path begins", () => {
+    expect(pathStartsToday(fresh(), null)).toBe(true);
+    expect(pathStartsToday(view(), null)).toBe(false);
+    expect(pathStartsToday(view({ goal: {}, builtOnDay: TODAY }), "accepted")).toBe(true);
+    expect(pathStartsToday(view({ goal: {}, builtOnDay: YESTERDAY }), "accepted")).toBe(false);
+  });
+});
+
+describe("recommendNext without a daily question", () => {
+  it("goes on to the journey", () => {
     expect(recommendNext(view({ daily: false, circle: true }), null, false)).toEqual({ kind: "journey", day: 1 });
   });
 });

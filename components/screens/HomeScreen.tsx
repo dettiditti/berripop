@@ -1,9 +1,9 @@
 "use client";
 
-import { ArrowRight, Check, Clock, Compass, Lock, NotebookPen, Sparkles, Sprout, UserPlus, Users } from "lucide-react";
+import { ArrowRight, CalendarHeart, Check, Clock, Compass, HeartHandshake, Lock, NotebookPen, Sparkles, Sprout, UserPlus, Users } from "lucide-react";
 import { chapterNodes, chapterOf, journeyNodes } from "@/lib/content";
 import { berripopSays, type MessageKey } from "@/lib/berripop-messages";
-import { recommendNext } from "@/lib/domain/next";
+import { pathStartsToday, recommendNext } from "@/lib/domain/next";
 import type { View } from "@/lib/domain/view";
 import { useI18n } from "@/lib/i18n/client";
 import { questionText } from "@/lib/i18n/content";
@@ -59,6 +59,8 @@ export default function HomeScreen({ view, run, notify, go, startQuest, openQues
   const together = members.length > 1;
   const memberTone = (id: string) => TONES[members.findIndex(m => m.id === id) % TONES.length];
   const step = recommendNext(view, assessmentStatus, journeyBuilding);
+  const firstPathDay = pathStartsToday(view, assessmentStatus);
+  const goalTitles = view.snapshot.account.goals.filter(g => g.status === "active").map(g => g.title);
   // Which recommended step people actually start (event name and step kind only).
   const started = () => void trackAction("today_step_started", step.kind).catch(() => {});
 
@@ -75,11 +77,11 @@ export default function HomeScreen({ view, run, notify, go, startQuest, openQues
     own ? startQuest(goalRef(goal!.id, day), { kind: "goal", day }) : startQuest(journeyNodes[day - 1].questionId, { kind: "journey", day });
 
   // Feeding Berri: today's question (or the next journey day), the check-in card, or a moment in the inner world.
+  const toCheckin = () => document.getElementById("home-checkin")?.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "start" });
+  // Tomorrow's stop once today's is done: something to come back for.
+  const tomorrow = jNext && jState.doneToday ? { day: jNext.day, title: own ? own.title(jNext.day) : d.journey.titles[jNext.day - 1] } : null;
   const feed = (meal: Meal) => {
-    if (meal === "checkin") {
-      document.getElementById("home-checkin")?.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "start" });
-      return;
-    }
+    if (meal === "checkin") return toCheckin();
     if (meal === "moment") return go("world");
     if (view.dailyRef && !view.dailyDoneByMe) return startQuest(view.dailyRef, { kind: "daily" });
     if (jNext && !jState.doneToday) return startJourneyDay(jNext.day);
@@ -130,6 +132,18 @@ export default function HomeScreen({ view, run, notify, go, startQuest, openQues
             <span className="eyebrow"><Sparkles size={14} /> {d.journey.eyebrowGoals}</span>
             <h2 id="next-title" aria-live="polite">{td.buildingTitle}</h2>
             <p>{td.buildingBody}</p>
+            <span className="building-bar" aria-hidden="true"><span /></span>
+            {goalTitles.length > 0 && (
+              <div className="building-goals">
+                <span className="shared-progress-label">{td.buildingGoals}</span>
+                <ul>{goalTitles.map(g => <li key={g}><Sprout size={14} /> {g}</li>)}</ul>
+              </div>
+            )}
+            <span className="shared-progress-label">{td.buildingMeanwhile}</span>
+            <div className="sheet-actions">
+              <button className="btn btn--white" onClick={toCheckin}><HeartHandshake size={16} /> {td.buildingCheckin}</button>
+              <button className="btn btn--white" onClick={() => go("world")}><Sparkles size={16} /> {td.restWorld}</button>
+            </div>
           </>
         ) : step.kind === "goal" || step.kind === "journey" ? (
           <>
@@ -137,6 +151,7 @@ export default function HomeScreen({ view, run, notify, go, startQuest, openQues
               {step.kind === "goal" ? <Sprout size={14} /> : <Compass size={14} />} {step.kind === "goal" ? d.journey.eyebrowGoals : together ? h.journeyEyebrow : td.journeyEyebrow} · {t(d.journey.day, { n: step.day })}
             </span>
             <h2 id="next-title">{step.kind === "goal" ? goal?.days.find(x => x.day === step.day)?.title : d.journey.titles[step.day - 1]}</h2>
+            {step.kind === "goal" && step.day === 1 && firstPathDay && <p>{td.firstStopBody}</p>}
             {step.kind === "journey" && together && circle && (
               <p className="journey-members">{t(h.journeyMembers, { done: members.filter(m => circle.participation.journey[m.id]?.[step.day]).length, total: members.length })}</p>
             )}
@@ -148,7 +163,16 @@ export default function HomeScreen({ view, run, notify, go, startQuest, openQues
           <>
             <span className="eyebrow"><Check size={14} strokeWidth={3} /> {td.eyebrow}</span>
             <h2 id="next-title">{td.restTitle}</h2>
-            <p>{td.restBody}</p>
+            {tomorrow ? (
+              <div className="tomorrow-preview">
+                <span className="tomorrow-preview-icon"><CalendarHeart size={18} /></span>
+                <span>
+                  <span className="shared-progress-label">{t(td.tomorrowLabel, { n: tomorrow.day })}</span>
+                  <strong>{tomorrow.title}</strong>
+                </span>
+              </div>
+            ) : null}
+            <p>{tomorrow ? td.restBodyTomorrow : td.restBody}</p>
             <div className="sheet-actions">
               <button className="btn btn--white" onClick={() => go("journal")}><NotebookPen size={16} /> {td.restJournal}</button>
               <button className="btn btn--white" onClick={() => go("world")}><Sparkles size={16} /> {td.restWorld}</button>

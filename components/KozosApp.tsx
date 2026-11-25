@@ -350,7 +350,8 @@ function AppShell({ snapshot, setSnapshot, relationshipEnabled }: { snapshot: Sn
     try {
       if (quiet) {
         const r = await buildGoalJourneyAction().catch(() => null);
-        if (r?.ok) setSnapshot(r.snapshot);
+        // Said even when the member is elsewhere (Berri's world, the check-in): the first stop is waiting.
+        if (r?.ok) { setSnapshot(r.snapshot); notify(d.journey.builtReady); }
         // No goals or no AI consent stay quiet; a failed build is said, so they know they can retry.
         else if (!r || r.error === "ai_unavailable") notify(d.journey.buildFailed);
       } else {
