@@ -927,6 +927,7 @@ export const en = {
     eaten: "{meal}: done",
     yum: "Yum! Thank you for the bite!",
     open: "Step into my world",
+    chest: "Treasures for your stars",
     intro: "Berri is your little companion, and is counting on you. Every time you take a moment for yourself, you feed Berri too.",
     howTitle: "How do you look after Berri?",
     how: [

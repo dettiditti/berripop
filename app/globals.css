@@ -2156,6 +2156,14 @@ html[data-app] body:has(.berri-stage)::before { content: none; }
 @media (prefers-reduced-motion: reduce) { .world-scene .berri-video--clear.is-floating > .berri-pose { animation: none; transform: translateY(-5%); } }
 @media (prefers-reduced-motion: reduce) { .world-scene .berri-video--clear > :is(video, canvas, img, .berri-pose) { animation: none; } }
 .berri-home-intro { margin: 0 6px; font-weight: 700; font-size: 15px; line-height: 1.45; color: var(--ink-2); }
+.berri-home-chest {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; padding: 10px 14px; margin: 2px 0 4px;
+  border-radius: 16px; border: 2px solid #f3dc8a; background: #fff8dc; color: var(--ink);
+  font-size: 15px; font-weight: 800; text-align: left; transition: transform 0.12s;
+}
+.berri-home-chest:active { transform: scale(0.98); }
+.berri-home-chest > span:first-of-type { flex: 1; }
+.berri-home-chest-stars { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: #a37400; white-space: nowrap; }
 .berri-home-how { margin: 0 6px; }
 .berri-home-how summary { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 800; font-size: 14px; color: var(--purple-dark); list-style: none; min-height: 32px; }
 .berri-home-how summary::-webkit-details-marker { display: none; }

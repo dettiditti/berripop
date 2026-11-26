@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, Check, HeartHandshake, Info, Sparkles, Star } from "lucide-react";
+import { ArrowRight, Check, Gift, HeartHandshake, Info, Sparkles, Star } from "lucide-react";
 import { addDays } from "@/lib/dates";
 import { appetiteOf, MEALS_PER_DAY, type Hunger, type Meal } from "@/lib/berriHunger";
 import type { View } from "@/lib/domain/view";
@@ -66,8 +66,8 @@ export function useAppetite(view: View) {
  * Tapping the world opens My Inner World. Once Berri has eaten today, the
  * usual greeting (streak, welcome back…) takes over the speech bubble.
  */
-export default function BerriHome({ view, onWorld, onFeed, fullMessage, covered = false }: { view: View; onWorld: () => void; onFeed: (meal: Meal) => void; fullMessage?: string; covered?: boolean }) {
-  const { d, t } = useI18n();
+export default function BerriHome({ view, onWorld, onChest, onFeed, fullMessage, covered = false }: { view: View; onWorld: () => void; onChest?: () => void; onFeed: (meal: Meal) => void; fullMessage?: string; covered?: boolean }) {
+  const { d, t, plural } = useI18n();
   const b = d.berriHome;
   const appetite = useAppetite(view);
   const world = useMemo(() => deriveWorld(view, view.snapshot.progress.moments), [view]);
@@ -144,6 +144,14 @@ export default function BerriHome({ view, onWorld, onFeed, fullMessage, covered 
           );
         })}
       </div>
+      {onChest && (
+        <button type="button" className="berri-home-chest" onClick={onChest}>
+          <Gift size={18} strokeWidth={2.4} aria-hidden />
+          <span>{b.chest}</span>
+          <span className="berri-home-chest-stars"><Star size={14} fill="currentColor" aria-hidden /> {plural(d.wardrobe.balance, view.snapshot.wardrobe?.balance ?? 0)}</span>
+          <ArrowRight size={16} aria-hidden />
+        </button>
+      )}
       <details className="berri-home-how">
         <summary><Info size={15} aria-hidden /> {b.howTitle}</summary>
         <ul>{b.how.map(line => <li key={line}>{line}</li>)}</ul>

@@ -93,3 +93,14 @@ describe("advent copy", () => {
     expect(src).toContain('track(userId, "advent_window_opened")');
   });
 });
+
+describe("winter look", () => {
+  it("starts on 20 November and lasts to the end of December", async () => {
+    const { winterLookActive } = await import("../lib/advent");
+    expect(winterLookActive("2026-11-19")).toBe(false);
+    expect(winterLookActive("2026-11-20")).toBe(true);
+    expect(winterLookActive("2026-11-26")).toBe(true);
+    expect(winterLookActive("2026-12-31")).toBe(true);
+    expect(winterLookActive("2027-01-01")).toBe(false);
+  });
+});

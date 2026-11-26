@@ -85,6 +85,17 @@ export default function HomeScreen({ view, run, notify, go, startQuest, openQues
   const deeperRef = doneTodayDay ? view.deeperFor(doneTodayDay) : null;
   const deeperQ = deeperRef ? view.question(deeperRef) : null;
   const tomorrow = jNext && jState.doneToday ? { day: jNext.day, title: own ? own.title(jNext.day) : d.journey.titles[jNext.day - 1] } : null;
+  // The treasure chest lives in the inner world: go there and bring it into view once it is on screen.
+  const openChest = () => {
+    go("world");
+    let tries = 0;
+    const find = () => {
+      const el = document.getElementById("chest");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      else if (++tries < 20) window.requestAnimationFrame(find);
+    };
+    window.requestAnimationFrame(find);
+  };
   const feed = (meal: Meal) => {
     if (meal === "checkin") return toCheckin();
     if (meal === "moment") return go("world");
@@ -101,12 +112,12 @@ export default function HomeScreen({ view, run, notify, go, startQuest, openQues
           <span className="eyebrow">{td.eyebrow}</span>
           <h1>{view.snapshot.me.name ? t(td.titleNamed, { name: view.snapshot.me.name }) : td.title}</h1>
         </div>
-        <div className="home-chips"><StreakIndicator streak={view.streak} /><StarChip wardrobe={view.snapshot.wardrobe} onOpen={() => go("world")} /></div>
+        <div className="home-chips"><StreakIndicator streak={view.streak} /><StarChip wardrobe={view.snapshot.wardrobe} onOpen={openChest} /></div>
       </header>
 
       <AdventCard today={view.today} run={run} notify={notify} writeInJournal={writeInJournal} onWorld={() => go("world")} />
 
-      <BerriHome view={view} covered={!!covered} onWorld={() => go("world")} onFeed={feed} fullMessage={berripopSays(d, key, view.today, { n: view.streak.current })} />
+      <BerriHome view={view} covered={!!covered} onWorld={() => go("world")} onChest={openChest} onFeed={feed} fullMessage={berripopSays(d, key, view.today, { n: view.streak.current })} />
 
       <section className="quest-card" aria-labelledby="next-title">
         {step.kind === "daily" && daily && view.dailyRef ? (

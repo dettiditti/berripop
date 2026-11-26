@@ -921,6 +921,7 @@ export const hu: Dictionary = {
     eaten: "{meal}: megvolt",
     yum: "Nyamm! Köszönöm a falatot!",
     open: "Belépek a világomba",
+    chest: "Kincsek a csillagaidért",
     intro: "Berri a te kis társad, és rád bízza magát. Minden alkalommal, amikor egy kicsit magadra figyelsz, Berrit is megeteted.",
     howTitle: "Hogyan gondoskodsz Berriről?",
     how: [

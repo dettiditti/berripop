@@ -26,7 +26,7 @@ import AssessmentFlow from "./assessment/AssessmentFlow";
 import BottomNavigation, { TABS, type Tab } from "./BottomNavigation";
 import BerripopCelebration, { type NextStep } from "./berripop/BerripopCelebration";
 import BerripopMascot from "./berripop/BerripopMascot";
-import { adventActive } from "@/lib/advent";
+import { winterLookActive } from "@/lib/advent";
 import { InviteModal, QuestionComposer, Toast } from "./Modals";
 import Onboarding from "./Onboarding";
 import QuestFlow, { type Draft } from "./QuestFlow";
@@ -68,9 +68,9 @@ import { achievementDefs, circleToday } from "@/lib/domain/rules";
 import { milestonesFrom, type MilestoneCounts, type MilestoneId } from "@/lib/milestones";
 import type { BadgeId } from "@/lib/progress";
 
-/** In December (the advent calendar's month) Berri waits in a winter hat and scarf. */
+/** From late November to the end of December Berri waits in a winter hat and scarf. */
 function Splash({ label }: { label: string }) {
-  const xmas = adventActive(circleToday());
+  const xmas = winterLookActive(circleToday());
   return (
     <div className="splash" aria-busy="true">
       {xmas
@@ -189,7 +189,7 @@ function AppShell({ snapshot, setSnapshot, relationshipEnabled }: { snapshot: Sn
 
   const view = useMemo(() => buildView(snapshot, d.common.you), [snapshot, d.common.you]);
   // December: a wintry light and slow snow behind everything (the advent calendar's month).
-  const winter = adventActive(view.today);
+  const winter = winterLookActive(view.today);
   const circle = view.circle;
 
   const notify = useCallback((message: string) => {

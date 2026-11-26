@@ -38,6 +38,10 @@ export function adventDay(today: string): { year: number; day: number } | null {
 /** Shown from 1 to 31 December: after the 24th, missed windows can still be opened. */
 export const adventActive = (today: string) => adventDay(today) !== null;
 
+/** The winter look (snow, Berri in a hat and scarf) starts before the calendar: from 20 November to 31 December. */
+export const WINTER_LOOK_FROM = "11-20";
+export const winterLookActive = (today: string) => today.slice(5) >= WINTER_LOOK_FROM && today.slice(5) <= "12-31";
+
 /** "open": today's window; "missed": an earlier one not opened yet (still openable); "locked": a later day. */
 export function windowState(day: number, today: string, opened: Set<number>): WindowState {
   if (opened.has(day)) return "opened";

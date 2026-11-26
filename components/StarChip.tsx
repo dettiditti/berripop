@@ -4,7 +4,7 @@ import { Star } from "lucide-react";
 import { useI18n } from "@/lib/i18n/client";
 import type { WardrobeDTO } from "@/lib/wardrobe";
 
-/** Berri's stars next to the spark on Today; a tap opens the inner world, where the treasure chest is. */
+/** Berri's stars next to the spark on Today; a tap opens the treasure chest in the inner world. */
 export default function StarChip({ wardrobe, onOpen }: { wardrobe: WardrobeDTO | null | undefined; onOpen: () => void }) {
   const { d, plural, num } = useI18n();
   const n = wardrobe?.balance ?? 0;

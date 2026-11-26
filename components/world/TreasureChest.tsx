@@ -69,7 +69,7 @@ export default function TreasureChest({ view, run, notify }: { view: View; run: 
   }
 
   return (
-    <section className="card chest" aria-labelledby="chest-title">
+    <section id="chest" className="card chest" aria-labelledby="chest-title">
       <div className="chest-head">
         <div>
           <h2 id="chest-title">{c.title}</h2>
