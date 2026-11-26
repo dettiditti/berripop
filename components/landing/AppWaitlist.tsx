@@ -15,7 +15,7 @@ import BerripopMascot from "../berripop/BerripopMascot";
  * the phone app is coming.
  * Picture only (role="img"); sizes are in em, so font-size scales it.
  */
-export function PhoneMock() {
+export function PhoneMock({ winter = false }: { winter?: boolean }) {
   const { d } = useI18n();
   const w = d.landing.appWaitlist;
   const b = d.berriHome;
@@ -35,7 +35,7 @@ export function PhoneMock() {
         </div>
         <div className="lp-phone-app">
           {/* eslint-disable-next-line @next/next/no-img-element -- transparent still from public/berri/pose, same as BerriStill */}
-          <img className="lp-phone-berri" src="/berri/pose/peckish.png" alt="" width={720} height={796} />
+          <img className="lp-phone-berri" src={winter ? "/berri/berri-xmas.png" : "/berri/pose/peckish.png"} alt="" width={winter ? 611 : 720} height={winter ? 720 : 796} />
           <p className="lp-phone-says">{w.phoneSays}</p>
           <div className="lp-phone-bowl"><span className="berri-bowl-dots"><i className="is-on" /><i /><i /></span> {b.bowl.replace("{n}", "1").replace("{total}", "3")}</div>
           <div className="lp-phone-meals">

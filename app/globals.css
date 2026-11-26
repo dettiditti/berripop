@@ -2412,7 +2412,7 @@ html[data-app] body:has(.berri-stage)::before { content: none; }
     radial-gradient(26vmax 26vmax at 90% 86%, rgba(228, 222, 252, 0.8), transparent 70%),
     #f6f3fc;
 }
-.app.app--winter::after {
+.app.app--winter::after, .lp.lp--winter::after {
   content: ""; position: fixed; left: 0; right: 0; top: -480px; height: calc(100vh + 480px); z-index: -1; pointer-events: none;
   background-image:
     radial-gradient(circle at 23px 31px, #fff 3px, transparent 4px),
@@ -2434,7 +2434,7 @@ html[data-app] body:has(.berri-stage)::before { content: none; }
   animation: app-snow 40s linear infinite; will-change: transform;
 }
 @keyframes app-snow { to { transform: translateY(480px); } }
-@media (prefers-reduced-motion: reduce) { .app.app--winter::after { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .app.app--winter::after, .lp.lp--winter::after { animation: none; } }
 
 
 /* Buttons lose the raised 3D edge (a soft shadow instead); the ghost/text variants and every
@@ -3204,3 +3204,38 @@ html[data-app]:has(.berri-video--clear), html[data-app] body:has(.berri-video--c
 .unsubscribe-page { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; background: var(--bg, #f6f3ff); }
 .unsubscribe-page > .card { width: 100%; max-width: 440px; }
 .unsubscribe-page h1 { font-size: 22px; }
+
+/* Landing in winter (20 Nov - 31 Dec): cooler light, the app's snow, winter Berri and the advent note. */
+.lp.lp--winter::before {
+  background:
+    radial-gradient(46vmax 46vmax at -8% -12%, rgba(222, 214, 252, 0.95), transparent 70%),
+    radial-gradient(36vmax 36vmax at 106% 6%, rgba(214, 228, 251, 0.9), transparent 70%),
+    radial-gradient(34vmax 34vmax at 30% 110%, rgba(252, 228, 238, 0.75), transparent 70%),
+    radial-gradient(26vmax 26vmax at 92% 78%, rgba(228, 222, 252, 0.8), transparent 70%),
+    #f6f3fc;
+}
+.lp-winter-note {
+  display: flex; align-items: center; gap: 14px; max-width: 34rem; padding: 12px 18px 12px 12px; border-radius: 22px;
+  background: var(--lp-glass-strong); border: 1px solid var(--lp-edge); box-shadow: var(--lp-shadow);
+}
+.lp-winter-note img { width: 64px; height: auto; flex-shrink: 0; filter: drop-shadow(0 8px 10px rgba(90, 47, 224, 0.18)); }
+.lp-winter-note > div { display: flex; flex-direction: column; gap: 3px; }
+.lp-winter-note strong { font-size: 16px; color: var(--ink); }
+.lp-winter-note p { margin: 0; font-size: 14px; line-height: 1.45; color: var(--ink-2); font-weight: 600; }
+.lp-winter-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 900; letter-spacing: 0.02em; color: #3d6fb8; }
+.lp-hero-stage--phone .lp-phone-berri[src*="xmas"] { width: 10.4em; }
+.lp-final-xmas { width: 104px; height: auto; filter: drop-shadow(0 10px 16px rgba(20, 8, 60, 0.35)); }
+
+/* Landing preview of Berri's card and treasure chest */
+.lp-screen--berri { gap: 12px; }
+.lp-berri-top { display: flex; align-items: center; gap: 12px; }
+.lp-berri-top img { width: 86px; height: auto; flex-shrink: 0; }
+.lp-berri-top .lp-screen-prompt { margin: 0; padding: 10px 12px; border-radius: 16px; background: #fff; font-weight: 700; color: var(--ink); }
+.lp-berri-bowl { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 800; color: var(--ink-2); }
+.lp-berri-meals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.lp-berri-meals span { display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 8px 4px; border-radius: 12px; background: #fff; font-size: 12px; font-weight: 800; color: var(--purple-dark); text-align: center; }
+.lp-berri-meals span.is-done { background: #e3f6ec; color: #23845a; }
+.lp-berri-chest { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 16px; background: #fff8dc; border: 1px solid #f3dc8a; }
+.lp-berri-chest .lp-screen-title { display: inline-flex; align-items: center; gap: 6px; }
+.lp-berri-chest ul { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.lp-berri-chest li { padding: 6px 10px; border-radius: 999px; background: #fff; font-size: 12px; font-weight: 800; color: var(--ink-2); }

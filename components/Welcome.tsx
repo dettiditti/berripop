@@ -2,13 +2,18 @@
 
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import Link from "next/link";
-import { ArrowRight, BookHeart, Check, Footprints, Lock, Map, Menu, MessageCircle, Smartphone, Sparkles, Target, X } from "lucide-react";
+import { ArrowRight, BookHeart, Check, Footprints, Gift, Heart, Lock, Map, Menu, MessageCircle, Smartphone, Snowflake, Sparkles, Star, Target, X } from "lucide-react";
 import { PLAN_LIMITS, PRICES } from "@/lib/billing/plans";
 import { localeLabels, locales } from "@/lib/i18n/config";
 import { setLocale, useI18n } from "@/lib/i18n/client";
 import BerripopMascot from "./berripop/BerripopMascot";
 import AppWaitlist, { PhoneMock } from "./landing/AppWaitlist";
 import { MOOD_COLORS, moodImage, type Mood } from "@/lib/journal/moods";
+import { winterLookActive } from "@/lib/advent";
+import { circleToday } from "@/lib/domain/rules";
+
+/** The daily question shown on the landing page: a real one from the question bank. */
+const SAMPLE_QUESTION = "C5.1";
 
 /*
  * Signed-out landing page. Rendered on the server for signed-out visitors (see
@@ -90,11 +95,11 @@ const HERO_STICKERS: { mood: Mood; size: number; tilt: number }[] = [
   { mood: "meglepett", size: 48, tilt: -4 },
 ];
 
-function Hero() {
+function Hero({ winter }: { winter: boolean }) {
   const { d } = useI18n();
   const l = d.landing;
   const h = l.hero;
-  const question = d.content.questions.j05.text;
+  const question = d.content.questions[SAMPLE_QUESTION].text;
   return (
     <section className="lp-hero" aria-labelledby="lp-hero-title">
       <div className="lp-container lp-hero-inner">
@@ -107,6 +112,17 @@ function Hero() {
             <a className="btn btn--ghost btn--lg" href="#product">{h.secondary}</a>
           </div>
           <ul className="lp-trust">{h.trust.map(x => <li key={x}><Check size={16} strokeWidth={3} aria-hidden /> {x}</li>)}</ul>
+          {winter && (
+            <div className="lp-winter-note">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/berri/berri-xmas.png" alt="" width={611} height={720} />
+              <div>
+                <span className="lp-winter-tag"><Snowflake size={14} aria-hidden /> {l.winter.tag}</span>
+                <strong>{l.winter.title}</strong>
+                <p>{l.winter.body}</p>
+              </div>
+            </div>
+          )}
           <AppWaitlist />
         </div>
 
@@ -121,7 +137,7 @@ function Hero() {
             ))}
           </div>
           <a className="lp-phone-tag" href="#app-waitlist"><Smartphone size={15} aria-hidden /> {l.appWaitlist.phoneTag}</a>
-          <PhoneMock />
+          <PhoneMock winter={winter} />
           <div className="lp-stage-card" aria-hidden>
             <span className="lp-chip lp-chip--sun"><MessageCircle size={14} /> {h.cardTag}</span>
             <p className="lp-stage-question">{question}</p>
@@ -138,13 +154,13 @@ function Hero() {
 
 /* ---------- product previews (real content, sample answers) ---------- */
 
-type TabId = "daily" | "journey" | "goals" | "journal";
-const TAB_ICONS = { daily: MessageCircle, journey: Map, goals: Target, journal: BookHeart } satisfies Record<TabId, unknown>;
+type TabId = "daily" | "journey" | "berri" | "goals" | "journal";
+const TAB_ICONS = { daily: MessageCircle, journey: Map, berri: Heart, goals: Target, journal: BookHeart } satisfies Record<TabId, unknown>;
 
 function DailyPreview() {
   const { d } = useI18n();
   const p = d.landing.product;
-  const q = d.content.questions.j05;
+  const q = d.content.questions[SAMPLE_QUESTION];
   return (
     <div className="lp-screen">
       <div className="lp-screen-top">
@@ -198,6 +214,33 @@ function JourneyPreview() {
   );
 }
 
+/** Berri's card and treasure chest, with the app's own words and items. */
+function BerriPreview() {
+  const { d, plural } = useI18n();
+  const b = d.berriHome;
+  const items = ["snowman", "firtree", "beanie"] as const;
+  return (
+    <div className="lp-screen lp-screen--berri">
+      <div className="lp-berri-top">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/berri/pose/peckish.png" alt="" width={720} height={796} />
+        <p className="lp-screen-prompt">{b.hunger.peckish}</p>
+      </div>
+      <div className="lp-berri-bowl"><span className="berri-bowl-dots"><i className="is-on" /><i className="is-on" /><i /></span> {b.bowl.replace("{n}", "2").replace("{total}", "3")}</div>
+      <div className="lp-berri-meals">
+        {(["question", "checkin", "moment"] as const).map((m, i) => <span key={m} className={i < 2 ? "is-done" : ""}>{i < 2 && <Check size={12} strokeWidth={3} />} {b.meals[m]}</span>)}
+      </div>
+      <div className="lp-berri-chest">
+        <div className="lp-screen-top">
+          <strong className="lp-screen-title"><Gift size={15} aria-hidden /> {d.wardrobe.title}</strong>
+          <span className="lp-chip lp-chip--sun"><Star size={12} fill="currentColor" aria-hidden /> {plural(d.wardrobe.balance, 12)}</span>
+        </div>
+        <ul>{items.map(id => <li key={id}>{d.wardrobe.items[id]}</li>)}</ul>
+      </div>
+    </div>
+  );
+}
+
 function GoalsPreview() {
   const p = useI18n().d.landing.product.goals;
   return (
@@ -240,14 +283,14 @@ function JournalPreview() {
   );
 }
 
-const PREVIEWS: Record<TabId, () => React.JSX.Element> = { daily: DailyPreview, journey: JourneyPreview, goals: GoalsPreview, journal: JournalPreview };
+const PREVIEWS: Record<TabId, () => React.JSX.Element> = { daily: DailyPreview, journey: JourneyPreview, berri: BerriPreview, goals: GoalsPreview, journal: JournalPreview };
 
 function ProductShowcase() {
   const { d } = useI18n();
   const p = d.landing.product;
-  const ids: TabId[] = ["daily", "journey", "goals", "journal"];
+  const ids: TabId[] = ["daily", "journey", "berri", "goals", "journal"];
   const [active, setActive] = useState<TabId>("daily");
-  const tabRefs = useRef<Record<TabId, HTMLButtonElement | null>>({ daily: null, journey: null, goals: null, journal: null });
+  const tabRefs = useRef<Record<TabId, HTMLButtonElement | null>>({ daily: null, journey: null, berri: null, goals: null, journal: null });
   const tab = p.tabs[active];
   const Preview = PREVIEWS[active];
 
@@ -445,6 +488,8 @@ function Pricing({ thoughtEnabled }: { thoughtEnabled: boolean }) {
 export default function Welcome({ thoughtEnabled = false }: { thoughtEnabled?: boolean }) {
   const { d, locale } = useI18n();
   const l = d.landing;
+  // From late November to the end of December the page wears its winter look, like the app.
+  const winter = winterLookActive(circleToday());
 
   // Keep <html lang> and the tab title in the chosen language.
   useEffect(() => {
@@ -453,11 +498,11 @@ export default function Welcome({ thoughtEnabled = false }: { thoughtEnabled?: b
   }, [locale, d]);
 
   return (
-    <div className="lp" id="top">
+    <div className={`lp${winter ? " lp--winter" : ""}`} id="top">
       <a className="lp-skip" href="#main">{l.skip}</a>
       <Header />
       <main id="main">
-        <Hero />
+        <Hero winter={winter} />
         <ProductShowcase />
         <HowItWorks />
         <Paths />
@@ -467,7 +512,10 @@ export default function Welcome({ thoughtEnabled = false }: { thoughtEnabled?: b
         <section className="lp-section" aria-labelledby="lp-final-title">
           <div className="lp-container">
             <div className="lp-final">
-              <BerripopMascot pair size={92} mood="excited" motion="subtle" />
+              {winter
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img className="lp-final-xmas" src="/berri/berri-xmas.png" alt="" width={611} height={720} />
+                : <BerripopMascot pair size={92} mood="excited" motion="subtle" />}
               <h2 id="lp-final-title">{l.final.title}</h2>
               <p>{l.final.body}</p>
               <Link className="btn btn--white btn--lg" href="/sign-up">{l.start} <ArrowRight size={18} aria-hidden /></Link>

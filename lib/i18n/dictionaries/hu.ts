@@ -1089,14 +1089,20 @@ export const hu: Dictionary = {
         daily: {
           label: "Napi kérdés",
           title: "Egy kérdés naponta, ami megállít egy percre",
-          body: "Minden nap kapsz egy rövid, átgondolt kérdést. Annyit írsz, amennyit szeretnél, és te döntöd el, megosztod-e.",
-          points: ["Kb. 2 perc naponta", "Továbbgondoló kérdések, ha mélyebbre mennél", "Privát, amíg nem osztod meg"],
+          body: "Minden nap kapsz egy rövid, átgondolt kérdést egy több mint száz kérdésből álló, gondosan összeállított gyűjteményből. Annyit írsz, amennyit szeretnél, és te döntöd el, megosztod-e.",
+          points: ["Kb. 2 perc naponta", "Ha ma nem illik, kérhetsz helyette másikat", "Továbbgondoló kérdések, ha mélyebbre mennél", "Privát, amíg nem osztod meg"],
         },
         journey: {
           label: "Utazás",
           title: "63 napos utazás, három fejezetben",
-          body: "Naponta egy új állomás nyílik meg: rövid kérdések, minden hetedik napon egy kis valós kihívás. Pontosan látod, meddig jutottál.",
-          points: ["3 fejezet, fejezetenként 21 nap", "Napi egy állomás, a saját tempódban", "Jelvények és heti visszatekintő, ranglista nélkül"],
+          body: "Naponta egy új állomás nyílik meg három fejezetben: Ismerkedés, Mélyebbre, Gondolatok és kapcsolatok. Minden hetedik napon egy kis valós kihívás vár. Pontosan látod, meddig jutottál.",
+          points: ["3 fejezet, fejezetenként 21 nap", "Napi egy állomás, a saját tempódban", "Visszatekintő napok, amikor újra látod, mit írtál korábban", "Jelvények és heti visszatekintő, ranglista nélkül"],
+        },
+        berri: {
+          label: "Berri",
+          title: "Berri, a kis társad, akire apró lépésekkel vigyázol",
+          body: "Berri naponta három falatot kér: egy kérdést, egy „Hogy vagy?” jelölést és egy pillanatot a Belső világodban. Minden falatért csillag jár, a csillagokból pedig kincseket választhatsz neki és a világának.",
+          points: ["Napi három apró falat, pár perc alatt", "Csillagok és kincsesláda: sapkák, hóember, fenyő és más apróságok", "„Hogy vagy?” és hangulatnaptár, amit csak te látsz", "Nem lesz beteg, és nem haragszik meg, ha kimaradsz"],
         },
         goals: {
           label: "Célok",
@@ -1139,6 +1145,11 @@ export const hu: Dictionary = {
         privateNote: "Csak te látod",
       },
     },
+    winter: {
+      tag: "Advent Berrivel",
+      title: "Decemberben adventi naptár vár",
+      body: "December 1-jétől 24 téli ablak nyílik a Ma oldalon. Mindegyikben egy kis téli kérdés vagy apró feladat van, és néhányban ajándék is Berri világába.",
+    },
     how: {
       eyebrow: "Így működik",
       title: "Három lépés, semmi bonyolult",
@@ -1160,6 +1171,8 @@ export const hu: Dictionary = {
           "Saját fejlődési célok és apró lépések",
           "Privát napló, AI-reflexióval, ha kéred",
           "Rövid felmérés, amelyből Berripop javaslatot tesz a céljaidra",
+          "Berri, a kis társad, csillagokkal és kincsesládával",
+          "„Hogy vagy?” jelölés és hangulatnaptár",
         ],
         aiNote: "Az AI-funkciók mindig a te kérésedre indulnak, heti kerettel. A naplód soha nem kerül automatikusan AI-hoz.",
       },

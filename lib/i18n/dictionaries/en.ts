@@ -1095,14 +1095,20 @@ export const en = {
         daily: {
           label: "Daily question",
           title: "One question a day that makes you pause",
-          body: "Every day you get a short, thoughtful question. Write as much as you like, and decide whether to share it.",
-          points: ["About 2 minutes a day", "Follow-up questions if you want to go deeper", "Private until you share it"],
+          body: "Every day you get a short, thoughtful question from a carefully put together collection of more than a hundred. Write as much as you like, and decide whether to share it.",
+          points: ["About 2 minutes a day", "If today's doesn't fit, ask for another one", "Follow-up questions if you want to go deeper", "Private until you share it"],
         },
         journey: {
           label: "Journey",
           title: "A 63-day journey in three chapters",
-          body: "A new stop opens each day: short questions, and a small real-life challenge every seventh day. You always see how far you've come.",
-          points: ["3 chapters of 21 days", "One stop a day, at your own pace", "Badges and a weekly recap, no leaderboard"],
+          body: "A new stop opens each day, in three chapters: Getting to know you, Going deeper, Thoughts and relationships. Every seventh day brings a small real-life challenge. You always see how far you've come.",
+          points: ["3 chapters of 21 days", "One stop a day, at your own pace", "Look-back days, when you see again what you wrote earlier", "Badges and a weekly recap, no leaderboard"],
+        },
+        berri: {
+          label: "Berri",
+          title: "Berri, your little companion, cared for in small steps",
+          body: "Berri asks for three bites a day: a question, a \"How are you?\" check-in and a moment in your Inner World. Every bite earns a star, and with stars you pick little treasures for Berri and Berri's world.",
+          points: ["Three small bites a day, in a few minutes", "Stars and a treasure chest: hats, a snowman, a fir tree and more", "\"How are you?\" and a mood calendar only you can see", "Berri never gets ill or cross if you miss a day"],
         },
         goals: {
           label: "Goals",
@@ -1145,6 +1151,11 @@ export const en = {
         privateNote: "Only you can see this",
       },
     },
+    winter: {
+      tag: "Advent with Berri",
+      title: "An advent calendar in December",
+      body: "From 1 December, 24 winter windows open on Today. Each holds a little winter question or a tiny task, and some bring a gift for Berri's world.",
+    },
     how: {
       eyebrow: "How it works",
       title: "Three steps, nothing complicated",
@@ -1166,6 +1177,8 @@ export const en = {
           "Your own growth goals and small steps",
           "A private journal, with AI reflection if you ask",
           "A short assessment that helps Berripop suggest your goals",
+          "Berri, your little companion, with stars and a treasure chest",
+          "A \"How are you?\" check-in and a mood calendar",
         ],
         aiNote: "AI features only start when you ask, within a weekly allowance. Your journal is never sent to the AI automatically.",
       },
