@@ -16,7 +16,7 @@ import type { AssessmentState } from "@/lib/assessment/types";
 import type { JournalState } from "@/lib/journal/types";
 import {
   aiFollowUpAction, appOpenedAction, buildGoalJourneyAction, translateGoalJourneyAction, getAssessmentAction, getJournalAction, getLegalStatusAction, getMilestonesAction, getSnapshotAction, importMomentsAction, saveAnswerAction,
-  savePersonalAnswerAction, shareAnswerAction,
+  savePersonalAnswerAction, setAsideDailyAction, shareAnswerAction,
   getEmailReminderAction,
 } from "@/lib/server/actions";
 import { clearDeviceMoments, readDeviceMoments } from "@/lib/store";
@@ -32,6 +32,7 @@ import Onboarding from "./Onboarding";
 import QuestFlow, { type Draft } from "./QuestFlow";
 import QuestionDetail from "./QuestionDetail";
 import { lookBackFor } from "@/lib/questions/lookBack";
+import { bankQuestion } from "@/lib/questions/bank";
 import { questionText } from "@/lib/i18n/content";
 import ReminderPrompt from "./ReminderPrompt";
 import EmailReminderPrompt from "./EmailReminderPrompt";
@@ -449,6 +450,14 @@ function AppShell({ snapshot, setSnapshot, relationshipEnabled }: { snapshot: Sn
     if (r.data) setReward(r.data);
   }
 
+  /** "Most nem volt ilyen" / "Inkább mást kérek": a light question comes instead (in a circle, as a bonus). */
+  async function setAside(outcome: "not_this_time" | "swapped") {
+    if (!quest) return;
+    const r = await run(setAsideDailyAction({ questionRef: quest.ref, outcome }));
+    if (r?.data) setQuest({ ref: r.data.questionRef, context: r.data.context });
+  }
+  const canSetAside = !!quest && quest.context.kind === "daily" && !!bankQuestion(quest.ref) && !view.answerFor(quest.ref) && !view.dailyDoneByMe;
+
   function nextStepFor(rw: RewardDTO): NextStep {
     const c = d.gamification.celebration;
     if (!circle && (assessment ? assessmentOpen(false, assessment.assessment?.status ?? null) : !view.goalJourney)) {
@@ -537,6 +546,7 @@ function AppShell({ snapshot, setSnapshot, relationshipEnabled }: { snapshot: Sn
           onClose={() => setQuest(null)}
           onSave={save}
           lookBack={questLookBack}
+          onSetAside={canSetAside ? setAside : undefined}
           ai={{
             account: snapshot.account,
             ask: async text => {

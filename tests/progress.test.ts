@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { journeyNodes, libraryQuestions, XP_RULES } from "../lib/content";
-import { cleanMoment, growthXpFor, personalBadges, personalFacts, pickPersonalDaily } from "../lib/domain/personal";
+import { journeyNodes, XP_RULES } from "../lib/content";
+import { cleanMoment, growthXpFor, personalBadges, personalFacts } from "../lib/domain/personal";
 import { streakOf } from "../lib/progress";
 
 const none = { answeredRefs: [], journey: {}, xp: [], activityDates: [] };
@@ -40,15 +40,6 @@ describe("growth XP", () => {
     expect(growthXpFor("journal", XP_RULES.growthDailyCap - XP_RULES.journal)).toBe(XP_RULES.journal);
     expect(growthXpFor("journal", XP_RULES.growthDailyCap - XP_RULES.journal + 1)).toBe(0);
     expect(XP_RULES.growthDailyCap).toBeLessThan(XP_RULES.daily);
-  });
-});
-
-describe("personal daily question", () => {
-  it("is stable for a member and day, from the library, and avoids used ones", () => {
-    const a = pickPersonalDaily("user_1", "2026-10-26", []);
-    expect(pickPersonalDaily("user_1", "2026-10-26", [])).toBe(a);
-    expect(libraryQuestions.some(q => q.id === a)).toBe(true);
-    expect(pickPersonalDaily("user_1", "2026-10-26", [a])).not.toBe(a);
   });
 });
 

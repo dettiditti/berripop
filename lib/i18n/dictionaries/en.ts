@@ -1,5 +1,5 @@
 import { pl } from "./plural";
-import { bankTextsEn } from "./bank/en";
+import { bankChoicesEn, bankTextsEn } from "./bank/en";
 
 /**
  * English UI dictionary. Its shape is the `Dictionary` type, so every other
@@ -519,6 +519,13 @@ export const en = {
       noWrong: "No wrong answers",
       ready: "I'm ready",
       later: "Maybe later",
+      notThisTime: "That didn't happen this time",
+      askAnother: "I'd rather have another one",
+      choicesLabel: "Pick what fits best",
+      choiceNone: "none of these",
+      choiceDontKnow: "I don't know",
+      scaleLabel: "1 = not at all, 10 = completely",
+      choiceMore: "Add a few words if you like",
       answerLabel: "Your answer",
       placeholder: "There's no wrong answer. Start anywhere…",
       answeredOn: "You answered this on {date}. Edit any time.",
@@ -2043,6 +2050,8 @@ export const en = {
       l12: { text: "Which dream did you set aside, and what if you picked it up again?", prompts: ["Why did you set it aside back then?", "What would a tiny version of it look like today?"] },
       ...bankTextsEn,
     },
+    /** Answer buttons of bank questions that offer them. */
+    choices: bankChoicesEn as Record<string, string[]>,
   },
 
   /** Prototype-only sample member. Always shown with a "Sample" label. */

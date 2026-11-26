@@ -171,7 +171,10 @@ export const bankQuestions: BankQuestion[] = [
   q("I4.2", 2, { circleSafe: true, resource: true }),
 ];
 
-export const bankQuestion = (id: string) => bankQuestions.find(b => b.id === id);
+/** The question a repeat stands for: `A1.3:r2` → `A1.3` (a repeat keeps the old answer and gets a new one). */
+export const baseRef = (ref: string) => ref.replace(/:r\d+$/, "");
+
+export const bankQuestion = (id: string) => { const base = baseRef(id); return bankQuestions.find(b => b.id === base); };
 
 /**
  * The 63-day journey (zz-63-napos-ut.md): the bank question for each day, and the

@@ -619,6 +619,12 @@ button.avatar:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ton
 .follow-up-card { display: grid; gap: 8px; }
 .follow-up-question { font-weight: 800; margin: 0; }
 .nudges-quiet { justify-self: start; }
+.answer-choices { display: grid; gap: 8px; margin: 6px 0 12px; }
+.answer-choices-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.answer-choices-scale { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.answer-choices-scale .chip:last-child { grid-column: 1 / -1; }
+.quest-set-aside { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 14px; margin-top: 4px; }
+.quest-set-aside .btn { color: var(--ink-3, var(--ink-2)); font-weight: 700; }
 .look-back { margin: 10px 0 14px; padding: 12px 14px; border-radius: 16px; background: rgba(255, 255, 255, 0.7); }
 .look-back summary { font-weight: 800; cursor: pointer; }
 .look-back ul { list-style: none; padding: 0; margin: 6px 0 10px; display: grid; gap: 8px; }

@@ -1,6 +1,6 @@
 import { companionPrompts, feelingWords, journeyNodes, XP_RULES } from "../content";
 import type { BadgeId } from "../progress";
-import { achievementDefs, companionDays, pickDailyQuestion, unlockedAchievements, type Facts } from "./rules";
+import { achievementDefs, companionDays, unlockedAchievements, type Facts } from "./rules";
 import type { QuestionRef } from "./types";
 
 /**
@@ -16,11 +16,6 @@ export type GrowthReason = (typeof GROWTH_REASONS)[number];
 export function growthXpFor(reason: GrowthReason, earnedToday: number): number {
   const amount = XP_RULES[reason];
   return earnedToday + amount <= XP_RULES.growthDailyCap ? amount : 0;
-}
-
-/** A member without a circle gets their own daily question from the library. */
-export function pickPersonalDaily(userId: string, date: string, usedRefs: QuestionRef[]): QuestionRef {
-  return pickDailyQuestion(`u:${userId}`, date, [], usedRefs);
 }
 
 export type PersonalFactsInput = {

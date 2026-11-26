@@ -1,4 +1,5 @@
 import { levels } from "../content";
+import { baseRef } from "../questions/bank";
 import type { Question } from "../types";
 import type { BuiltInQuestionId, Dictionary } from "./dictionaries";
 import { fmt } from "./format";
@@ -9,13 +10,13 @@ import { fmt } from "./format";
  */
 export function questionText(q: Question, d: Dictionary): string {
   if (q.source === "custom" || q.source === "goal") return q.text ?? "";
-  return d.content.questions[q.id as BuiltInQuestionId]?.text ?? q.id;
+  return d.content.questions[baseRef(q.id) as BuiltInQuestionId]?.text ?? q.id;
 }
 
 export function questionPrompts(q: Question, d: Dictionary): string[] {
   if (q.source === "goal") return q.prompts?.length ? q.prompts : d.questions.customPrompts;
   if (q.source === "custom") return d.questions.customPrompts;
-  return d.content.questions[q.id as BuiltInQuestionId]?.prompts ?? [];
+  return d.content.questions[baseRef(q.id) as BuiltInQuestionId]?.prompts ?? [];
 }
 
 export function levelName(d: Dictionary, level: number): string {

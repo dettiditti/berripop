@@ -1,5 +1,5 @@
-import { builtInQuestions, CHAPTER_DAYS, journeyNodes, libraryQuestions, XP_RULES } from "../content";
-import { hash } from "../dates";
+import { builtInQuestions, CHAPTER_DAYS, journeyNodes, XP_RULES } from "../content";
+import { baseRef } from "../questions/bank";
 import type { BadgeId } from "../progress";
 import type { CategoryId, JourneyNode, QuestTheme, Question, Tone } from "../types";
 import type { CircleDTO, QuestionRef } from "./types";
@@ -29,11 +29,14 @@ export const isCustomRef = (ref: QuestionRef) => ref.startsWith("c:");
 
 /** Resolves a question reference within a circle (custom questions carry their own text). */
 export function resolveQuestion(ref: QuestionRef, circle: Pick<CircleDTO, "customQuestions"> | null): Question | null {
-  if (isCustomRef(ref)) {
-    const c = circle?.customQuestions.find(q => q.ref === ref);
+  // A repeat (`A1.3:r2`) is the same question under its own ref, so the earlier answer stays.
+  const base = baseRef(ref);
+  if (isCustomRef(base)) {
+    const c = circle?.customQuestions.find(q => q.ref === base);
     return c ? { id: ref, text: c.text, theme: c.theme as QuestTheme, category: c.category as CategoryId, minutes: 2, source: "custom" } : null;
   }
-  return builtInQuestions.find(q => q.id === ref) ?? null;
+  const q = builtInQuestions.find(q => q.id === base);
+  return q ? (base === ref ? q : { ...q, id: ref }) : null;
 }
 
 /** Days done in the journey's two relationship weeks (2 and 8), at most two from each. */
@@ -44,17 +47,6 @@ export function companionDays(done: Record<number, unknown>): number {
 
 export function journeyDayOf(ref: QuestionRef): number | null {
   return journeyNodes.find(n => n.questionId === ref)?.day ?? null;
-}
-
-/**
- * Today's circle quest: a stable pick from the circle's own question list plus
- * the library, avoiding questions already used as a daily quest.
- */
-export function pickDailyQuestion(circleId: string, date: string, circleRefs: QuestionRef[], usedRefs: QuestionRef[]): QuestionRef {
-  const pool = [...new Set([...circleRefs, ...libraryQuestions.map(q => q.id)])];
-  const fresh = pool.filter(r => !usedRefs.includes(r));
-  const list = fresh.length ? fresh : pool;
-  return list[hash(`${circleId}:${date}`) % list.length];
 }
 
 /* ---------- XP ---------- */

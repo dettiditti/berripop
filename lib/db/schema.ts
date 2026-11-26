@@ -549,6 +549,24 @@ export const personalDailyQuests = pgTable("personal_daily_quests", {
 }, t => [primaryKey({ columns: [t.userId, t.date] })]);
 
 /**
+ * Questions a member set aside without answering ("Most nem volt ilyen" /
+ * "Inkább mást kérek"), so the daily question waits before asking them again.
+ * Only ids and dates, never any text. Answered and assigned questions are
+ * already in `answers`, `user_activity` and the daily question tables.
+ */
+export const questionHistory = pgTable("question_history", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  questionRef: text("question_ref").notNull(),
+  /** "daily" | "circle" | "journey" | "bonus" */
+  context: text("context").notNull(),
+  /** "not_this_time" | "swapped" */
+  outcome: text("outcome").notNull(),
+  date: text("date").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [index("question_history_user_date_idx").on(t.userId, t.date)]);
+
+/**
  * "My Inner World" moments: feeling words and an optional note. Private: only
  * ever read by their owner, never shared, scored, sent to analytics or to the AI.
  */

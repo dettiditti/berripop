@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, Clock, Lightbulb, Lock, Sparkles, Users, X } from "lucide-react";
 import { categoryTone, XP_RULES } from "@/lib/content";
-import { bankQuestion } from "@/lib/questions/bank";
+import { baseRef, bankQuestion } from "@/lib/questions/bank";
+import { splitChoice } from "@/lib/questions/choices";
 import type { LookBack } from "@/lib/questions/lookBack";
 import { journeyNodes } from "@/lib/content";
 import { berripopSays, moodFor, type MessageKey } from "@/lib/berripop-messages";
@@ -36,6 +37,8 @@ type Props = {
   onSave: (d: Draft, share: boolean) => Promise<void>;
   /** On the journey's look-back days: the member's own earlier answers, shown as written (lib/questions/lookBack). */
   lookBack?: LookBack;
+  /** On today's own daily bank question: set it aside and get a light one instead (lib/server/dailyQuestion). */
+  onSetAside?: (outcome: "not_this_time" | "swapped") => Promise<void>;
   /** AI follow-up suggestions (metered on the server). */
   ai?: { account: AccountDTO; ask: (draft: string) => Promise<{ question: string } | { error: string } | null> };
 };
@@ -103,11 +106,20 @@ function AiFollowUp({ ai, draft, suggestion, onSuggestion, selected, onUse }: {
 
 type Step = "intro" | "write" | "save";
 
-export default function QuestFlow({ question, context, existing, draft, circleNames, xp, onDraft, onClose, onSave, lookBack, ai }: Props) {
+export default function QuestFlow({ question, context, existing, draft, circleNames, xp, onDraft, onClose, onSave, lookBack, onSetAside, ai }: Props) {
   const { d, t, plural, date } = useI18n();
   const f = d.questions.flow;
   const [step, setStep] = useState<Step>(existing ? "write" : "intro");
-  const [text, setText] = useState(draft?.text ?? existing?.text ?? "");
+  // Questions with answer buttons or a 1-10 scale: the chosen one is the answer, words can be added after it.
+  const bankQ = bankQuestion(question.id);
+  const choiceList = bankQ?.choices === "buttons"
+    ? [...(d.content.choices[baseRef(question.id)] ?? []), f.choiceNone, f.choiceDontKnow]
+    : bankQ?.choices === "scale" ? [...Array.from({ length: 10 }, (_, i) => `${i + 1}/10`), f.choiceDontKnow] : null;
+  const [initialChoice, initialText] = splitChoice(draft?.text ?? existing?.text ?? "", choiceList);
+  const [choice, setChoice] = useState(initialChoice);
+  const [text, setText] = useState(initialText);
+  const answer = choice ? (text.trim() ? `${choice} – ${text.trim()}` : choice) : text;
+  const [settingAside, setSettingAside] = useState(false);
   const [reflection, setReflection] = useState(draft?.reflection ?? existing?.reflection ?? "");
   const [prompt, setPrompt] = useState(draft?.prompt ?? existing?.reflectionPrompt ?? "");
   const prompts = questionPrompts(question, d);
@@ -139,14 +151,14 @@ export default function QuestFlow({ question, context, existing, draft, circleNa
   const [followUp, setFollowUp] = useState<"open" | "quiet" | "closed">("open");
   const [declined, setDeclined] = useState(0);
   useEffect(() => { setDeclined(readDeclined()); }, []);
-  const words = text.trim().split(/\s+/).filter(Boolean).length;
+  const words = answer.trim().split(/\s+/).filter(Boolean).length;
   const quiet = followUp === "quiet" || (followUp === "open" && !prompt && (words < 4 || declined >= 2));
   const warm = bankQuestion(question.id)?.resource === true;
   const canShare = circleNames.length > 0;
   const alreadyShared = !!existing?.shared;
-  const ready = text.trim().length >= 2;
+  const ready = answer.trim().length >= 2;
   // Berripop reacts to effort only, never to what the answer says.
-  const writeKey: MessageKey = reflection.trim() ? "quest.deeper" : words >= 4 ? (warm ? "quest.answeredWarm" : "quest.answered") : text.trim() ? "quest.writing" : "quest.empty";
+  const writeKey: MessageKey = reflection.trim() ? "quest.deeper" : words >= 4 ? (warm ? "quest.answeredWarm" : "quest.answered") : answer.trim() ? "quest.writing" : "quest.empty";
   const label =
     context.kind === "journey" || context.kind === "goal"
       ? t(f.dayQuest, { day: context.day })
@@ -166,7 +178,7 @@ export default function QuestFlow({ question, context, existing, draft, circleNa
   });
 
   function chooseAiQuestion(q: string) {
-    const next = chooseFollowUp({ text, reflection, prompt }, q);
+    const next = chooseFollowUp({ text: answer, reflection, prompt }, q);
     if (next.prompt === prompt) return;
     setPrompt(next.prompt);
     if (tracked.current !== q) {
@@ -178,15 +190,21 @@ export default function QuestFlow({ question, context, existing, draft, circleNa
   }
 
   function close() {
-    if (!existing) onDraft({ text, reflection, prompt });
+    if (!existing) onDraft({ text: answer, reflection, prompt });
     onClose();
+  }
+
+  async function setAside(outcome: "not_this_time" | "swapped") {
+    if (!onSetAside) return;
+    setSettingAside(true);
+    try { await onSetAside(outcome); } finally { setSettingAside(false); }
   }
 
   async function save() {
     setSaving(true);
     try {
       if (prompt && reflection.trim()) writeDeclined(0);
-      await onSave({ text, reflection: prompt ? reflection : "", prompt }, share);
+      await onSave({ text: answer, reflection: prompt ? reflection : "", prompt }, share);
     } finally {
       setSaving(false);
     }
@@ -228,6 +246,12 @@ export default function QuestFlow({ question, context, existing, draft, circleNa
                 <button className="btn btn--text" onClick={close}>{f.later}</button>
               </>
             )}
+            {onSetAside && (
+              <div className="quest-set-aside">
+                {bankQ?.depth === 1 && <button className="btn btn--text btn--sm" disabled={settingAside} onClick={() => setAside("not_this_time")}>{f.notThisTime}</button>}
+                <button className="btn btn--text btn--sm" disabled={settingAside} onClick={() => setAside("swapped")}>{f.askAnother}</button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -255,6 +279,18 @@ export default function QuestFlow({ question, context, existing, draft, circleNa
             </details>
           )}
           {existing && <p className="note"><Check size={15} /> {t(f.answeredOn, { date: date(existing.date) })}</p>}
+          {choiceList && (
+            <div className="answer-choices" role="group" aria-label={f.choicesLabel}>
+              <span className="shared-progress-label">{bankQ?.choices === "scale" ? f.scaleLabel : f.choicesLabel}</span>
+              <div className={bankQ?.choices === "scale" ? "answer-choices-scale" : "answer-choices-list"}>
+                {choiceList.map(c => (
+                  <button key={c} type="button" className={`chip${choice === c ? " is-active" : ""}`} aria-pressed={choice === c} onClick={() => setChoice(choice === c ? "" : c)}>
+                    {bankQ?.choices === "scale" && c.endsWith("/10") ? c.slice(0, -3) : c}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <label className="sr-only" htmlFor="answer">{f.answerLabel}</label>
           <textarea
             id="answer"
@@ -262,9 +298,9 @@ export default function QuestFlow({ question, context, existing, draft, circleNa
             className="answer-box"
             value={text}
             onChange={e => setText(e.target.value)}
-            placeholder={f.placeholder}
+            placeholder={choiceList ? f.choiceMore : f.placeholder}
             aria-describedby="answer-hint"
-            rows={6}
+            rows={choiceList ? 3 : 6}
             maxLength={2000}
           />
           <div className="answer-hint" id="answer-hint"><Lock size={13} /> {d.privacy.answerHint}</div>
@@ -290,7 +326,7 @@ export default function QuestFlow({ question, context, existing, draft, circleNa
                   <button type="button" className="chip is-active" aria-pressed onClick={() => setPrompt("")}>{prompt}</button>
                 </div>
               )}
-              {ai && <AiFollowUp ai={ai} draft={text} suggestion={aiQuestion} onSuggestion={setAiQuestion} selected={!!aiQuestion && prompt === aiQuestion} onUse={chooseAiQuestion} />}
+              {ai && <AiFollowUp ai={ai} draft={answer} suggestion={aiQuestion} onSuggestion={setAiQuestion} selected={!!aiQuestion && prompt === aiQuestion} onUse={chooseAiQuestion} />}
               {prompt && (
                 <textarea ref={reflectionRef} className="answer-box answer-box--small" aria-label={prompt} value={reflection} onChange={e => setReflection(e.target.value)} placeholder={prompt} rows={3} maxLength={1000} />
               )}
@@ -298,7 +334,7 @@ export default function QuestFlow({ question, context, existing, draft, circleNa
           ))}
 
           <div className="quest-flow-actions">
-            {!ready && text.length > 0 && <p className="field-hint" role="status">{d.validation.answerTooShort}</p>}
+            {!ready && answer.length > 0 && <p className="field-hint" role="status">{d.validation.answerTooShort}</p>}
             <button className="btn btn--primary btn--lg btn--block" disabled={!ready} onClick={() => setStep("save")}>
               {d.common.continue} <ArrowRight size={20} />
             </button>

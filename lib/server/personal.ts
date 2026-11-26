@@ -6,6 +6,8 @@ import { CHAPTER_DAYS, journeyNodes } from "../content";
 import { cleanMoment, type MomentInput } from "../domain/personal";
 import { journeyStateFor, resolveQuestion, XP_RULES } from "../domain/rules";
 import { journeyDayAccepts } from "../questions/journeyDay";
+import { bankQuestion } from "../questions/bank";
+import { isSetAsideOutcome, setAsidePersonal } from "./dailyQuestion";
 import { goalNodes, goalQuestion, goalRef, parseGoalRef } from "../journey/goal";
 import type { ActionResult, AnswerContext, QuestionRef, RewardDTO } from "../domain/types";
 import type { QuestTheme } from "../types";
@@ -131,6 +133,29 @@ export async function savePersonalAnswer(userId: string, input: {
 }
 
 /** Deletes the text of an own-path answer. Completions and earned rewards stay. */
+/**
+ * "Most nem volt ilyen" / "Inkább mást kérek" on today's daily question: it is
+ * set aside (waits like an asked one, never counts as answered) and a light
+ * question comes instead. Without a circle that becomes today's daily question;
+ * in a circle the shared question stays and the member gets a bonus one.
+ */
+export async function setAsideDaily(userId: string, input: { questionRef: QuestionRef; outcome: unknown }): Promise<ActionResult<{ questionRef: QuestionRef; context: AnswerContext }>> {
+  if (!isSetAsideOutcome(input.outcome)) return fail("invalid");
+  const before = await loadSnapshot(userId);
+  const circle = before.circle;
+  const today = before.progress.today;
+  const current = circle ? circle.daily.questionRef : before.progress.dailyQuestion?.questionRef;
+  const bank = bankQuestion(input.questionRef);
+  if (!current || current !== input.questionRef || !bank) return fail("invalid");
+  // "Not this time" is for questions about a moment (level 1).
+  if (input.outcome === "not_this_time" && bank.depth !== 1) return fail("invalid");
+  const done = circle ? circle.daily.completedBy.includes(userId) : !!before.progress.dailyQuestion?.done;
+  if (done) return fail("invalid");
+  const ref = await setAsidePersonal(userId, { questionRef: input.questionRef, outcome: input.outcome, circle: !!circle, today });
+  if (!ref) return fail("invalid");
+  return { ok: true, snapshot: await loadSnapshot(userId), data: { questionRef: ref, context: circle ? { kind: "bonus" } : { kind: "daily" } } };
+}
+
 export async function deletePersonalAnswer(userId: string, answerId: string): Promise<ActionResult> {
   const removed = await getDb().delete(answers)
     .where(and(eq(answers.id, answerId), eq(answers.userId, userId), isNull(answers.circleId)))

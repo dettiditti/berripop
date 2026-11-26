@@ -1,6 +1,6 @@
 import type { Dictionary } from ".";
 import { pl } from "./plural";
-import { bankTextsHu } from "./bank/hu";
+import { bankChoicesHu, bankTextsHu } from "./bank/hu";
 
 /** Hungarian UI dictionary (default language). Must match the `Dictionary` shape exactly. */
 export const hu: Dictionary = {
@@ -516,6 +516,13 @@ export const hu: Dictionary = {
       noWrong: "Nincs rossz válasz",
       ready: "Készen állok",
       later: "Majd később",
+      notThisTime: "Most nem volt ilyen",
+      askAnother: "Inkább mást kérek",
+      choicesLabel: "Válaszd ki, ami a legjobban illik",
+      choiceNone: "egyik sem",
+      choiceDontKnow: "nem tudom",
+      scaleLabel: "1 = egyáltalán nem, 10 = teljesen",
+      choiceMore: "Ha szeretnéd, írj hozzá pár szót",
       answerLabel: "A válaszod",
       placeholder: "Itt nincs rossz válasz. Kezdd bárhol…",
       answeredOn: "Ezt már megválaszoltad ({date}). Bármikor módosíthatod.",
@@ -2036,6 +2043,8 @@ export const hu: Dictionary = {
       l12: { text: "Melyik álmodat tetted félre, és mi lenne, ha újra elővennéd?", prompts: ["Miért tetted félre akkor?", "Mi lenne belőle egy aprócska mai változat?"] },
       ...bankTextsHu,
     },
+    /** Answer buttons of bank questions that offer them. */
+    choices: bankChoicesHu as Record<string, string[]>,
   },
 
   sample: {

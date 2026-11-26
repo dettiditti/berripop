@@ -331,6 +331,13 @@ export async function savePersonalAnswerAction(input: {
   return personal.savePersonalAnswer(userId, input);
 }
 
+/** Sets today's daily question aside ("Most nem volt ilyen" / "Inkább mást kérek") and returns the light one instead. */
+export async function setAsideDailyAction(input: { questionRef: QuestionRef; outcome: "not_this_time" | "swapped" }): Promise<ActionResult<{ questionRef: QuestionRef; context: AnswerContext }>> {
+  const userId = await requireUserId();
+  if (!userId) return { ok: false, error: "unauthorized" } as const;
+  return personal.setAsideDaily(userId, input);
+}
+
 /** Builds (or, when the goals changed, rebuilds) the member's own journey from their goals. One AI call. */
 export async function buildGoalJourneyAction(): Promise<ActionResult> {
   const userId = await requireUserId();

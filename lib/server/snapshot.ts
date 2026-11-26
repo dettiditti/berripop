@@ -3,13 +3,14 @@ import { and, desc, eq, inArray, isNotNull, ne, or, sum } from "drizzle-orm";
 import { getDb } from "../db";
 import {
   achievements, answerReactions, answers, circleEvents, circleMembers, circleMilestones, circleQuestions,
-  circles, customQuestions, dailyQuests, growthGoals, participations, savedQuestions, sharedJourneyDays, subscriptions, userPrefs, users, xpEvents,
+  circles, customQuestions, growthGoals, participations, savedQuestions, sharedJourneyDays, subscriptions, userPrefs, users, xpEvents,
 } from "../db/schema";
 import { aiConfigured } from "./ai";
 import { getAiUsage, getUserEntitlements } from "./entitlements";
 import { loadProgress } from "./progress";
 import { loadWardrobe } from "./wardrobe";
-import { circleToday, dateOf, pickDailyQuestion } from "../domain/rules";
+import { circleToday, dateOf } from "../domain/rules";
+import { ensureCircleDaily } from "./dailyQuestion";
 import { REACTIONS, type AccountDTO, type CircleDTO, type FeedEventType, type Reaction, type ReactionSummary, type Snapshot } from "../domain/types";
 
 /**
@@ -71,20 +72,6 @@ async function loadAccount(userId: string, ownedCircles: number): Promise<Accoun
   };
 }
 
-async function ensureDailyQuest(circleId: string, today: string): Promise<string> {
-  const db = getDb();
-  const existing = await db.select().from(dailyQuests).where(and(eq(dailyQuests.circleId, circleId), eq(dailyQuests.date, today))).limit(1);
-  if (existing[0]) return existing[0].questionRef;
-  const [refs, used] = await Promise.all([
-    db.select({ ref: circleQuestions.questionRef }).from(circleQuestions).where(eq(circleQuestions.circleId, circleId)),
-    db.select({ ref: dailyQuests.questionRef }).from(dailyQuests).where(eq(dailyQuests.circleId, circleId)),
-  ]);
-  const ref = pickDailyQuestion(circleId, today, refs.map(r => r.ref), used.map(u => u.ref));
-  await db.insert(dailyQuests).values({ circleId, date: today, questionRef: ref }).onConflictDoNothing();
-  const [row] = await db.select().from(dailyQuests).where(and(eq(dailyQuests.circleId, circleId), eq(dailyQuests.date, today))).limit(1);
-  return row?.questionRef ?? ref;
-}
-
 async function loadCircle(userId: string, circleId: string): Promise<CircleDTO> {
   const db = getDb();
   const today = circleToday();
@@ -98,7 +85,7 @@ async function loadCircle(userId: string, circleId: string): Promise<CircleDTO> 
         .innerJoin(users, eq(users.id, circleMembers.userId))
         .where(eq(circleMembers.circleId, circleId))
         .orderBy(circleMembers.joinedAt),
-      ensureDailyQuest(circleId, today),
+      ensureCircleDaily(circleId, today),
       db.select({ ref: circleQuestions.questionRef, addedBy: circleQuestions.addedBy }).from(circleQuestions).where(eq(circleQuestions.circleId, circleId)).orderBy(desc(circleQuestions.addedAt)),
       db.select().from(answers).where(and(eq(answers.circleId, circleId), eq(answers.userId, userId))),
       db.select({ userId: participations.userId, kind: participations.kind, key: participations.key, date: participations.date }).from(participations).where(eq(participations.circleId, circleId)),

@@ -16,6 +16,7 @@ import {
   SHARED_XP, unlockedAchievements, unlockedMilestones, XP_RULES,
 } from "../domain/rules";
 import { journeyDayAccepts } from "../questions/journeyDay";
+import { baseRef } from "../questions/bank";
 import { REACTIONS, type ActionResult, type AnswerContext, type QuestionRef, type RewardDTO } from "../domain/types";
 import type { CategoryId, QuestTheme } from "../types";
 import { loadSnapshot } from "./snapshot";
@@ -250,6 +251,8 @@ export async function leaveCircle(userId: string, circleId: string): Promise<Act
 
 async function canUseQuestion(userId: string, circleId: string, ref: QuestionRef) {
   if (!isCustomRef(ref)) return !!resolveQuestion(ref, null);
+  // A repeat (`c:…:r2`) is the same custom question.
+  ref = baseRef(ref);
   const id = ref.slice(2);
   const db = getDb();
   const [q] = await db.select({ authorId: customQuestions.authorId }).from(customQuestions).where(eq(customQuestions.id, id)).limit(1);

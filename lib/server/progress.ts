@@ -1,14 +1,15 @@
 import "server-only";
 import { and, asc, desc, eq, gte, isNull, sql } from "drizzle-orm";
 import { getDb } from "../db";
-import { answers, dailyCheckins, goalJourneys, growthGoals, personalDailyQuests, userAchievements, userActivity, userXpEvents, worldMoments } from "../db/schema";
+import { answers, dailyCheckins, goalJourneys, growthGoals, userAchievements, userActivity, userXpEvents, worldMoments } from "../db/schema";
 import { XP_RULES } from "../content";
 import { circleToday, dateOf } from "../domain/rules";
-import { GROWTH_REASONS, personalBadges, personalFacts, pickPersonalDaily, type GrowthReason } from "../domain/personal";
+import { GROWTH_REASONS, personalBadges, personalFacts, type GrowthReason } from "../domain/personal";
 import type { GoalJourneyDTO, ProgressDTO } from "../domain/types";
 import { isCheckinState } from "../checkin/checkin";
 import { toCheckinDTO } from "../checkin/dto";
 import { addDays } from "../dates";
+import { ensurePersonalDaily } from "./dailyQuestion";
 import { goalsKey, type GoalJourneyDay, type GoalJourneyWeek } from "../journey/goal";
 
 /*
@@ -103,20 +104,6 @@ export async function activeGoalTitles(userId: string) {
   const rows = await getDb().select({ title: growthGoals.title, details: growthGoals.details }).from(growthGoals)
     .where(and(eq(growthGoals.userId, userId), eq(growthGoals.status, "active"))).orderBy(asc(growthGoals.createdAt));
   return rows;
-}
-
-async function ensurePersonalDaily(userId: string, today: string) {
-  const db = getDb();
-  const [existing] = await db.select().from(personalDailyQuests).where(and(eq(personalDailyQuests.userId, userId), eq(personalDailyQuests.date, today))).limit(1);
-  if (existing) return existing.questionRef;
-  const [used, answered] = await Promise.all([
-    db.select({ ref: personalDailyQuests.questionRef }).from(personalDailyQuests).where(eq(personalDailyQuests.userId, userId)),
-    db.select({ ref: answers.questionRef }).from(answers).where(eq(answers.userId, userId)),
-  ]);
-  const ref = pickPersonalDaily(userId, today, [...used, ...answered].map(r => r.ref));
-  await db.insert(personalDailyQuests).values({ userId, date: today, questionRef: ref }).onConflictDoNothing();
-  const [row] = await db.select().from(personalDailyQuests).where(and(eq(personalDailyQuests.userId, userId), eq(personalDailyQuests.date, today))).limit(1);
-  return row.questionRef;
 }
 
 /** Everything about the member's own progress. Only their own rows are read. */
