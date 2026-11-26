@@ -70,7 +70,7 @@ import type { BadgeId } from "@/lib/progress";
 
 /** In December (the advent calendar's month) Berri waits in a winter hat and scarf. */
 function Splash({ label }: { label: string }) {
-  const xmas = adventActive(process.env.NEXT_PUBLIC_ADVENT_PREVIEW_DATE || circleToday()); // ZZ-TEMP local preview (env part)
+  const xmas = adventActive(circleToday());
   return (
     <div className="splash" aria-busy="true">
       {xmas
@@ -189,7 +189,7 @@ function AppShell({ snapshot, setSnapshot, relationshipEnabled }: { snapshot: Sn
 
   const view = useMemo(() => buildView(snapshot, d.common.you), [snapshot, d.common.you]);
   // December: a wintry light and slow snow behind everything (the advent calendar's month).
-  const winter = adventActive(process.env.NEXT_PUBLIC_ADVENT_PREVIEW_DATE || view.today); // ZZ-TEMP local preview (env part)
+  const winter = adventActive(view.today);
   const circle = view.circle;
 
   const notify = useCallback((message: string) => {

@@ -17,7 +17,7 @@ type Opened = { day: number; gift: string | null; fresh: boolean };
  * is the same for everyone; anything the member writes about it goes to their
  * journal, only if they choose.
  */
-export default function AdventCard({ today: realToday, run, notify, writeInJournal, onWorld, initial }: {
+export default function AdventCard({ today, run, notify, writeInJournal, onWorld, initial }: {
   today: string;
   run: Run;
   notify: (message: string) => void;
@@ -28,7 +28,6 @@ export default function AdventCard({ today: realToday, run, notify, writeInJourn
 }) {
   const { d, t } = useI18n();
   const a = d.advent;
-  const today = (initial === undefined && process.env.NEXT_PUBLIC_ADVENT_PREVIEW_DATE) || realToday; // ZZ-TEMP local preview
   const active = adventActive(today);
   const [state, setState] = useState<AdventState | null | undefined>(initial);
   const [sheet, setSheet] = useState(false);
