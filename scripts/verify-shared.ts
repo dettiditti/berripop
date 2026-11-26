@@ -10,6 +10,7 @@ import { eq, inArray } from "drizzle-orm";
 import { getDb } from "../lib/db";
 import { circles, funnelEvents, users } from "../lib/db/schema";
 import * as svc from "../lib/server/service";
+import { journeyNodes } from "../lib/content";
 import type { ActionResult, Snapshot } from "../lib/domain/types";
 
 let failures = 0;
@@ -78,12 +79,12 @@ async function main() {
     check("making it private hides it from B again", !JSON.stringify(bAfterUnshare).includes(SECRET_A));
 
     // Journey: individual vs shared completion
-    const j1 = await svc.saveAnswer(A, { circleId, questionRef: "j01", text: "A day one", reflection: "", reflectionPrompt: "", share: false, context: { kind: "journey", day: 1 } });
+    const j1 = await svc.saveAnswer(A, { circleId, questionRef: journeyNodes[0].questionId, text: "A day one", reflection: "", reflectionPrompt: "", share: false, context: { kind: "journey", day: 1 } });
     check("A completes journey day 1", j1.ok && j1.data!.journeyDay === 1);
     check("day 1 is NOT shared-complete after one member", j1.ok && !snap(j1).circle!.sharedJourney[1]);
-    const j2 = await svc.saveAnswer(A, { circleId, questionRef: "j02", text: "A day two", reflection: "", reflectionPrompt: "", share: false, context: { kind: "journey", day: 2 } });
+    const j2 = await svc.saveAnswer(A, { circleId, questionRef: journeyNodes[1].questionId, text: "A day two", reflection: "", reflectionPrompt: "", share: false, context: { kind: "journey", day: 2 } });
     check("day 2 stays locked until tomorrow", !j2.ok && j2.error === "locked");
-    const jb = await svc.saveAnswer(B, { circleId, questionRef: "j01", text: SECRET_B, reflection: "", reflectionPrompt: "", share: false, context: { kind: "journey", day: 1 } });
+    const jb = await svc.saveAnswer(B, { circleId, questionRef: journeyNodes[0].questionId, text: SECRET_B, reflection: "", reflectionPrompt: "", share: false, context: { kind: "journey", day: 1 } });
     check("B completing day 1 makes it shared-complete", jb.ok && jb.data!.sharedDayCompleted === 1);
     check("A never sees B's private journey answer", !JSON.stringify(snap(await svc.getSnapshot(A, circleId))).includes(SECRET_B));
 

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, Clock, Lightbulb, Lock, Sparkles, Users, X } from "lucide-react";
 import { categoryTone, XP_RULES } from "@/lib/content";
+import { bankQuestion } from "@/lib/questions/bank";
 import { berripopSays, moodFor, type MessageKey } from "@/lib/berripop-messages";
 import { PLAN_LIMITS } from "@/lib/billing/plans";
 import type { AccountDTO, AnswerContext, AnswerDTO } from "@/lib/domain/types";
@@ -119,6 +120,10 @@ export default function QuestFlow({ question, context, existing, draft, circleNa
   const topic = d.themes[question.theme].name;
   const tagline = d.themes[question.theme].tagline;
   const text0 = questionText(question, d);
+  // A thinking-it-through version of some challenges: either one completes the day.
+  const altText = context.kind === "journey" ? d.journey.challengeAlt[String(context.day)] : undefined;
+  // Bank questions that are not marked circle-safe get a gentle note before sharing.
+  const personal = bankQuestion(question.id)?.circleSafe === false;
   const canShare = circleNames.length > 0;
   const alreadyShared = !!existing?.shared;
   const ready = text.trim().length >= 2;
@@ -189,6 +194,7 @@ export default function QuestFlow({ question, context, existing, draft, circleNa
           <span className="eyebrow">{label} · {topic}</span>
           <span className="theme-badge"><ThemeGlyph theme={question.theme} size={16} /> {tagline}</span>
           <h1 className="quest-intro-question">{text0}</h1>
+          {altText && <p className="quest-alt">{altText}</p>}
           <p className="quest-meta"><Clock size={16} /> {plural(d.common.aboutMinutes, question.minutes)} · {f.noWrong}</p>
           <div className="quest-flow-actions">
             <button className="btn btn--primary btn--lg btn--block" onClick={() => setStep("write")}>{f.ready} <ArrowRight size={20} /></button>
@@ -201,6 +207,7 @@ export default function QuestFlow({ question, context, existing, draft, circleNa
         <div className="quest-flow-body quest-write" key="write">
           <span className="eyebrow">{topic}</span>
           <h1 className="quest-write-question">{text0}</h1>
+          {altText && <p className="quest-alt">{altText}</p>}
           {existing && <p className="note"><Check size={15} /> {t(f.answeredOn, { date: date(existing.date) })}</p>}
           <label className="sr-only" htmlFor="answer">{f.answerLabel}</label>
           <textarea
@@ -259,6 +266,7 @@ export default function QuestFlow({ question, context, existing, draft, circleNa
               </span>
             </button>
           </div>
+          {personal && canShare && !alreadyShared && <p className="note quest-share-note">{f.personalShare}</p>}
           <div className="quest-flow-actions">
             <button className="btn btn--primary btn--lg btn--block" disabled={saving} onClick={save}>
               {existing ? f.saveChanges : share ? f.saveShare : f.saveAnswer} <Check size={20} />

@@ -27,7 +27,7 @@ export type Question = {
   id: string;
   category: CategoryId;
   minutes: number;
-  source: "journey" | "library" | "custom" | "goal";
+  source: "journey" | "library" | "bank" | "custom" | "goal";
   theme: QuestTheme;
   text?: string;
   /** Optional deeper questions that come with a custom or goal-journey question. */

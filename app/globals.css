@@ -614,6 +614,8 @@ button.avatar:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ton
 .quest-flow-actions { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; margin-top: auto; padding-top: 12px; }
 .quest-flow-actions .btn--text { align-self: center; }
 .quest-write-question { font-size: 24px; }
+.quest-alt { margin-top: 8px; color: var(--muted, inherit); font-weight: 700; }
+.quest-share-note { margin-top: 4px; }
 .answer-box {
   width: 100%; resize: vertical; min-height: 150px;
   padding: 16px 18px; border-radius: 22px; border: 2px solid var(--line); background: #fff;

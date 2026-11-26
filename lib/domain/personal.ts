@@ -1,6 +1,6 @@
-import { builtInQuestions, companionPrompts, feelingWords, journeyNodes, XP_RULES } from "../content";
+import { companionPrompts, feelingWords, journeyNodes, XP_RULES } from "../content";
 import type { BadgeId } from "../progress";
-import { achievementDefs, pickDailyQuestion, unlockedAchievements, type Facts } from "./rules";
+import { achievementDefs, companionDays, pickDailyQuestion, unlockedAchievements, type Facts } from "./rules";
 import type { QuestionRef } from "./types";
 
 /**
@@ -43,7 +43,7 @@ export function personalFacts(input: PersonalFactsInput): Facts {
     answered: new Set(input.answeredRefs).size,
     themesTried: input.xp.filter(e => e.reason === "new-topic").length,
     journeyDone: Math.max(Object.keys(journey).length, Object.keys(goal).length),
-    listeningDone: journeyNodes.filter(n => journey[n.day] && builtInQuestions.find(q => q.id === n.questionId)?.category === "listening").length,
+    companionDays: companionDays(journey),
     weeksDone: Math.max(weeksOf(journey), weeksOf(goal)),
     // Together-only facts belong to circles.
     togetherDays: 0,

@@ -1,4 +1,5 @@
 import { pl } from "./plural";
+import { bankTextsEn } from "./bank/en";
 
 /**
  * English UI dictionary. Its shape is the `Dictionary` type, so every other
@@ -499,6 +500,7 @@ export const en = {
 
   questions: {
     flow: {
+      personalShare: "This question may be more personal. Only share your answer if you want to.",
       dialogLabel: "Question",
       dayQuest: "Day {day} quest",
       weekly: "Weekly challenge",
@@ -566,7 +568,7 @@ export const en = {
     intro: "One stop a day. Every seventh stop is a challenge with a bigger reward. Come back tomorrow for the next one.",
     weeksDone: "weeks done",
     chapterLabel: "Chapter {n}",
-    chapters: ["Getting to know you", "Going deeper", "Outward and together"],
+    chapters: ["Getting to know you", "Going deeper", "Thoughts and relationships"],
     chaptersAria: "Journey chapters",
     chapterLocked: "Chapter {n} opens once you finish the one before it.",
     allDoneTitle: "You walked all 63 stops! 🎉",
@@ -602,15 +604,15 @@ export const en = {
     weekLabel: "Week {n}",
     weekAria: "Week {n}: {theme}",
     weeks: {
-      w1: { theme: "Discover", tagline: "Explore what you like, what you're good at, and what matters to you.", topics: ["Feelings", "Preferences", "Strengths", "What matters"] },
-      w2: { theme: "Connect", tagline: "Practise listening, good questions and seeing other perspectives.", topics: ["Listening", "Thoughtful questions", "Communication", "Perspectives"] },
-      w3: { theme: "Grow together", tagline: "Appreciate each other, set kind boundaries and celebrate how far you've come.", topics: ["Appreciation", "Boundaries", "Shared intentions", "Celebrating"] },
-      w4: { theme: "Kindness to yourself", tagline: "Practise treating yourself like a good friend.", topics: ["Inner voice", "Rest", "Mistakes", "Gratitude"] },
-      w5: { theme: "Beneath the feelings", tagline: "Look a little behind your feelings: what do you really need?", topics: ["Body", "Needs", "Calm", "Speaking up"] },
-      w6: { theme: "Brave little steps", tagline: "Small brave steps toward what matters to you.", topics: ["Courage", "Habits", "Making room", "First step"] },
-      w7: { theme: "Curiosity", tagline: "See the world and others with fresh eyes.", topics: ["Learning", "Stories", "Perspectives", "Something new"] },
-      w8: { theme: "Nourishing connections", tagline: "Notice who fills you up, and give some of it back.", topics: ["Friendship", "Gratitude", "Listening", "Conversations"] },
-      w9: { theme: "What stays", tagline: "Gather what you'll take with you from the journey.", topics: ["Looking back", "Strengths", "Intentions", "Celebration"] },
+      w1: { theme: "Discover", tagline: "Get to know what fills you up and what matters to you.", topics: ["Mood", "Energy", "What goes well", "What matters"] },
+      w2: { theme: "Connect", tagline: "Notice who you can be yourself with, and what you'd need from them.", topics: ["Closeness", "Through others' eyes", "Attention", "Help"] },
+      w3: { theme: "Your own boundaries", tagline: "Notice what goes well, and where you'd draw a kind boundary.", topics: ["Good things noticed", "Boundaries", "Needs", "Small steps"] },
+      w4: { theme: "Kindness to yourself", tagline: "Practise treating yourself like a good friend would.", topics: ["Inner voice", "Mistakes", "Hard moments", "Small joys"] },
+      w5: { theme: "Beneath the feelings", tagline: "Look a little behind your feelings: what do you really need?", topics: ["Body", "Feelings put aside", "What's underneath", "Saying it"] },
+      w6: { theme: "Brave little steps", tagline: "Small, brave steps towards what matters to you.", topics: ["Courage", "Putting off", "Taking on too much", "What's yours"] },
+      w7: { theme: "Curiosity", tagline: "Look at yourself with curiosity, without judgement.", topics: ["Mood", "Thoughts", "What goes well", "Calmer days"] },
+      w8: { theme: "Nourishing connections", tagline: "Notice who fills you up, and give some of it back.", topics: ["Waiting", "Speaking up", "Disagreement", "What goes well"] },
+      w9: { theme: "What stays", tagline: "Gather what you're taking with you from the journey.", topics: ["Abilities", "Goals of your own", "Values", "Change"] },
     },
     start: "Start!",
     tomorrow: "Tomorrow",
@@ -636,7 +638,9 @@ export const en = {
       quest: "Answer on your own, in your own words. Your answer stays private unless you choose to share it.",
       challenge: "Weekly challenge: take a few extra minutes. Finishing it completes your week.",
     },
-    titles: ["Everyday feelings", "Little lifts", "What matters to me", "Real rest", "Proud moments", "Hidden strengths", "Week one look-back", "Feeling heard", "When listening is hard", "Saying the hard thing", "Feedback that lands", "Where care comes from", "Asking for support", "Noticing each other", "Quiet appreciation", "Boundaries that help", "A kind no", "More of this together", "Growing into", "Our small ritual", "Celebrating the journey", "Your inner voice", "A kind gesture", "What we dodge", "Pausing in time", "Lessons from mistakes", "Grateful for me", "A letter to me", "Body and feeling", "When I'm sad", "Behind the irritation", "A calm place", "From the heart", "Saying it", "A day of feelings", "What I haven't dared", "Braver than I thought", "Making room", "A habit that carries", "Who encouraged me", "One small step", "The brave step", "Something to learn", "Someone's story", "Good mistakes", "A free day", "Through other eyes", "Noticing", "A first time", "Being myself", "An unsaid thank you", "Just listening", "Giving and getting", "The postponed talk", "A small gesture", "A thank-you note", "Looking back", "A new strength", "Patience with me", "Passing it on", "A hard-day kit", "An intention ahead", "Celebrating 63 days"],
+    /** A thinking-it-through version of the challenge on these days. */
+    challengeAlt: { 14: "Or: think through who you'd tell and what, if you had the chance today.", 35: "Or: think back over today and write down the three feelings that stayed with you most.", 42: "Or: write down what this step would be, and what would help you take it one day.", 49: "Or: write down what you'd like to try for the first time, if you had the chance.", 56: "Or: write down who you're grateful to and why, even if you don't send it now." } as Record<string, string>,
+    titles: ["Today's weather", "What gives me energy", "Three words about me", "What matters", "A small pride", "Calm moments", "Looking back on week one", "Being myself with someone", "How others see me", "When I needed attention", "Asking for help", "Unspoken appreciation", "Whose opinion matters", "Appreciation, said out loud", "Quiet wins", "The yes that wasn't", "Standing up for myself", "What gets too little time", "Ten minutes for what matters", "A conversation that went better", "Looking back on 21 days", "My inner voice", "Gentler with old mistakes", "The first few minutes", "Kind to myself", "What's valuable in me", "Small joys", "A letter as a friend", "What my body signals", "Feelings put aside", "What stayed with me", "What's under the feeling", "Pleasant feelings", "Saying what I need", "A day of feelings", "Braver than I thought", "A change put off", "Someone good to be with", "Taking on too much", "Two parts of me", "Others' expectations", "One small, brave step", "A change of mood", "A thought that comes back", "Not nothing", "At my best", "Calmer days", "Thought or fact", "Something for the first time", "When there's no reply", "Speaking up for others", "A disagreement", "Something done differently", "Asking for help when it's hard", "Attention that felt good", "Thanks in a message", "Abilities I take for granted", "Goals of my own", "Living how I want to", "Things to hold on to", "Who I want to be", "How I've changed", "After 63 days"],
     toastTomorrow: "This stop unlocks tomorrow. See you then!",
     toastLocked: "Day {day} unlocks after the stops before it.",
   },
@@ -776,7 +780,7 @@ export const en = {
       "first-tiny-step": { name: "First Tiny Step", description: "You showed up. That's the hardest part.", condition: "Complete your first quest" },
       "curious-mind": { name: "Curious Mind", description: "You wandered into new themes.", condition: "Answer questions from 4 different themes" },
       "seven-little-wins": { name: "Seven Little Wins", description: "Seven quests done. That's a habit growing.", condition: "Complete 7 quests (daily or bonus)" },
-      "good-listener": { name: "Good Listener", description: "You explored what real listening feels like.", condition: "Finish both Listening stops on the journey" },
+      "good-listener": { name: "Good Companion", description: "You looked at who you can be yourself with, and what you give them.", condition: "Finish two days of week 2 and two of week 8" },
       "growing-together": { name: "Growing Together", description: "Three days of showing up side by side.", condition: "Take part on 3 days when someone else in your circle does too" },
       "journey-explorer": { name: "Journey Explorer", description: "A whole journey week, done.", condition: "Finish one full week of the journey" },
       "full-bunch": { name: "Full Bunch", description: "All 21 days. The whole bunch!", condition: "Finish the 21-day journey" },
@@ -2022,6 +2026,7 @@ export const en = {
       l10: { text: "Who made your life a little easier recently?", prompts: ["Did they know?", "How could you thank them?"] },
       l11: { text: "Which everyday thing would make life much harder without it, yet you rarely think about it?", prompts: ["When did you last notice it?", "How could you appreciate it a little more today?"] },
       l12: { text: "Which dream did you set aside, and what if you picked it up again?", prompts: ["Why did you set it aside back then?", "What would a tiny version of it look like today?"] },
+      ...bankTextsEn,
     },
   },
 

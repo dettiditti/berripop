@@ -36,6 +36,12 @@ export function resolveQuestion(ref: QuestionRef, circle: Pick<CircleDTO, "custo
   return builtInQuestions.find(q => q.id === ref) ?? null;
 }
 
+/** Days done in the journey's two relationship weeks (2 and 8), at most two from each. */
+export function companionDays(done: Record<number, unknown>): number {
+  const inWeek = (w: number) => journeyNodes.filter(n => n.week === w && done[n.day]).length;
+  return Math.min(inWeek(2), 2) + Math.min(inWeek(8), 2);
+}
+
 export function journeyDayOf(ref: QuestionRef): number | null {
   return journeyNodes.find(n => n.questionId === ref)?.day ?? null;
 }
@@ -97,7 +103,8 @@ export type Facts = {
   answered: number;
   themesTried: number;
   journeyDone: number;
-  listeningDone: number;
+  /** Journey days done in week 2 and week 8, at most 2 counted from each (the "Good companion" badge). */
+  companionDays: number;
   weeksDone: number;
   /** Dates on which you and at least one other member took part. */
   togetherDays: number;
@@ -148,7 +155,7 @@ export function computeFacts(circle: CircleDTO, meId: string): Facts {
     answered: circle.myAnswers.length,
     themesTried: circle.xp.myEvents.filter(e => e.reason === "new-topic").length,
     journeyDone: Object.keys(myJourney).length,
-    listeningDone: journeyNodes.filter(n => myJourney[n.day] && builtInQuestions.find(q => q.id === n.questionId)?.category === "listening").length,
+    companionDays: companionDays(myJourney),
     weeksDone: [1, 2, 3].filter(w => days(w).every(d => myJourney[d])).length,
     togetherDays,
     memberCount: circle.members.length,
@@ -173,7 +180,7 @@ export const achievementDefs: AchievementDef[] = [
   { id: "first-tiny-step", tone: "purple", target: 1, metric: f => f.answered },
   { id: "curious-mind", tone: "sky", target: 4, metric: f => f.themesTried },
   { id: "seven-little-wins", tone: "sun", target: 7, metric: f => f.answered },
-  { id: "good-listener", tone: "mint", target: 2, metric: f => f.listeningDone },
+  { id: "good-listener", tone: "mint", target: 4, metric: f => f.companionDays },
   { id: "growing-together", tone: "coral", target: 3, needsCircle: true, metric: f => f.togetherDays },
   { id: "journey-explorer", tone: "purple", target: 1, metric: f => f.weeksDone },
   { id: "full-bunch", tone: "sun", target: CHAPTER_DAYS, metric: f => f.journeyDone },

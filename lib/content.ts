@@ -1,3 +1,4 @@
+import { bankQuestion, bankQuestions, journeyPlan, type BankQuestion, type BankTheme } from "./questions/bank";
 import type { CategoryId, JourneyNode, QuestTheme, Question, Tone, Week } from "./types";
 
 /**
@@ -45,7 +46,11 @@ export const categoryTheme: Record<CategoryId, QuestTheme> = {
 const j = (id: string, category: CategoryId, theme: QuestTheme, minutes = 2): Question => ({ id, category, theme, minutes, source: "journey" });
 const l = (id: string, category: CategoryId, theme: QuestTheme, minutes = 2): Question => ({ id, category, theme, minutes, source: "library" });
 
-export const journeyQuestions: Question[] = [
+/**
+ * The first version of the 63-day journey (j01–j63). These ids stay valid so old
+ * answers keep their question; the journey itself now follows `journeyPlan`.
+ */
+export const legacyJourneyQuestions: Question[] = [
   j("j01", "emotions", "feel"), j("j02", "emotions", "recharge"), j("j03", "needs", "connect"), j("j04", "needs", "recharge"),
   j("j05", "strengths", "grow"), j("j06", "strengths", "discover"), j("j07", "strengths", "discover", 4),
   j("j08", "listening", "connect"), j("j09", "listening", "connect"), j("j10", "communication", "feel"), j("j11", "communication", "connect"),
@@ -60,6 +65,35 @@ export const journeyQuestions: Question[] = [
   j("j50", "friendship", "connect"), j("j51", "gratitude", "connect"), j("j52", "listening", "connect"), j("j53", "friendship", "recharge"), j("j54", "communication", "connect"), j("j55", "gratitude", "feel"), j("j56", "gratitude", "connect", 4),
   j("j57", "intentions", "grow"), j("j58", "strengths", "grow"), j("j59", "self-compassion", "feel"), j("j60", "intentions", "connect"), j("j61", "needs", "recharge"), j("j62", "intentions", "grow"), j("j63", "intentions", "grow", 4),
 ];
+
+/** Topic and theme of each bank theme (A–I), for colours, badges and XP topics. */
+const bankCategory: Record<BankTheme, [CategoryId, QuestTheme]> = {
+  A: ["emotions", "feel"],
+  B: ["understanding", "discover"],
+  C: ["self-compassion", "feel"],
+  D: ["understanding", "discover"],
+  E: ["friendship", "connect"],
+  F: ["boundaries", "recharge"],
+  G: ["understanding", "discover"],
+  H: ["intentions", "grow"],
+  I: ["gratitude", "recharge"],
+};
+
+const fromBank = (b: BankQuestion, source: Question["source"]): Question =>
+  ({ id: b.id, category: bankCategory[b.theme][0], theme: bankCategory[b.theme][1], minutes: 2, source });
+
+const challenge = (id: string): Question =>
+  id === "k42" ? j("k42", "confidence", "grow", 4) : legacyJourneyQuestions.find(q => q.id === id)!;
+
+/** The 63-day journey in day order: bank questions, and a challenge every seventh day. */
+export const journeyQuestions: Question[] = journeyPlan.map((id, i) =>
+  (i + 1) % 7 === 0 ? challenge(id) : fromBank(bankQuestion(id)!, "journey"));
+
+/** Bank questions that are not on the journey (used by the daily question and the guided sequences). */
+export const otherBankQuestions: Question[] = bankQuestions
+  .filter(b => !journeyPlan.includes(b.id))
+  .map(b => fromBank(b, "bank"));
+
 
 export const libraryQuestions: Question[] = [
   l("l13", "curiosity", "discover"), l("l14", "gratitude", "recharge"), l("l15", "emotions", "feel"),
@@ -92,7 +126,15 @@ export const chapterOf = (day: number) => Math.ceil(day / CHAPTER_DAYS);
 export const chapterNodes = (chapter: number) => journeyNodes.filter(n => n.chapter === chapter);
 export const chapterWeeks = (chapter: number) => [...new Set(chapterNodes(chapter).map(n => n.week))];
 
-export const builtInQuestions: Question[] = [...journeyQuestions, ...libraryQuestions];
+export const builtInQuestions: Question[] = [
+  ...journeyQuestions,
+  ...legacyJourneyQuestions.filter(q => !journeyPlan.includes(q.id)),
+  ...otherBankQuestions,
+  ...libraryQuestions,
+];
+
+/** The old journey question of a day (for members who answered it before the new journey). */
+export const legacyJourneyId = (day: number) => legacyJourneyQuestions[day - 1]?.id;
 
 export const XP_RULES = {
   daily: 20,

@@ -1,5 +1,6 @@
 import type { Dictionary } from ".";
 import { pl } from "./plural";
+import { bankTextsHu } from "./bank/hu";
 
 /** Hungarian UI dictionary (default language). Must match the `Dictionary` shape exactly. */
 export const hu: Dictionary = {
@@ -496,6 +497,7 @@ export const hu: Dictionary = {
 
   questions: {
     flow: {
+      personalShare: "Ez a kérdés személyesebb lehet. Csak akkor oszd meg a válaszod, ha szeretnéd.",
       dialogLabel: "Kérdés",
       dayQuest: "{day}. napi küldetés",
       weekly: "Heti kihívás",
@@ -562,7 +564,7 @@ export const hu: Dictionary = {
     intro: "Naponta egy állomás. Minden hetedik egy kihívás, nagyobb jutalommal. Holnap gyere vissza a következőért.",
     weeksDone: "kész hét",
     chapterLabel: "{n}. fejezet",
-    chapters: ["Ismerkedés", "Mélyebbre", "Kifelé és együtt"],
+    chapters: ["Ismerkedés", "Mélyebbre", "Gondolatok és kapcsolatok"],
     chaptersAria: "Az utazás fejezetei",
     chapterLocked: "A {n}. fejezet az előző befejezése után nyílik meg.",
     allDoneTitle: "Végigjártad mind a 63 állomást! 🎉",
@@ -598,15 +600,15 @@ export const hu: Dictionary = {
     weekLabel: "{n}. hét",
     weekAria: "{n}. hét: {theme}",
     weeks: {
-      w1: { theme: "Felfedezés", tagline: "Fedezd fel, mit szeretsz, miben vagy jó, és mi fontos neked.", topics: ["Érzések", "Kedvenc dolgok", "Erősségek", "Ami fontos"] },
-      w2: { theme: "Kapcsolódás", tagline: "Gyakoroljátok a meghallgatást, a jó kérdéseket és mások nézőpontját.", topics: ["Meghallgatás", "Átgondolt kérdések", "Kommunikáció", "Nézőpontok"] },
-      w3: { theme: "Közös fejlődés", tagline: "Becsüljétek meg egymást, húzzatok kedves határokat, és ünnepeljétek, milyen messzire jutottatok.", topics: ["Megbecsülés", "Határok", "Közös szándékok", "Ünneplés"] },
-      w4: { theme: "Kedvesség magaddal", tagline: "Gyakorold, hogy úgy bánj magaddal, mint egy jó baráttal.", topics: ["Belső hang", "Pihenés", "Hibák", "Hála"] },
-      w5: { theme: "Érzések mélyén", tagline: "Nézz kicsit az érzéseid mögé: mire van szükséged valójában?", topics: ["Test", "Szükségletek", "Nyugalom", "Kimondás"] },
-      w6: { theme: "Bátor kis lépések", tagline: "Apró, bátor lépések afelé, ami fontos neked.", topics: ["Bátorság", "Szokások", "Helyet csinálni", "Első lépés"] },
-      w7: { theme: "Kíváncsiság", tagline: "Nézz a világra és másokra friss szemmel.", topics: ["Tanulás", "Történetek", "Nézőpontok", "Újdonság"] },
-      w8: { theme: "Tápláló kapcsolatok", tagline: "Vedd észre, kik töltenek fel, és adj vissza belőle.", topics: ["Barátság", "Hála", "Meghallgatás", "Beszélgetések"] },
-      w9: { theme: "Ami megmarad", tagline: "Gyűjtsd össze, mit viszel magaddal az útról.", topics: ["Visszatekintés", "Erősségek", "Szándékok", "Ünneplés"] },
+      w1: { theme: "Felfedezés", tagline: "Ismerd meg, mi tölt fel, és mi fontos neked.", topics: ["Hangulat", "Energia", "Ami jól megy", "Ami fontos"] },
+      w2: { theme: "Kapcsolódás", tagline: "Nézd meg, kik mellett lehetsz önmagad, és mire lenne szükséged tőlük.", topics: ["Közelség", "Mások szemével", "Odafigyelés", "Segítség"] },
+      w3: { theme: "Saját határaid", tagline: "Vedd észre, mi megy jól, és hol húznál kedves határt.", topics: ["Észrevett jók", "Határok", "Szükségletek", "Kis lépések"] },
+      w4: { theme: "Kedvesség magaddal", tagline: "Gyakorold, hogy úgy bánj magaddal, mint egy jó baráttal.", topics: ["Belső hang", "Hibák", "Nehéz pillanatok", "Apró örömök"] },
+      w5: { theme: "Érzések mélyén", tagline: "Nézz kicsit az érzéseid mögé: mire van szükséged valójában?", topics: ["Test", "Félretett érzések", "Ami alatta van", "Kimondás"] },
+      w6: { theme: "Bátor kis lépések", tagline: "Apró, bátor lépések afelé, ami fontos neked.", topics: ["Bátorság", "Halogatás", "Túlvállalás", "Ami a tiéd"] },
+      w7: { theme: "Kíváncsiság", tagline: "Nézz magadra kíváncsian, ítélet nélkül.", topics: ["Hangulat", "Gondolatok", "Ami jól megy", "Nyugodtabb napok"] },
+      w8: { theme: "Tápláló kapcsolatok", tagline: "Vedd észre, kik töltenek fel, és adj vissza belőle.", topics: ["Várakozás", "Kiállás", "Nézeteltérés", "Ami jól alakul"] },
+      w9: { theme: "Ami megmarad", tagline: "Gyűjtsd össze, mit viszel magaddal az útról.", topics: ["Képességek", "Saját célok", "Értékek", "Változás"] },
     },
     start: "Rajta!",
     tomorrow: "Holnap",
@@ -632,7 +634,9 @@ export const hu: Dictionary = {
       quest: "Válaszolj a saját szavaiddal, a saját tempódban. A válaszod privát marad, hacsak úgy nem döntesz, hogy megosztod.",
       challenge: "Heti kihívás: szánj rá pár perccel többet. Ezzel zárod le a hetedet.",
     },
-    titles: ["Hétköznapi érzések", "Apró feldobások", "Ami fontos nekem", "Igazi pihenés", "Büszke pillanatok", "Rejtett erősségek", "Visszatekintés az első hétre", "Amikor meghallgatnak", "Amikor nehéz figyelni", "Kimondani a nehezet", "Visszajelzés, ami jólesik", "Honnan jön a törődés", "Támogatást kérni", "Észrevenni egymást", "Csendes megbecsülés", "Határok, amik segítenek", "Egy kedves nem", "Ebből többet együtt", "Amivé válnék", "A mi kis szokásunk", "Ünnepeljük az utat", "A belső hangod", "Egy kedves gesztus", "Ami elől kitérünk", "Megállni időben", "Hibából tanulság", "Hálás magamért", "Levél magamnak", "Test és érzés", "Amikor szomorú vagyok", "A bosszúság mögött", "A nyugalom helye", "Szívből", "Kimondani", "Egy nap érzései", "Amit még nem mertem", "Bátrabb, mint hittem", "Helyet csinálni", "Szokás, ami visz", "Aki bátorított", "Egy apró lépés", "A bátor lépés", "Amiről többet tudnék", "Egy történet", "Jó tévedések", "Egy szabad nap", "Más szemmel", "Észrevenni", "Valami először", "Önmagam lehetek", "Elmaradt köszönet", "Csak meghallgatni", "Adni és kapni", "A halogatott beszélgetés", "Apró gesztus", "Hálaüzenet", "Visszanézve", "Új erősség", "Türelem magammal", "Továbbadni", "Nehéz napi csomag", "Szándék előre", "Ünnepeljük a 63 napot"],
+    /** A thinking-it-through version of the challenge on these days. */
+    challengeAlt: { 14: "Vagy: gondold végig, kinek és mit mondanál, ha ma lenne rá alkalom.", 35: "Vagy: idézd fel a mai napot, és írd le azt a három érzést, ami a legjobban megmaradt.", 42: "Vagy: írd le, mi lenne ez a lépés, és mi segítene, hogy egyszer megtedd.", 49: "Vagy: írd le, mit próbálnál ki szívesen először, ha lenne rá alkalmad.", 56: "Vagy: írd le, kinek és miért vagy hálás, akkor is, ha most nem küldöd el." } as Record<string, string>,
+    titles: ["A nap időjárása", "Ami energiát ad", "Három szó rólam", "Ami számít", "Apró büszkeség", "Nyugodt pillanatok", "Visszatekintés az első hétre", "Akivel önmagam lehetek", "Ahogy mások látnak", "Amikor figyelem kellett volna", "Segítséget kérni", "Ki nem mondott elismerés", "Akinek a véleménye számít", "Kimondott megbecsülés", "Csendes sikerek", "Az igen, ami nem", "Kiállni magamért", "Amire kevés idő jut", "Tíz perc azért, ami fontos", "Egy jobban sikerült beszélgetés", "Visszatekintés a 21 napra", "A belső hangom", "Szelídebben a régi hibákra", "Az első percek", "Kedvesen magammal", "Ami értékes bennem", "Apró örömök", "Levél barátként", "Amit a testem jelez", "Félretett érzések", "Ami megmaradt", "Ami az érzés alatt van", "Kellemes érzések", "Kimondani, mire van szükségem", "Egy nap érzései", "Bátrabb, mint gondoltam", "Halogatott változás", "Akivel jó volt lenni", "Túlvállalás", "Két rész bennem", "Mások elvárásai", "Egy apró, bátor lépés", "Hangulatváltozás", "Visszatérő gondolat", "Ami nem semmiség", "A legjobb önmagam", "Nyugodtabb napok", "Gondolat vagy tény", "Valami először", "Amikor nincs válasz", "Kiállni másokért", "Nézeteltérés", "Valami másképp", "Segítséget kérni, ha nehéz", "Jóleső figyelem", "Hála üzenetben", "Magától értetődő képességek", "Saját célok", "Ahogy élni szeretnék", "Kapaszkodók", "Akinek lenni szeretnék", "Amiben változtam", "A 63 nap után"],
     toastTomorrow: "Ez az állomás holnap nyílik meg. Akkor találkozunk!",
     toastLocked: "Ez az állomás ({day}. nap) az előzők teljesítése után nyílik meg.",
   },
@@ -771,7 +775,7 @@ export const hu: Dictionary = {
       "first-tiny-step": { name: "Első apró lépés", description: "Itt vagy. Ez a legnehezebb rész.", condition: "Teljesítsd az első küldetésedet" },
       "curious-mind": { name: "Kíváncsi elme", description: "Új témákba is belekóstoltál.", condition: "Válaszolj 4 különböző téma kérdéseire" },
       "seven-little-wins": { name: "Hét kis győzelem", description: "Hét teljesített küldetés. Kezd szokássá válni.", condition: "Teljesíts 7 küldetést (napit vagy bónuszt)" },
-      "good-listener": { name: "Jó hallgató", description: "Felfedezted, milyen az igazi odafigyelés.", condition: "Teljesítsd az út mindkét Meghallgatás-állomását" },
+      "good-listener": { name: "Jó társ", description: "Ránéztél, kik mellett lehetsz önmagad, és mit adsz nekik.", condition: "Teljesíts két napot a 2. hétből és kettőt a 8. hétből" },
       "growing-together": { name: "Együtt növünk", description: "Három nap, amikor egymás mellett haladtatok.", condition: "Legyél aktív 3 olyan napon, amikor a körödből más is az" },
       "journey-explorer": { name: "Felfedező", description: "Egy teljes hét az úton, kipipálva.", condition: "Teljesítsd az utazás egy teljes hetét" },
       "full-bunch": { name: "Teljes fürt", description: "Mind a 21 nap. Az egész fürt!", condition: "Teljesítsd a 21 napos utazást" },
@@ -2015,6 +2019,7 @@ export const hu: Dictionary = {
       l10: { text: "Ki könnyítette meg mostanában egy kicsit az életedet?", prompts: ["Tudja, hogy segített?", "Hogyan köszönhetnéd meg neki?"] },
       l11: { text: "Melyik hétköznapi dolog nélkül lenne sokkal nehezebb az életed, mégis ritkán gondolsz rá?", prompts: ["Mikor figyeltél fel rá legutóbb?", "Hogyan becsülhetnéd meg ma egy kicsit jobban?"] },
       l12: { text: "Melyik álmodat tetted félre, és mi lenne, ha újra elővennéd?", prompts: ["Miért tetted félre akkor?", "Mi lenne belőle egy aprócska mai változat?"] },
+      ...bankTextsHu,
     },
   },
 

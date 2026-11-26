@@ -24,7 +24,8 @@ describe("journey chapters", () => {
       for (const n of journeyNodes) {
         const q = dict.content.questions[n.questionId as keyof typeof dict.content.questions] as { text: string; prompts: string[] } | undefined;
         expect(q?.text, `${n.questionId}`).toBeTruthy();
-        expect(q?.prompts).toHaveLength(2);
+        // Question days have three follow-ups to choose from; challenges keep their two.
+        expect(q?.prompts).toHaveLength(n.kind === "challenge" ? 2 : 3);
       }
       for (const w of weeks) expect(dict.journey.weeks[`w${w.week}` as keyof typeof dict.journey.weeks]?.theme).toBeTruthy();
     }
