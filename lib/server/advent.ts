@@ -5,6 +5,7 @@ import { getDb } from "../db";
 import { adventWindows, berriItems } from "../db/schema";
 import { circleToday } from "../domain/rules";
 import { track } from "./analytics";
+const zzToday = () => process.env.NEXT_PUBLIC_ADVENT_PREVIEW_DATE || circleToday(); // ZZ-TEMP local preview
 
 /*
  * The advent calendar (rules in lib/advent). Reads and writes only window
@@ -15,7 +16,7 @@ import { track } from "./analytics";
 export type AdventState = { today: string; year: number; opened: AdventOpened[] };
 
 /** The member's windows this December, or null outside December. */
-export async function loadAdvent(userId: string, today = circleToday()): Promise<AdventState | null> {
+export async function loadAdvent(userId: string, today = zzToday()): Promise<AdventState | null> {
   const now = adventDay(today);
   if (!now) return null;
   const rows = await getDb().select({ day: adventWindows.day, gift: adventWindows.gift }).from(adventWindows)
@@ -31,7 +32,7 @@ export type OpenResult = { ok: true; state: AdventState; gift: string | null; fr
  * world (out right away, like a bought one); if the member already has it,
  * they get bonus stars instead.
  */
-export async function openWindow(userId: string, day: number, today = circleToday()): Promise<OpenResult> {
+export async function openWindow(userId: string, day: number, today = zzToday()): Promise<OpenResult> {
   const before = await loadAdvent(userId, today);
   if (!before) return { ok: false, error: "invalid" };
   const opened = new Set(before.opened.map(w => w.day));

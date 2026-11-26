@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { ADVENT_DAYS, ADVENT_GIFTS, adventActive, adventDay, adventStars, canOpen, giftedItems, nextWindow, windowState } from "../lib/advent";
+import { ADVENT_DAYS, ADVENT_GIFTS, ADVENT_STAR_DAYS, adventActive, adventDay, adventStars, canOpen, giftedItems, nextWindow, windowState } from "../lib/advent";
 import { en } from "../lib/i18n/dictionaries/en";
 import { hu } from "../lib/i18n/dictionaries/hu";
 import { starsSpent, wardrobeOf, inSeason } from "../lib/wardrobe";
@@ -51,6 +51,16 @@ describe("advent stars and gifts", () => {
     expect(adventStars([{ day: 1, gift: null }, { day: 6, gift: "snowfall" }, { day: 13, gift: "stars" }])).toBe(1 + 1 + 6);
   });
 
+  it("star days give 2–3 stars instead of a question, never on a gift day", () => {
+    expect(Object.keys(ADVENT_STAR_DAYS)).toHaveLength(3);
+    for (const [day, n] of Object.entries(ADVENT_STAR_DAYS)) {
+      expect(n).toBeGreaterThanOrEqual(2);
+      expect(n).toBeLessThanOrEqual(3);
+      expect(ADVENT_GIFTS[Number(day)]).toBeUndefined();
+    }
+    expect(adventStars([{ day: 4, gift: null }, { day: 11, gift: null }, { day: 18, gift: null }, { day: 5, gift: null }])).toBe(2 + 2 + 3 + 1);
+  });
+
   it("gifted things are not paid for with stars", () => {
     const opened = [{ day: 6, gift: "snowfall" }, { day: 13, gift: "stars" }];
     expect(giftedItems(opened)).toEqual(["snowfall"]);
@@ -69,6 +79,12 @@ describe("advent copy", () => {
   it("24 windows in both languages", () => {
     expect(hu.advent.windows).toHaveLength(ADVENT_DAYS);
     expect(en.advent.windows).toHaveLength(ADVENT_DAYS);
+  });
+
+  it("every day has its question, except the star days", () => {
+    for (const w of [hu.advent.windows, en.advent.windows]) {
+      w.forEach((text, i) => expect(text === "").toBe(!!ADVENT_STAR_DAYS[i + 1]));
+    }
   });
 
   it("the server keeps only window numbers and gift ids, never what the member writes", () => {

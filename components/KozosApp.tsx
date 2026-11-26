@@ -26,6 +26,7 @@ import AssessmentFlow from "./assessment/AssessmentFlow";
 import BottomNavigation, { TABS, type Tab } from "./BottomNavigation";
 import BerripopCelebration, { type NextStep } from "./berripop/BerripopCelebration";
 import BerripopMascot from "./berripop/BerripopMascot";
+import { adventActive } from "@/lib/advent";
 import { InviteModal, QuestionComposer, Toast } from "./Modals";
 import Onboarding from "./Onboarding";
 import QuestFlow, { type Draft } from "./QuestFlow";
@@ -60,14 +61,19 @@ import { OfferContext } from "./billing/UpgradePrompt";
 import { reportTransactions } from "./billing/AppStorePaywall";
 import { appStore, removeListener } from "@/lib/nativeBridge";
 import { celebratedKey, freshlyReached, readCelebrated, writeCelebrated, type CelebrationKind } from "@/lib/celebrate";
-import { achievementDefs } from "@/lib/domain/rules";
+import { achievementDefs, circleToday } from "@/lib/domain/rules";
 import { milestonesFrom, type MilestoneCounts, type MilestoneId } from "@/lib/milestones";
 import type { BadgeId } from "@/lib/progress";
 
+/** In December (the advent calendar's month) Berri waits in a winter hat and scarf. */
 function Splash({ label }: { label: string }) {
+  const xmas = adventActive(process.env.NEXT_PUBLIC_ADVENT_PREVIEW_DATE || circleToday()); // ZZ-TEMP local preview (env part)
   return (
     <div className="splash" aria-busy="true">
-      <BerripopMascot size={96} mood="happy" label="Berripop" />
+      {xmas
+        // eslint-disable-next-line @next/next/no-img-element -- transparent still, like public/berri/pose
+        ? <img className="splash-berri-xmas" src="/berri/berri-xmas.png" alt="Berripop" width={611} height={720} />
+        : <BerripopMascot size={96} mood="happy" label="Berripop" />}
       <span>berripop</span>
       <span className="sr-only">{label}</span>
     </div>
@@ -179,6 +185,8 @@ function AppShell({ snapshot, setSnapshot, relationshipEnabled }: { snapshot: Sn
   const [askReminder, setAskReminder] = useState(false);
 
   const view = useMemo(() => buildView(snapshot, d.common.you), [snapshot, d.common.you]);
+  // December: a wintry light and slow snow behind everything (the advent calendar's month).
+  const winter = adventActive(process.env.NEXT_PUBLIC_ADVENT_PREVIEW_DATE || view.today); // ZZ-TEMP local preview (env part)
   const circle = view.circle;
 
   const notify = useCallback((message: string) => {
@@ -470,7 +478,7 @@ function AppShell({ snapshot, setSnapshot, relationshipEnabled }: { snapshot: Sn
   if (assessing && assessment) {
     return (
       <OfferContext.Provider value={offerRules}>
-        <div className="app app--focus">
+        <div className={`app app--focus${winter ? " app--winter" : ""}`}>
           <div className="app-topbar"><AccountMenu /></div>
           <main className="screen">
             <AssessmentFlow state={assessment} account={snapshot.account} onState={setAssessment} onFinished={finishAssessment} />
@@ -482,7 +490,7 @@ function AppShell({ snapshot, setSnapshot, relationshipEnabled }: { snapshot: Sn
 
   return (
     <OfferContext.Provider value={offerRules}>
-    <div className="app">
+    <div className={`app${winter ? " app--winter" : ""}`}>
       <BottomNavigation active={tab} onChange={go} hidden={relationshipEnabled ? [] : ["relationship"]} />
       <div className="app-topbar"><AccountMenu /></div>
       <main className="screen" key={tab}>

@@ -5,8 +5,9 @@ import type { WorldItemId } from "./wardrobe";
  * December (Europe/Budapest). Each holds a short winter question or tiny
  * exercise, written in advance and the same for everyone (lib/i18n
  * dictionaries: advent.windows). Opening a window gives a star; a few days
- * also bring a thing for Berri's world. A window missed on its day stays
- * openable until 31 December, so nobody is punished for a day away.
+ * also bring a thing for Berri's world, and three are star days (a few
+ * stars, no question). A window missed on its day stays openable until
+ * 31 December, so nobody is punished for a day away.
  * Shared by the server (which decides) and the app (which shows).
  */
 
@@ -17,6 +18,12 @@ export const GIFT_BONUS_STARS = 5;
 
 /** Days that bring a winter thing for Berri's world (Saint Nicholas day, mid-December, the solstice week, Christmas Eve). */
 export const ADVENT_GIFTS: Partial<Record<number, WorldItemId>> = { 6: "snowfall", 13: "sled", 20: "snowman", 24: "firtree" };
+
+/** Star days: no question, just a little shower of stars (this many instead of the usual one). */
+export const ADVENT_STAR_DAYS: Partial<Record<number, number>> = { 4: 2, 11: 2, 18: 3 };
+
+/** Stars a window gives on opening (before any gift bonus). */
+export const windowStars = (day: number) => ADVENT_STAR_DAYS[day] ?? ADVENT_STARS;
 
 export type AdventOpened = { day: number; gift: string | null };
 export type WindowState = "opened" | "open" | "missed" | "locked";
@@ -52,9 +59,9 @@ export function nextWindow(today: string, opened: Set<number>): number | null {
   return null;
 }
 
-/** Stars the calendar gave: one per window, plus a bonus where a gift was already owned. */
+/** Stars the calendar gave: one per window (more on star days), plus a bonus where a gift was already owned. */
 export function adventStars(opened: AdventOpened[]): number {
-  return opened.reduce((n, w) => n + ADVENT_STARS + (w.gift === "stars" ? GIFT_BONUS_STARS : 0), 0);
+  return opened.reduce((n, w) => n + windowStars(w.day) + (w.gift === "stars" ? GIFT_BONUS_STARS : 0), 0);
 }
 
 /** Things received as gifts: owned without being paid for with stars. */

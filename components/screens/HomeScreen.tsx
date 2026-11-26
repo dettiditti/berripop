@@ -100,6 +100,8 @@ export default function HomeScreen({ view, run, notify, go, startQuest, openQues
         <div className="home-chips"><StreakIndicator streak={view.streak} /><StarChip wardrobe={view.snapshot.wardrobe} onOpen={() => go("world")} /></div>
       </header>
 
+      <AdventCard today={view.today} run={run} notify={notify} writeInJournal={writeInJournal} onWorld={() => go("world")} />
+
       <BerriHome view={view} covered={!!covered} onWorld={() => go("world")} onFeed={feed} fullMessage={berripopSays(d, key, view.today, { n: view.streak.current })} />
 
       <section className="quest-card" aria-labelledby="next-title">
@@ -181,8 +183,6 @@ export default function HomeScreen({ view, run, notify, go, startQuest, openQues
           </>
         )}
       </section>
-
-      <AdventCard today={view.today} run={run} notify={notify} writeInJournal={writeInJournal} onWorld={() => go("world")} />
 
       <nav className="home-shortcuts" aria-label={td.choicesTitle}>
         <button
