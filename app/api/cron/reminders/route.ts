@@ -1,3 +1,4 @@
+import { sendDueEmails } from "@/lib/server/emailReminders";
 import { sendDuePushes } from "@/lib/server/push";
 
 /**
@@ -12,11 +13,14 @@ import { sendDuePushes } from "@/lib/server/push";
  * the database lets each kind reach a member at most once a day (push_sends).
  * Takes no parameters. Vercel and the workflow send
  * `Authorization: Bearer <CRON_SECRET>`; without it every call is refused.
- * Responds with counts only, never a member, token or text.
+ * The same run sends the evening email reminders to members who asked for
+ * them (lib/server/emailReminders; only between 18 and 21 Budapest time).
+ * Responds with counts only, never a member, token, address or text.
  */
 export async function GET(req: Request) {
   const secret = process.env.CRON_SECRET;
   if (!secret || req.headers.get("authorization") !== `Bearer ${secret}`) return new Response("Unauthorized", { status: 401 });
   const pushes = await sendDuePushes().catch(() => { console.error("[push] job failed"); return null; });
-  return Response.json({ pushes });
+  const emails = await sendDueEmails().catch(() => { console.error("[email] job failed"); return null; });
+  return Response.json({ pushes, emails });
 }

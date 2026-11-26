@@ -10,13 +10,13 @@
  */
 export const LEGAL_VERSIONS = {
   terms: "2026-11-09",
-  privacy: "2026-11-11.2",
+  privacy: "2026-11-25",
   cookies: "2026-10-27",
   aiConsent: "2026-10-27.2",
   checkoutDisclosure: "2026-10-27",
 } as const;
 
-export type LegalRecordKind = "terms" | "ai_processing" | "checkout_disclosure";
+export type LegalRecordKind = "terms" | "ai_processing" | "checkout_disclosure" | "email_reminders";
 
 export type LegalRecordRow = { kind: string; version: string; granted: boolean; createdAt: Date };
 

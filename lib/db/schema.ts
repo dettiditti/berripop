@@ -692,7 +692,7 @@ export const pushDevices = pgTable("push_devices", {
  */
 export const pushSends = pgTable("push_sends", {
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  kind: text("kind", { enum: ["thought", "remind"] }).notNull(),
+  kind: text("kind", { enum: ["thought", "remind", "email"] }).notNull(),
   date: text("date").notNull(),
   sentAt: timestamp("sent_at", { withTimezone: true }).notNull().defaultNow(),
 }, t => [primaryKey({ columns: [t.userId, t.kind, t.date] })]);

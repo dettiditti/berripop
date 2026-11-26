@@ -28,6 +28,7 @@ import type { JournalResult } from "../journal/types";
 import * as goalJourney from "./goalJourney";
 import * as personal from "./personal";
 import * as push from "./push";
+import * as emailReminders from "./emailReminders";
 import type { PushPrefs } from "../push/schedule";
 import { getMemberProfile, setMemberProfile } from "./profile";
 import type { MemberProfile } from "../profile/model";
@@ -642,6 +643,23 @@ export async function setPushReminderAction(token: string, on: boolean, timeZone
   if (!userId) return { ok: false, on: false };
   const ok = on ? await push.savePushDevice(userId, token, timeZone) : await push.removePushDevice(userId, token);
   return { ok, on: ok ? on : !on };
+}
+
+/* ---------- Email reminder (opt-in) ---------- */
+
+/** "on", "off", or "unasked" (never said yes or no: the popup may offer it). */
+export async function getEmailReminderAction(): Promise<{ ok: boolean; state: emailReminders.EmailReminderState }> {
+  const userId = await requireUserId();
+  if (!userId) return { ok: false, state: "off" };
+  return { ok: true, state: await emailReminders.getEmailReminderState(userId) };
+}
+
+/** The member's own yes or no, from the popup or Settings. */
+export async function setEmailReminderAction(on: boolean, context: "popup" | "settings"): Promise<{ ok: boolean; state: emailReminders.EmailReminderState }> {
+  const userId = await requireUserId();
+  if (!userId) return { ok: false, state: "off" };
+  const where = context === "popup" ? "popup" : "settings";
+  return { ok: true, state: await emailReminders.setEmailReminders(userId, on === true, where) };
 }
 
 /** On app launch: updates the time zone of this phone if it is registered. */

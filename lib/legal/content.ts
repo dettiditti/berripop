@@ -30,7 +30,7 @@ type LegalSet = {
 
 const hu: LegalSet = {
   back: "Vissza a Berripophoz",
-  updated: "Utolsó módosítás: 2026. november 12.",
+  updated: "Utolsó módosítás: 2026. november 25.",
   version: "Dokumentumverzió: {v}",
   nav: { privacy: "Adatkezelési tájékoztató", terms: "Felhasználási feltételek", cookies: "Cookie-tájékoztató", contact: "Kapcsolat" },
   docs: {
@@ -55,6 +55,7 @@ const hu: LegalSet = {
           "Termékesemények: például regisztráció, első cél, az alkalmazás napi megnyitása vagy előfizetés indítása. Az esemény neve és időpontja, és ahol releváns, a csomag és az alkalmazásnak az a része, ahol történt. Tartalmat nem tárolunk benne.",
           "Mobilapp-értesítő: ha a honlapon feliratkozol, hogy szóljunk, amikor megjelenik a mobilapp, az e-mail-címed, a választott nyelv, a feliratkozás időpontja és annak a hozzájárulási szövegnek a verziója, amelyet elfogadtál. Ehhez nem kell fiók, és a címet nem kapcsoljuk fiókhoz.",
           "Telefonos értesítések (iPhone-app, csak ha bekapcsolod): a telefonod értesítési azonosítója (push token) és időzónája (ezt az app indításakor frissítjük, hogy utazás után is helyi idő szerint jöjjenek), hogy melyik értesítést kéred, hány órakor, és hozzád igazítva kéred-e a reggeli gondolatot. Ezen felül egy küldési napló arról, hogy melyik értesítés melyik napon és mikor ment ki neked, hogy egyik se jöjjön kétszer; ezt 3 nap után töröljük. A délutáni emlékeztető előtt csak azt nézzük meg, hogy aznap történt-e valami az alkalmazásban (például naplóbejegyzés, „Hogy vagy?”, napi kérdés vagy lépés), azt nem, hogy mi. A hozzád igazított gondolathoz kizárólag a kiválasztott témáidat (amelyeket a kezdő kérdéseknél vagy az utad tervezésekor jelöltél be) és a legutóbbi „Hogy vagy?” hangulatodat (az elmúlt másfél napból) használjuk. A naplódat, a beírt szövegeidet és az AI-elemzéseket ehhez soha. Ez a beállításokban kikapcsolható. Az értesítéseket az Apple értesítési szolgáltatása (APNs) kézbesíti, és sosem tartalmazzák, amit írtál, vagy a céljaidat. Ha kikapcsolod őket, a telefonod adatait töröljük; a fiókod törlésekor a küldési naplót is.",
+          "E-mail-emlékeztető (csak ha kéred): ha bekapcsolod, azokon a napokon, amikor még nem jártál a Berripopban, este egy rövid emlékeztető levelet küldünk a fiókod e-mail-címére (pár nap kihagyás után ritkábban, egy hónap után már nem). A küldés előtt csak azt nézzük meg, hogy aznap jártál-e az alkalmazásban, és ha van saját utad, hányadik napja következik; a levél ezen kívül semmit nem tartalmaz abból, amit írtál, sem a céljaidat. A döntésedet (igen vagy nem) és annak idejét rögzítjük. A jogalap a hozzájárulásod, amelyet bármikor visszavonhatsz a levél alján lévő linkkel vagy a Beállításokban. A leveleket a Resend küldi ki.",
           "Technikai adatok: a tárhely- és bejelentkezési szolgáltatók a működéshez és a biztonsághoz naplózhatnak IP-címet, böngésző- és eszközadatokat.",
         ] },
         { heading: "Mire használjuk és milyen jogalapon", list: [
@@ -79,15 +80,16 @@ const hu: LegalSet = {
           "Apple: az iPhone-appban indított vásárlásoknál a fizetést, a megújítást, a lemondást és a visszatérítést az Apple (az EU-ban az Apple Distribution International Ltd.) kezeli, a saját feltételei és adatkezelési tájékoztatója szerint. Tőle a vásárlás állapotát kapjuk meg.",
           "KBOSS.hu Kft. (Számlázz.hu; 1031 Budapest, Záhony utca 7.): a számlák kiállítása, megküldése és tárolása, valamint a számlaadatok jogszabály szerinti továbbítása a NAV-nak.",
           "OpenAI: AI-válaszok.",
+          "Resend: az e-mail-emlékeztetők kiküldése (csak ha kéred őket).",
           "Google: Google-bejelentkezés (ha ezt választod), valamint a betűtípusok betöltése a Google Fonts szolgáltatásból.",
         ] },
-        { heading: "Adattovábbítás az EGT-n kívülre", body: ["Több szolgáltató (Vercel, Neon, Clerk, Stripe, Apple, OpenAI, Google) az Egyesült Államokban is kezel adatot, és az adatbázisunk is ott található. A továbbítás az EU által elismert garanciák, az EU–USA adatvédelmi keretrendszer vagy az Európai Bizottság általános szerződési feltételei (SCC) alapján történik, az adott szolgáltató feltételei szerint."] },
+        { heading: "Adattovábbítás az EGT-n kívülre", body: ["Több szolgáltató (Vercel, Neon, Clerk, Stripe, Apple, OpenAI, Resend, Google) az Egyesült Államokban is kezel adatot, és az adatbázisunk is ott található. A továbbítás az EU által elismert garanciák, az EU–USA adatvédelmi keretrendszer vagy az Európai Bizottság általános szerződési feltételei (SCC) alapján történik, az adott szolgáltató feltételei szerint."] },
         { heading: "Meddig őrizzük az adatokat", body: [
           "A fiókodat és a tartalmaidat addig őrizzük, amíg nem törlöd őket vagy a fiókodat. A naplóbejegyzések egyenként és egyben is törölhetők.",
           "Az AI-használati adatokat és a próba adatait a fiók törléséig őrizzük. A termékeseményeket és a körök tevékenységnaplóját a fiók törlésekor leválasztjuk a fiókodról: ezután a fiókodhoz nem kapcsolva, összesített statisztikához maradnak meg.",
           "A számlákat és a kiállításukhoz szükséges adatokat 8 évig őrizzük (ez lefedi az adójogszabályok szerinti elévülési időt), a fiók törlése után is, a fiókhoz nem kapcsolva. A Stripe a fizetési adatokat a saját feltételei és a jogszabályok szerint is tárolja; a Berripop-fiók törlése ezeket nem törli.",
           "Az App Store-előfizetés adatait a fiók törléséig őrizzük. Az Apple a vásárlásaidat a saját feltételei szerint tárolja; a Berripop-fiók törlése ezeket nem törli, és az App Store-előfizetést sem mondja le.",
-          "A Feltételek elfogadásáról és az AI-hozzájárulásról szóló nyilvántartást a fiók törléséig őrizzük.",
+          "A Feltételek elfogadásáról, az AI-hozzájárulásról és az e-mail-emlékeztetőről hozott döntésedről szóló nyilvántartást a fiók törléséig őrizzük.",
           "A panaszokat és az azokra adott válaszunkat három évig őrizzük (a fogyasztóvédelmi törvény 17/A. §-a szerint).",
           "A mobilapp-értesítő listáján szereplő e-mail-címet a megjelenésről szóló értesítés kiküldése után töröljük, vagy korábban, ha leiratkozol.",
         ] },
@@ -209,7 +211,7 @@ const hu: LegalSet = {
 
 const en: LegalSet = {
   back: "Back to Berripop",
-  updated: "Last updated: 12 November 2026",
+  updated: "Last updated: 25 November 2026",
   version: "Document version: {v}",
   nav: { privacy: "Privacy policy", terms: "Terms of service", cookies: "Cookie policy", contact: "Contact" },
   docs: {
@@ -234,6 +236,7 @@ const en: LegalSet = {
           "Product events: for example sign-up, first goal, opening the app on a given day or starting a subscription. The event name and time and, where relevant, the plan and the part of the app where it happened. No content is stored in them.",
           "Phone-app notice: if you sign up on the website to hear when the phone app launches, your email address, the chosen language, the time you signed up and the version of the consent wording you agreed to. No account is needed, and the address is not linked to an account.",
           "Phone notifications (iPhone app, only if you turn them on): your phone's notification identifier (push token) and time zone (refreshed when the app starts, so they stay on local time after travel), which notifications you want, at what time, and whether the morning thought should be fitted to you. Also a send log of which notification went out to you on which day and when, so none arrives twice; it is deleted after 3 days. Before the afternoon reminder we only check whether something happened in the app that day (for example a journal entry, a \"How are you?\" check-in, the daily question or a step), not what it was. A thought fitted to you uses only the topics you picked (in the first questions or when planning your path) and your latest \"How are you?\" mood (from the last day and a half). Never your journal, anything you typed or AI reflections. You can turn this off in Settings. Notifications are delivered by Apple's notification service (APNs) and never contain what you wrote or your goals. Turning them off deletes your phone's data; deleting your account also deletes the send log.",
+          "Email reminder (only if you ask for it): if you turn it on, on days you haven't been to Berripop yet we send a short reminder email to your account's email address in the evening (less often after a few days away, and not at all after a month). Before sending we only check whether you were in the app that day and, if you have your own journey, which day of it comes next; the email contains nothing you wrote and not your goals. We record your choice (yes or no) and when you made it. The legal basis is your consent, which you can withdraw at any time with the link at the bottom of the email or in Settings. The emails are sent by Resend.",
           "Technical data: hosting and sign-in providers may log IP addresses, browser and device data for operation and security.",
         ] },
         { heading: "Purposes and legal bases", list: [
@@ -258,15 +261,16 @@ const en: LegalSet = {
           "Apple: for purchases started in the iPhone app, payment, renewal, cancellation and refunds are handled by Apple (in the EU, Apple Distribution International Ltd.) under its own terms and privacy policy. We receive the purchase's status from Apple.",
           "KBOSS.hu Kft. (Számlázz.hu; Záhony utca 7., 1031 Budapest): issuing, sending and storing invoices, and reporting invoice data to the Hungarian Tax Authority (NAV) as required by law.",
           "OpenAI: AI responses.",
+          "Resend: sending email reminders (only if you ask for them).",
           "Google: Google sign-in (if you choose it), and loading fonts from Google Fonts.",
         ] },
-        { heading: "Transfers outside the EEA", body: ["Several providers (Vercel, Neon, Clerk, Stripe, Apple, OpenAI, Google) also process data in the United States, where our database is also located. Transfers rely on safeguards recognised by the EU, the EU–US Data Privacy Framework or the European Commission's standard contractual clauses (SCC), under each provider's terms."] },
+        { heading: "Transfers outside the EEA", body: ["Several providers (Vercel, Neon, Clerk, Stripe, Apple, OpenAI, Resend, Google) also process data in the United States, where our database is also located. Transfers rely on safeguards recognised by the EU, the EU–US Data Privacy Framework or the European Commission's standard contractual clauses (SCC), under each provider's terms."] },
         { heading: "Retention", body: [
           "We keep your account and content until you delete them or your account. Journal entries can be deleted one by one or all at once.",
           "AI usage data and trial data are kept until your account is deleted. When you delete your account, product events and circle activity entries are unlinked from it: they remain, no longer linked to your account, for aggregate statistics.",
           "Invoices and the data needed to issue them are kept for 8 years (which covers the limitation period under tax law), also after your account is deleted, no longer linked to it. Stripe also stores payment data under its own terms and the law; deleting your Berripop account doesn't delete it.",
           "App Store subscription data is kept until your account is deleted. Apple keeps your purchases under its own terms; deleting your Berripop account doesn't delete them, and doesn't cancel the App Store subscription.",
-          "Records of your acceptance of the Terms and of your AI consent are kept until your account is deleted.",
+          "Records of your acceptance of the Terms, of your AI consent and of your email reminder choice are kept until your account is deleted.",
           "Complaints and our replies are kept for three years (as required by section 17/A of the Hungarian Consumer Protection Act).",
           "Email addresses on the phone-app notice list are deleted once the launch notice has been sent, or earlier if you unsubscribe.",
         ] },

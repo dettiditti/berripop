@@ -17,6 +17,7 @@ import type { JournalState } from "@/lib/journal/types";
 import {
   aiFollowUpAction, appOpenedAction, buildGoalJourneyAction, translateGoalJourneyAction, getAssessmentAction, getJournalAction, getLegalStatusAction, getMilestonesAction, getSnapshotAction, importMomentsAction, saveAnswerAction,
   savePersonalAnswerAction, shareAnswerAction,
+  getEmailReminderAction,
 } from "@/lib/server/actions";
 import { clearDeviceMoments, readDeviceMoments } from "@/lib/store";
 import AccountMenu from "./AccountMenu";
@@ -30,6 +31,7 @@ import Onboarding from "./Onboarding";
 import QuestFlow, { type Draft } from "./QuestFlow";
 import QuestionDetail from "./QuestionDetail";
 import ReminderPrompt from "./ReminderPrompt";
+import EmailReminderPrompt from "./EmailReminderPrompt";
 import PushTimeZoneSync from "./PushTimeZoneSync";
 import ScenePrompt from "./ScenePrompt";
 import TermsGate from "./TermsGate";
@@ -250,6 +252,17 @@ function AppShell({ snapshot, setSnapshot, relationshipEnabled }: { snapshot: Sn
     if (scenePicked && hasWidget() && widgetTipDue(meId, view.today)) setWidgetTip(true);
   }, [todayFree, meId, view.today, view.streak, scenePicked]);
   const closeStreakWelcome = useCallback(() => setStreakWelcome(null), []);
+
+  // Website only: offer the email reminder once per account ("unasked" = never said yes or no).
+  // A new member sees it once they have done something today or on an earlier day, not in the middle of their first steps.
+  const [emailAsk, setEmailAsk] = useState<"unknown" | "ask" | "done">("unknown");
+  useEffect(() => {
+    if (isNativeApp(navigator.userAgent)) return setEmailAsk("done");
+    getEmailReminderAction().then(r => setEmailAsk(r.ok && r.state === "unasked" ? "ask" : "done")).catch(() => setEmailAsk("done"));
+  }, []);
+  const settledIn = [...view.facts.myActiveDates].some(day => day < view.today)
+    || view.dailyDoneByMe || view.journey.doneToday || !!view.goalState?.doneToday;
+  const showEmailAsk = emailAsk === "ask" && todayFree && settledIn && scenePicked && !streakWelcome && !widgetTip;
   const tipDone = useCallback(() => { widgetTipDone(meId); setWidgetTip(false); }, [meId]);
   const tipLater = useCallback(() => { widgetTipLater(meId, view.today); setWidgetTip(false); }, [meId, view.today]);
   const appetite = useAppetite(view);
@@ -295,6 +308,17 @@ function AppShell({ snapshot, setSnapshot, relationshipEnabled }: { snapshot: Sn
     // Only on first load: joining a circle later shouldn't reopen it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Opening the assessment before its state has loaded (a slow or failed first load) loads it first,
+  // so the button never silently does nothing; one already accepted or skipped is not reopened.
+  const openAssessment = () => {
+    if (assessment) return setAssessing(true);
+    getAssessmentAction().then(r => {
+      if (!r.ok) return notify(d.auth.error);
+      setAssessment(r.state);
+      if (assessmentOpen(hasCircle, r.state.assessment?.status ?? null)) setAssessing(true);
+    }).catch(() => notify(d.auth.error));
+  };
 
   // Answers from the phone app's first questions are only needed until onboarding; never kept after.
   useEffect(() => { clearStart(); }, []);
@@ -417,8 +441,8 @@ function AppShell({ snapshot, setSnapshot, relationshipEnabled }: { snapshot: Sn
 
   function nextStepFor(rw: RewardDTO): NextStep {
     const c = d.gamification.celebration;
-    if (!circle && assessmentOpen(false, assessment?.assessment?.status ?? null)) {
-      return { label: d.today.assessmentTitle, onClick: () => { setReward(null); setAssessing(true); } };
+    if (!circle && (assessment ? assessmentOpen(false, assessment.assessment?.status ?? null) : !view.goalJourney)) {
+      return { label: d.today.assessmentTitle, onClick: () => { setReward(null); openAssessment(); } };
     }
     if (rw.weekCompleted || rw.newAchievements.length > 0) return { label: c.nextWorld, onClick: () => { setReward(null); go("world"); } };
     if (rw.context === "journey") return { label: c.nextJourney, onClick: () => { setReward(null); openJourney(circle ? "shared" : "own"); } };
@@ -436,7 +460,7 @@ function AppShell({ snapshot, setSnapshot, relationshipEnabled }: { snapshot: Sn
   const screenProps = {
     view, run, notify, go, startQuest, openQuestion: setDetail, onInvite: () => setInviteOpen(true),
     journeyMode, openJourney, buildJourney: () => buildJourney(), journeyBuilding, journeyTranslating,
-    assessmentStatus: assessment?.assessment?.status ?? null, openAssessment: () => setAssessing(true),
+    assessmentStatus: assessment ? assessment.assessment?.status ?? null : undefined, openAssessment,
     writeInJournal, milestoneCounts, relationshipEnabled,
     covered: !!quest || !!reward || !!detail || !!streakWelcome || widgetTip,
   };
@@ -552,6 +576,7 @@ function AppShell({ snapshot, setSnapshot, relationshipEnabled }: { snapshot: Sn
       {widgetTip && todayFree && !streakWelcome && (
         <WidgetTip streak={view.streak.current} bites={appetite.mealsToday.length} wear={wornHeadItem(snapshot.wardrobe)} onDone={tipDone} onLater={tipLater} />
       )}
+      {showEmailAsk && <EmailReminderPrompt notify={notify} onDone={() => setEmailAsk("done")} />}
       {toast && <Toast key={toast.id} message={toast.message} />}
       {nextCelebration && !quest && !reward && <Celebration key={`${nextCelebration.kind}:${nextCelebration.id}`} item={nextCelebration} onDone={finishCelebration} />}
     </div>

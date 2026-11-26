@@ -3043,3 +3043,8 @@ html[data-app]:has(.berri-video--clear), html[data-app] body:has(.berri-video--c
 .rel-past[open] summary { margin-bottom: 10px; }
 .rel-retest-note { max-width: 140px; text-align: right; font-size: 12px; font-weight: 700; line-height: 1.35; }
 .rel-delta { display: block; font-size: 11px; font-weight: 800; text-align: right; }
+
+/* Email unsubscribe page (no app shell). */
+.unsubscribe-page { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; background: var(--bg, #f6f3ff); }
+.unsubscribe-page > .card { width: 100%; max-width: 440px; }
+.unsubscribe-page h1 { font-size: 22px; }

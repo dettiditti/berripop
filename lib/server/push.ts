@@ -95,7 +95,7 @@ const MOOD_MS = 36 * 3600_000;
  * a check-in, a saved journal entry, a circle answer, a path step or a world
  * moment. Timestamps only, never content.
  */
-async function lastActivity(userIds: string[], since: Date): Promise<Map<string, Date>> {
+export async function lastActivity(userIds: string[], since: Date): Promise<Map<string, Date>> {
   const db = getDb();
   const rows = (await Promise.all([
     db.select({ userId: userActivity.userId, at: max(userActivity.completedAt) }).from(userActivity)
@@ -164,7 +164,9 @@ const dbStore: PushStore = {
   },
   lastActivity,
   async sends(userIds) {
-    return getDb().select({ userId: pushSends.userId, kind: pushSends.kind, date: pushSends.date, sentAt: pushSends.sentAt }).from(pushSends).where(inArray(pushSends.userId, userIds));
+    // The email reminder shares the send log (lib/server/emailReminders) but is not a phone notification.
+    return getDb().select({ userId: pushSends.userId, kind: pushSends.kind, date: pushSends.date, sentAt: pushSends.sentAt }).from(pushSends)
+      .where(and(inArray(pushSends.userId, userIds), inArray(pushSends.kind, ["thought", "remind"]))) as Promise<{ userId: string; kind: "thought" | "remind"; date: string; sentAt: Date }[]>;
   },
   thoughtInputs,
   async claim(userId, kind, date) {

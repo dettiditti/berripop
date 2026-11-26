@@ -10,6 +10,7 @@ import { useI18n } from "@/lib/i18n/client";
 import { deleteAccountAction, exportAccountAction, getSnapshotAction, setDisplayNameAction } from "@/lib/server/actions";
 import BerripopMascot from "./berripop/BerripopMascot";
 import ReminderCard from "./ReminderCard";
+import EmailReminderCard from "./EmailReminderCard";
 import AiConsentCard from "./AiConsentCard";
 import AboutYouCard from "./AboutYouCard";
 import SceneCard from "./SceneCard";
@@ -127,6 +128,7 @@ export default function SettingsPage() {
             <LanguageSelector persist onChanged={notify} />
 
             <ReminderCard notify={notify} />
+            <EmailReminderCard notify={notify} />
 
             <AiConsentCard notify={notify} />
 
