@@ -12,6 +12,7 @@ import { goalNodes, goalRef } from "@/lib/journey/goal";
 import type { Meal } from "@/lib/berriHunger";
 import { prefersReducedMotion } from "@/lib/motion";
 import AchievementBadge from "../AchievementBadge";
+import AdventCard from "../AdventCard";
 import RelationshipHomeCard from "../relationship/RelationshipHomeCard";
 import CheckinCard from "../checkin/CheckinCard";
 import Feed from "../Feed";
@@ -180,6 +181,8 @@ export default function HomeScreen({ view, run, notify, go, startQuest, openQues
           </>
         )}
       </section>
+
+      <AdventCard today={view.today} run={run} notify={notify} writeInJournal={writeInJournal} onWorld={() => go("world")} />
 
       <nav className="home-shortcuts" aria-label={td.choicesTitle}>
         <button

@@ -21,6 +21,8 @@ export const FUNNEL_EVENTS = [
   "signup_error_shown",
   // Which part of the form the error belongs to (context: field name only, never the message or what was typed).
   "signup_error_field",
+  // Advent calendar: a window opened (no day, no content).
+  "advent_window_opened",
   "first_goal_created",
   "first_entry_saved",
   "first_reflection_received",

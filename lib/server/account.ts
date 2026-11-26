@@ -3,7 +3,7 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { and, asc, desc, eq, inArray, ne } from "drizzle-orm";
 import { getDb } from "../db";
 import {
-  aiCalls, answers, circleMembers, dailyCheckins, circles, customQuestions, funnelEvents, growthGoals, growthSteps, legalRecords,
+  adventWindows, aiCalls, answers, circleMembers, dailyCheckins, circles, customQuestions, funnelEvents, growthGoals, growthSteps, legalRecords,
   pathAssessments, pushDevices, subscriptions, userAchievements, userActivity, userPrefs, users, userXpEvents, worldMoments,
 } from "../db/schema";
 import { deletionBlock, isDeleteConfirmation, type DeletionBlock } from "../account/policy";
@@ -30,7 +30,7 @@ export type DeleteError = "unauthorized" | "confirmation" | "billing_unavailable
 /** Everything we store about the member, for download (their own data only). */
 export async function exportAccount(userId: string) {
   const db = getDb();
-  const [[user], [prefs], [sub], memberships, myAnswers, myQuestions, goals, steps, [assessment], journal, usage, events, activity, xp, badges, moments, legal, invoiceRows, checkins, phones, thoughts, relationship] = await Promise.all([
+  const [[user], [prefs], [sub], memberships, myAnswers, myQuestions, goals, steps, [assessment], journal, usage, events, activity, xp, badges, moments, legal, invoiceRows, checkins, phones, thoughts, relationship, adventRows] = await Promise.all([
     db.select().from(users).where(eq(users.id, userId)).limit(1),
     db.select().from(userPrefs).where(eq(userPrefs.userId, userId)).limit(1),
     db.select().from(subscriptions).where(eq(subscriptions.userId, userId)).limit(1),
@@ -58,6 +58,7 @@ export async function exportAccount(userId: string) {
     }).from(pushDevices).where(eq(pushDevices.userId, userId)),
     exportThoughts(userId),
     exportRelationship(userId),
+    db.select({ year: adventWindows.year, day: adventWindows.day, gift: adventWindows.gift, openedAt: adventWindows.openedAt }).from(adventWindows).where(eq(adventWindows.userId, userId)),
   ]);
   return {
     exportedAt: new Date().toISOString(),
@@ -75,7 +76,7 @@ export async function exportAccount(userId: string) {
     relationshipWorld: relationship,
     aiUsage: usage,
     productEvents: events,
-    progress: { activity, xp, badges },
+    progress: { activity, xp, badges, adventWindows: adventRows },
     innerWorldMoments: moments,
     dailyCheckins: checkins,
     /** Phones with the daily reminder on (the device token itself is left out). */

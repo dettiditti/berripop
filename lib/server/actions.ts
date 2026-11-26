@@ -29,6 +29,7 @@ import * as goalJourney from "./goalJourney";
 import * as personal from "./personal";
 import * as push from "./push";
 import * as emailReminders from "./emailReminders";
+import * as advent from "./advent";
 import type { PushPrefs } from "../push/schedule";
 import { getMemberProfile, setMemberProfile } from "./profile";
 import type { MemberProfile } from "../profile/model";
@@ -643,6 +644,30 @@ export async function setPushReminderAction(token: string, on: boolean, timeZone
   if (!userId) return { ok: false, on: false };
   const ok = on ? await push.savePushDevice(userId, token, timeZone) : await push.removePushDevice(userId, token);
   return { ok, on: ok ? on : !on };
+}
+
+/* ---------- Advent calendar ---------- */
+
+/** This December's opened windows, or null outside December. */
+export async function getAdventAction(): Promise<advent.AdventState | null> {
+  const userId = await requireUserId();
+  if (!userId) return null;
+  return advent.loadAdvent(userId);
+}
+
+/**
+ * Opens one window (today's or a missed one); its star and any gift are counted
+ * on the server. Returns the fresh snapshot too, so the star count and Berri's
+ * world update at once.
+ */
+export async function openAdventWindowAction(day: number): Promise<ActionResult<{ state: advent.AdventState; gift: string | null; fresh: boolean }>> {
+  const userId = await requireUserId();
+  if (!userId) return { ok: false, error: "unauthorized" } as const;
+  const r = await advent.openWindow(userId, Number(day));
+  if (!r.ok) return { ok: false, error: "invalid" } as const;
+  const snap = await service.getSnapshot(userId);
+  if (!snap.ok) return snap;
+  return { ok: true, snapshot: snap.snapshot, data: { state: r.state, gift: r.gift, fresh: r.fresh } };
 }
 
 /* ---------- Email reminder (opt-in) ---------- */

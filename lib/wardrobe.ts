@@ -65,9 +65,11 @@ export function starsEarned(input: { questionDates: Iterable<string>; checkinDat
   return new Set(input.questionDates).size + new Set(input.checkinDates).size + new Set(input.momentDates).size;
 }
 
-export function starsSpent(owned: Iterable<string>): number {
+/** Stars paid for what the member owns; things received as gifts (the advent calendar) cost nothing. */
+export function starsSpent(owned: Iterable<string>, gifted: Iterable<string> = []): number {
+  const free = new Set(gifted);
   let n = 0;
-  for (const id of owned) if (isItem(id)) n += PRICES[id];
+  for (const id of owned) if (isItem(id) && !free.has(id)) n += PRICES[id];
   return n;
 }
 
@@ -80,10 +82,10 @@ export type WardrobeDTO = {
   equipped: ItemId[];
 };
 
-export function wardrobeOf(earned: number, rows: { itemId: string; equipped: boolean }[]): WardrobeDTO {
+export function wardrobeOf(earned: number, rows: { itemId: string; equipped: boolean }[], gifted: string[] = []): WardrobeDTO {
   const valid = rows.filter(r => isItem(r.itemId));
   const owned = valid.map(r => r.itemId as ItemId);
-  const spent = starsSpent(owned);
+  const spent = starsSpent(owned, gifted);
   return { earned, spent, balance: Math.max(0, earned - spent), owned, equipped: valid.filter(r => r.equipped).map(r => r.itemId as ItemId) };
 }
 

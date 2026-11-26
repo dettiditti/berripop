@@ -167,6 +167,20 @@ export const berriItems = pgTable("berri_items", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, t => [primaryKey({ columns: [t.userId, t.itemId] })]);
 
+/**
+ * Advent calendar windows the member opened (lib/advent): one row per member,
+ * year and day (1–24). `gift` is the Berri's-world thing it brought (also in
+ * berri_items, and not paid for with stars), "stars" when it brought bonus
+ * stars instead (the member already had that thing), or null. Holds no content.
+ */
+export const adventWindows = pgTable("advent_windows", {
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  year: integer("year").notNull(),
+  day: integer("day").notNull(),
+  gift: text("gift"),
+  openedAt: timestamp("opened_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [primaryKey({ columns: [t.userId, t.year, t.day] })]);
+
 export const userPrefs = pgTable("user_prefs", {
   userId: text("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
   locale: text("locale").notNull().default("hu"),
