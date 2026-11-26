@@ -32,7 +32,7 @@ async function main() {
   const members = sql`select id, row_number() over (order by created_at) as n, created_at from users
     where id not like 'test\\_%' and (${days} = 0 or created_at >= now() - make_interval(days => ${days}))`;
 
-  const [overview, funnel, journeys, retention, signup] = await sql.transaction([
+  const [overview, funnel, journeys, retention, signup, signupErrors] = await sql.transaction([
     sql`with m as (${members}) select count(distinct m.id)::int as members, count(e.id)::int as events,
       min(m.created_at at time zone ${TZ})::date::text as first_joined, max(e.created_at at time zone ${TZ})::text as last_event
       from m left join funnel_events e on e.user_id = m.id`,
@@ -62,6 +62,10 @@ async function main() {
         and e.created_at >= now() - make_interval(days => ${days || 30})
         and (case when s.step = 'signup_completed' then e.user_id not like 'test\\_%' else e.user_id is null end)
       group by s.step, s.ord order by s.ord`,
+    // Which form part the sign-up errors belong to (field names only).
+    sql`select coalesce(context, '-') as field, count(*)::int as tabs from funnel_events
+      where event = 'signup_error_field' and user_id is null and created_at >= now() - make_interval(days => ${days || 30})
+      group by context order by tabs desc`,
   ], { readOnly: true });
 
   console.log(days ? `Members who joined in the last ${days} days` : "All real members");
@@ -74,6 +78,8 @@ async function main() {
   console.table(retention);
   console.log(`Sign-up page, last ${days || 30} days (browser tabs that reached each step; the last row is accounts created)`);
   console.table(signup);
+  console.log("Sign-up errors by form part (browser tabs; recorded since this was added)");
+  console.table(signupErrors);
 }
 
 main().catch(err => {

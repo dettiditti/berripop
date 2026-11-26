@@ -38,6 +38,7 @@ sets `user_id` to null, so counts stay but the person is gone.
 | `thought_dissector_quota_exhausted` | A start was refused because the monthly sessions were used up | `thought` |
 | `thought_dissector_premium_clicked` | The Premium button in the Gondolatboncoló was pressed | `thought` |
 | `signup_page_viewed` / `signup_form_started` / `signup_submitted` / `signup_verify_viewed` / `signup_error_shown` | Sign-up page, **before an account exists, so without a member id**; each once per browser tab (`components/auth/SignUpTracker.tsx`) | `app` in the iPhone app, else – |
+| `signup_error_field` | Sign-up page, with each error shown: which part of the form it belongs to, from Clerk's class names only (never the message or what was typed); once per field per browser tab | `password`, `email`, `code` (email code), `form` (an alert above the form), `other`; with an `app_` prefix in the iPhone app |
 | `signup_social_clicked` | A Google or Apple button was tapped on the sign-up page (anonymous, once per tab) | `google`, `apple` or `social` |
 | `pricing_viewed`, `upgrade_prompt_*`, `checkout_*`, `subscription_canceled`, `plan_changed`, `ai_allowance_reached`, `premium_feature_requested` | Subscription funnel | where it came from |
 | `trial_started` | Server: the member started the one-time 7-day trial (once per account) | – |

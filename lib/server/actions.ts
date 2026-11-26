@@ -157,7 +157,7 @@ const CLIENT_EVENTS = new Set<string>([
   "apple_purchase_started", "apple_purchase_failed",
   "feature_paywall_viewed",
   // Sign-up page steps, sent before sign-in (so without a user id).
-  "signup_page_viewed", "signup_form_started", "signup_submitted", "signup_social_clicked", "signup_verify_viewed", "signup_error_shown",
+  "signup_page_viewed", "signup_form_started", "signup_submitted", "signup_social_clicked", "signup_verify_viewed", "signup_error_shown", "signup_error_field",
 ]);
 export async function trackAction(event: string, context?: string): Promise<void> {
   if (!CLIENT_EVENTS.has(event)) return;

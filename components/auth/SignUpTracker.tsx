@@ -3,6 +3,7 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { trackAction } from "@/lib/server/actions";
+import { errorField } from "@/lib/signupErrors";
 
 /*
  * Anonymous steps of the sign-up page, to see where visitors stop before an
@@ -11,10 +12,13 @@ import { trackAction } from "@/lib/server/actions";
  * steps are read from its DOM: the first focus in a field, a form submit, a tap
  * on a social button, Clerk's email-code route and its error texts.
  * Each step counts once per browser tab, so reloads and retries do not inflate it.
+ * An error also records which part of the form it belongs to
+ * (signup_error_field: password, email, code, form or other), from Clerk's
+ * class names only, never the message text.
  */
 type Step =
   | "signup_page_viewed" | "signup_form_started" | "signup_submitted"
-  | "signup_social_clicked" | "signup_verify_viewed" | "signup_error_shown";
+  | "signup_social_clicked" | "signup_verify_viewed" | "signup_error_shown" | "signup_error_field";
 
 const STORE_KEY = "berripop.signupSteps";
 const sent = new Set<string>();
@@ -66,7 +70,15 @@ export default function SignUpTracker({ inApp, children }: { inApp: boolean; chi
       if (provider) once("signup_social_clicked", provider);
     };
     const errorSelector = "[class*='cl-formFieldErrorText'], [class*='cl-alert']";
-    const checkErrors = () => { if (root.querySelector(errorSelector)) once("signup_error_shown", context); };
+    const checkErrors = () => {
+      const errors = root.querySelectorAll(errorSelector);
+      if (!errors.length) return;
+      once("signup_error_shown", context);
+      for (const el of errors) {
+        const field = errorField(el);
+        once("signup_error_field", inApp ? `app_${field}` : field);
+      }
+    };
     const observer = new MutationObserver(checkErrors);
     root.addEventListener("focusin", onFocus);
     root.addEventListener("submit", onSubmit, true);
@@ -78,7 +90,7 @@ export default function SignUpTracker({ inApp, children }: { inApp: boolean; chi
       root.removeEventListener("click", onClick, true);
       observer.disconnect();
     };
-  }, [context]);
+  }, [context, inApp]);
 
   return <div ref={ref} style={{ display: "contents" }}>{children}</div>;
 }

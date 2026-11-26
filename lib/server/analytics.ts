@@ -19,6 +19,8 @@ export const FUNNEL_EVENTS = [
   "signup_social_clicked",
   "signup_verify_viewed",
   "signup_error_shown",
+  // Which part of the form the error belongs to (context: field name only, never the message or what was typed).
+  "signup_error_field",
   "first_goal_created",
   "first_entry_saved",
   "first_reflection_received",
@@ -97,6 +99,8 @@ const CONTEXTS = new Set([
   "personal", "circle", "daily", "journey", "goal", "assessment", "building", "rest", "thought",
   "sandbox", "production", "app", "settings", "converted", "not_converted",
   "google", "apple", "social",
+  // Sign-up form error fields (signup_error_field); "app_" prefix in the iPhone app.
+  "password", "email", "code", "form", "other", "app_password", "app_email", "app_code", "app_form", "app_other",
   // Kapcsolati világ features (PREMIUM_FEATURES in lib/relationship/types.ts).
   "relationship", "love_detail", "attachment_detail", "reflection", "trigger", "translator", "growth",
 ]);
