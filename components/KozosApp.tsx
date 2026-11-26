@@ -31,6 +31,8 @@ import { InviteModal, QuestionComposer, Toast } from "./Modals";
 import Onboarding from "./Onboarding";
 import QuestFlow, { type Draft } from "./QuestFlow";
 import QuestionDetail from "./QuestionDetail";
+import { lookBackFor } from "@/lib/questions/lookBack";
+import { questionText } from "@/lib/i18n/content";
 import ReminderPrompt from "./ReminderPrompt";
 import EmailReminderPrompt from "./EmailReminderPrompt";
 import PushTimeZoneSync from "./PushTimeZoneSync";
@@ -473,6 +475,16 @@ function AppShell({ snapshot, setSnapshot, relationshipEnabled }: { snapshot: Sn
     covered: !!quest || !!reward || !!detail || !!streakWelcome || widgetTip,
   };
   const questQuestion = quest ? view.question(quest.ref) : null;
+  // Look-back days show the member's own earlier answers (never analysed, never sent anywhere).
+  const questLookBack = quest?.context.kind === "journey"
+    ? lookBackFor(quest.context.day, day => {
+        if (!view.myJourney[day]) return null;
+        const ref = view.journeyRef(day);
+        const answer = view.answerFor(ref);
+        const q = view.question(ref);
+        return answer && q ? { question: questionText(q, d), answer: answer.text } : null;
+      })
+    : undefined;
   const offerRules = useMemo(() => ({ activeDays: new Set(snapshot.progress.activeDates).size, account: snapshot.account, notify }), [snapshot.progress.activeDates, snapshot.account, notify]);
 
   if (assessing && assessment) {
@@ -524,6 +536,7 @@ function AppShell({ snapshot, setSnapshot, relationshipEnabled }: { snapshot: Sn
           onDraft={dr => setDrafts(prev => ({ ...prev, [quest.ref]: dr }))}
           onClose={() => setQuest(null)}
           onSave={save}
+          lookBack={questLookBack}
           ai={{
             account: snapshot.account,
             ask: async text => {

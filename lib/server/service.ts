@@ -12,9 +12,10 @@ import { isLocale } from "../i18n/config";
 import { isGoalRef } from "../journey/goal";
 import { isScene } from "../world";
 import {
-  computeFacts, isCustomRef, isSharedComplete, journeyDayOf, journeyStateFor, resolveQuestion,
+  computeFacts, isCustomRef, isSharedComplete, journeyStateFor, resolveQuestion,
   SHARED_XP, unlockedAchievements, unlockedMilestones, XP_RULES,
 } from "../domain/rules";
+import { journeyDayAccepts } from "../questions/journeyDay";
 import { REACTIONS, type ActionResult, type AnswerContext, type QuestionRef, type RewardDTO } from "../domain/types";
 import type { CategoryId, QuestTheme } from "../types";
 import { loadSnapshot } from "./snapshot";
@@ -321,7 +322,8 @@ export async function saveAnswer(userId: string, input: {
   let context = input.context;
   if (context.kind === "daily" && circle.daily.questionRef !== questionRef) context = { kind: "bonus" };
   if (context.kind === "journey") {
-    if (journeyDayOf(questionRef) !== context.day) return fail("invalid");
+    const answered = [...before.progress.answeredRefs, ...circle.myAnswers.map(a => a.questionRef)];
+    if (!journeyDayAccepts(context.day, questionRef, answered, before.progress.journeyRefs[context.day])) return fail("invalid");
     // One journey: the member's own, wherever they walked it.
     const state = journeyStateFor(before.progress.journey, today);
     if (!state.canStart(context.day)) return fail("locked");

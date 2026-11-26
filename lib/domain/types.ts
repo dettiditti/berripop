@@ -125,6 +125,8 @@ export type ProgressDTO = {
   today: string;
   /** Journey day → date it was completed. */
   journey: Record<number, string>;
+  /** Journey day → the question it was completed with (the day's own, an easier stand-in, or the first journey's). */
+  journeyRefs: Record<number, QuestionRef>;
   /** Dates the member completed a daily question (own or circle). */
   daily: string[];
   /** Today's own question; null for members of a circle (they answer the circle's). */

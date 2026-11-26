@@ -616,6 +616,15 @@ button.avatar:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ton
 .quest-write-question { font-size: 24px; }
 .quest-alt { margin-top: 8px; color: var(--muted, inherit); font-weight: 700; }
 .quest-share-note { margin-top: 4px; }
+.follow-up-card { display: grid; gap: 8px; }
+.follow-up-question { font-weight: 800; margin: 0; }
+.nudges-quiet { justify-self: start; }
+.look-back { margin: 10px 0 14px; padding: 12px 14px; border-radius: 16px; background: rgba(255, 255, 255, 0.7); }
+.look-back summary { font-weight: 800; cursor: pointer; }
+.look-back ul { list-style: none; padding: 0; margin: 6px 0 10px; display: grid; gap: 8px; }
+.look-back li p { margin: 2px 0 0; white-space: pre-wrap; }
+.look-back-ask { font-weight: 800; }
+.deeper-offer { display: grid; gap: 6px; justify-items: start; margin: 12px 0; padding: 12px 14px; border-radius: 16px; background: rgba(255, 255, 255, 0.16); }
 .answer-box {
   width: 100%; resize: vertical; min-height: 150px;
   padding: 16px 18px; border-radius: 22px; border: 2px solid var(--line); background: #fff;

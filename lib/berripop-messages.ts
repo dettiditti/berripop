@@ -25,6 +25,8 @@ export const moodFor: Record<MessageKey, BerripopMood> = {
   "quest.intro": "curious",
   "quest.empty": "thinking",
   "quest.writing": "encouraging",
+  "quest.answered": "happy",
+  "quest.answeredWarm": "happy",
   "quest.deeper": "excited",
   "quest.save": "happy",
   "celebrate.default": "excited",

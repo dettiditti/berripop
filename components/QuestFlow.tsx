@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, Clock, Lightbulb, Lock, Sparkles, Users, X } from "lucide-react";
 import { categoryTone, XP_RULES } from "@/lib/content";
 import { bankQuestion } from "@/lib/questions/bank";
+import type { LookBack } from "@/lib/questions/lookBack";
+import { journeyNodes } from "@/lib/content";
 import { berripopSays, moodFor, type MessageKey } from "@/lib/berripop-messages";
 import { PLAN_LIMITS } from "@/lib/billing/plans";
 import type { AccountDTO, AnswerContext, AnswerDTO } from "@/lib/domain/types";
@@ -32,6 +34,8 @@ type Props = {
   onDraft: (d: Draft) => void;
   onClose: () => void;
   onSave: (d: Draft, share: boolean) => Promise<void>;
+  /** On the journey's look-back days: the member's own earlier answers, shown as written (lib/questions/lookBack). */
+  lookBack?: LookBack;
   /** AI follow-up suggestions (metered on the server). */
   ai?: { account: AccountDTO; ask: (draft: string) => Promise<{ question: string } | { error: string } | null> };
 };
@@ -99,7 +103,7 @@ function AiFollowUp({ ai, draft, suggestion, onSuggestion, selected, onUse }: {
 
 type Step = "intro" | "write" | "save";
 
-export default function QuestFlow({ question, context, existing, draft, circleNames, xp, onDraft, onClose, onSave, ai }: Props) {
+export default function QuestFlow({ question, context, existing, draft, circleNames, xp, onDraft, onClose, onSave, lookBack, ai }: Props) {
   const { d, t, plural, date } = useI18n();
   const f = d.questions.flow;
   const [step, setStep] = useState<Step>(existing ? "write" : "intro");
@@ -124,11 +128,25 @@ export default function QuestFlow({ question, context, existing, draft, circleNa
   const altText = context.kind === "journey" ? d.journey.challengeAlt[String(context.day)] : undefined;
   // Bank questions that are not marked circle-safe get a gentle note before sharing.
   const personal = bankQuestion(question.id)?.circleSafe === false;
+  const isChallenge = context.kind === "journey" && journeyNodes[context.day - 1]?.kind === "challenge";
+  // Challenge days: do it, or think it through instead (both complete the day the same way).
+  const [thinking, setThinking] = useState(false);
+  const thinkText = altText?.replace(/^(Vagy|Or): /, "");
+  const heading = thinking && thinkText ? thinkText.charAt(0).toLocaleUpperCase() + thinkText.slice(1) : text0;
+  // Follow-ups (63-day plan 3.3): one at a time, never on challenge days, quieter after a very short answer
+  // or when the member said "that's enough" the last two times.
+  const [promptIndex, setPromptIndex] = useState(0);
+  const [followUp, setFollowUp] = useState<"open" | "quiet" | "closed">("open");
+  const [declined, setDeclined] = useState(0);
+  useEffect(() => { setDeclined(readDeclined()); }, []);
+  const words = text.trim().split(/\s+/).filter(Boolean).length;
+  const quiet = followUp === "quiet" || (followUp === "open" && !prompt && (words < 4 || declined >= 2));
+  const warm = bankQuestion(question.id)?.resource === true;
   const canShare = circleNames.length > 0;
   const alreadyShared = !!existing?.shared;
   const ready = text.trim().length >= 2;
   // Berripop reacts to effort only, never to what the answer says.
-  const writeKey: MessageKey = reflection.trim() ? "quest.deeper" : text.trim() ? "quest.writing" : "quest.empty";
+  const writeKey: MessageKey = reflection.trim() ? "quest.deeper" : words >= 4 ? (warm ? "quest.answeredWarm" : "quest.answered") : text.trim() ? "quest.writing" : "quest.empty";
   const label =
     context.kind === "journey" || context.kind === "goal"
       ? t(f.dayQuest, { day: context.day })
@@ -167,6 +185,7 @@ export default function QuestFlow({ question, context, existing, draft, circleNa
   async function save() {
     setSaving(true);
     try {
+      if (prompt && reflection.trim()) writeDeclined(0);
       await onSave({ text, reflection: prompt ? reflection : "", prompt }, share);
     } finally {
       setSaving(false);
@@ -197,8 +216,18 @@ export default function QuestFlow({ question, context, existing, draft, circleNa
           {altText && <p className="quest-alt">{altText}</p>}
           <p className="quest-meta"><Clock size={16} /> {plural(d.common.aboutMinutes, question.minutes)} · {f.noWrong}</p>
           <div className="quest-flow-actions">
-            <button className="btn btn--primary btn--lg btn--block" onClick={() => setStep("write")}>{f.ready} <ArrowRight size={20} /></button>
-            <button className="btn btn--text" onClick={close}>{f.later}</button>
+            {isChallenge && altText ? (
+              <>
+                <button className="btn btn--primary btn--lg btn--block" onClick={() => { setThinking(false); setStep("write"); }}>{f.challengeDo} <ArrowRight size={20} /></button>
+                <button className="btn btn--white btn--lg btn--block" onClick={() => { setThinking(true); setStep("write"); }}>{f.challengeThink}</button>
+                <button className="btn btn--text" onClick={close}>{f.challengeLater}</button>
+              </>
+            ) : (
+              <>
+                <button className="btn btn--primary btn--lg btn--block" onClick={() => setStep("write")}>{f.ready} <ArrowRight size={20} /></button>
+                <button className="btn btn--text" onClick={close}>{f.later}</button>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -206,8 +235,25 @@ export default function QuestFlow({ question, context, existing, draft, circleNa
       {step === "write" && (
         <div className="quest-flow-body quest-write" key="write">
           <span className="eyebrow">{topic}</span>
-          <h1 className="quest-write-question">{text0}</h1>
-          {altText && <p className="quest-alt">{altText}</p>}
+          <h1 className="quest-write-question">{heading}</h1>
+          {altText && !thinking && <p className="quest-alt">{altText}</p>}
+          {lookBack && lookBack.length > 0 && (
+            <details className="look-back" open={lookBack.some(g => g.key === "pair") || lookBack.reduce((n, g) => n + g.items.length, 0) <= 7}>
+              <summary>{f.lookBackTitle}</summary>
+              <p className="muted">{f.lookBackIntro}</p>
+              {lookBack.map(g => (
+                <div key={String(g.key)} className="look-back-group">
+                  <span className="shared-progress-label">{g.key === "pair" ? f.lookBackPair : t(f.lookBackWeek, { n: g.key })}</span>
+                  <ul>
+                    {g.items.map(i => (
+                      <li key={i.day}><small>{t(d.journey.day, { n: i.day })} · {i.question}</small><p>{i.answer}</p></li>
+                    ))}
+                  </ul>
+                  {g.key === "pair" && <p className="look-back-ask">{f.lookBackThreeWords}</p>}
+                </div>
+              ))}
+            </details>
+          )}
           {existing && <p className="note"><Check size={15} /> {t(f.answeredOn, { date: date(existing.date) })}</p>}
           <label className="sr-only" htmlFor="answer">{f.answerLabel}</label>
           <textarea
@@ -224,20 +270,32 @@ export default function QuestFlow({ question, context, existing, draft, circleNa
           <div className="answer-hint" id="answer-hint"><Lock size={13} /> {d.privacy.answerHint}</div>
           <BerripopReaction mood={moodFor[writeKey]} message={berripopSays(d, writeKey, question.id)} size={52} className="quest-reaction" />
 
-          <div className="nudges">
-            <span className="nudges-title"><Lightbulb size={16} /> {f.deeperTitle} <em>{context.kind !== "bonus" && !existing?.reflection ? t(f.optionalXp, { n: XP_RULES.reflection }) : f.optional}</em></span>
-            <div className="chip-row">
-              {prompts.map(p => (
-                <button key={p} type="button" className={`chip ${prompt === p ? "is-active" : ""}`} onClick={() => setPrompt(prompt === p ? "" : p)} aria-pressed={prompt === p}>
-                  {p}
-                </button>
-              ))}
+          {!isChallenge && (prompts.length > 0 || ai) && followUp !== "closed" && (quiet ? (
+            <button type="button" className="btn btn--text nudges-quiet" onClick={() => setFollowUp("open")}><Lightbulb size={16} /> {f.deeperTitle}</button>
+          ) : (
+            <div className="nudges">
+              <span className="nudges-title"><Lightbulb size={16} /> {f.deeperTitle} <em>{context.kind !== "bonus" && !existing?.reflection ? t(f.optionalXp, { n: XP_RULES.reflection }) : f.optional}</em></span>
+              {prompts.length > 0 && !(prompt && prompts.includes(prompt)) && !(prompt && prompt === aiQuestion) && (
+                <div className="follow-up-card">
+                  <p className="follow-up-question">{prompts[promptIndex % prompts.length]}</p>
+                  <div className="chip-row">
+                    <button type="button" className="chip" onClick={() => { setPrompt(prompts[promptIndex % prompts.length]); window.requestAnimationFrame(() => reflectionRef.current?.focus()); }}>{f.followUpWrite}</button>
+                    {promptIndex < prompts.length - 1 && <button type="button" className="chip" onClick={() => setPromptIndex(i => i + 1)}>{f.followUpAnother}</button>}
+                    <button type="button" className="chip" onClick={() => { const n = declined + 1; setDeclined(n); writeDeclined(n); setFollowUp("closed"); }}>{f.followUpEnough}</button>
+                  </div>
+                </div>
+              )}
+              {prompt && prompts.includes(prompt) && (
+                <div className="chip-row">
+                  <button type="button" className="chip is-active" aria-pressed onClick={() => setPrompt("")}>{prompt}</button>
+                </div>
+              )}
+              {ai && <AiFollowUp ai={ai} draft={text} suggestion={aiQuestion} onSuggestion={setAiQuestion} selected={!!aiQuestion && prompt === aiQuestion} onUse={chooseAiQuestion} />}
+              {prompt && (
+                <textarea ref={reflectionRef} className="answer-box answer-box--small" aria-label={prompt} value={reflection} onChange={e => setReflection(e.target.value)} placeholder={prompt} rows={3} maxLength={1000} />
+              )}
             </div>
-            {ai && <AiFollowUp ai={ai} draft={text} suggestion={aiQuestion} onSuggestion={setAiQuestion} selected={!!aiQuestion && prompt === aiQuestion} onUse={chooseAiQuestion} />}
-            {prompt && (
-              <textarea ref={reflectionRef} className="answer-box answer-box--small" aria-label={prompt} value={reflection} onChange={e => setReflection(e.target.value)} placeholder={prompt} rows={3} maxLength={1000} />
-            )}
-          </div>
+          ))}
 
           <div className="quest-flow-actions">
             {!ready && text.length > 0 && <p className="field-hint" role="status">{d.validation.answerTooShort}</p>}
@@ -276,4 +334,13 @@ export default function QuestFlow({ question, context, existing, draft, circleNa
       )}
     </div>
   );
+}
+
+/** How many times in a row the member chose "that's enough" (a per-device convenience; fine to lose). */
+const DECLINED_KEY = "berripop.followUpDeclined";
+function readDeclined(): number {
+  try { return Number(window.localStorage.getItem(DECLINED_KEY)) || 0; } catch { return 0; }
+}
+function writeDeclined(n: number) {
+  try { window.localStorage.setItem(DECLINED_KEY, String(n)); } catch { /* private mode: fine */ }
 }

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ArrowRight, Check, Clock, Info, Lock, PartyPopper, RefreshCw, Sparkles, Sprout, Users } from "lucide-react";
-import { CHAPTERS, chapterNodes, chapterOf, chapterWeeks, journeyNodes, legacyJourneyId } from "@/lib/content";
+import { CHAPTERS, chapterNodes, chapterOf, chapterWeeks, journeyNodes } from "@/lib/content";
 import type { JourneyStopState } from "@/lib/domain/rules";
 import { useI18n } from "@/lib/i18n/client";
 import { questionText, weekText } from "@/lib/i18n/content";
@@ -184,9 +184,9 @@ function SharedStop({ view, day, startQuest, openQuestion, onClose }: StopProps)
   const j = d.journey;
   const { circle } = view;
   const node = journeyNodes.find(n => n.day === day);
-  // Someone who finished this day before the new journey answered its old question: show that one.
-  const legacy = node ? legacyJourneyId(node.day) : undefined;
-  const ref = node && legacy && legacy !== node.questionId && view.answerFor(legacy) && !view.answerFor(node.questionId) ? legacy : node?.questionId;
+  // The question this member answered the day with (an easier stand-in, or the first journey's), or gets today.
+  const ref = node ? view.journeyRef(node.day) : undefined;
+  const deeperRef = node ? view.deeperFor(node.day) : null;
   const question = ref ? view.question(ref) : null;
   if (!node || !ref || !question) return null;
   return (
@@ -214,7 +214,8 @@ function SharedStop({ view, day, startQuest, openQuestion, onClose }: StopProps)
       {!circle && view.myJourney[node.day] && <p className="tag tag--mint"><Check size={13} strokeWidth={3} /> {d.dashboard.memberDone}</p>}
       <div className="sheet-actions">
         <button className="btn btn--ghost" onClick={() => { onClose(); openQuestion(ref); }}>{j.open}</button>
-        <button className="btn btn--primary" onClick={() => { onClose(); startQuest(node.questionId, { kind: "journey", day: node.day }); }}>
+        {deeperRef && <button className="btn btn--ghost" onClick={() => { onClose(); startQuest(deeperRef, { kind: "bonus" }); }}>{d.today.deeperLabel}</button>}
+        <button className="btn btn--primary" onClick={() => { onClose(); startQuest(ref, { kind: "journey", day: node.day }); }}>
           {view.myJourney[node.day] ? j.revisit : j.start} <ArrowRight size={16} />
         </button>
       </div>

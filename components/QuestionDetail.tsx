@@ -39,7 +39,8 @@ export function contextFor(ref: QuestionRef, view: ScreenProps["view"]): AnswerC
   if (ref === view.dailyRef) return { kind: "daily" };
   const goal = parseGoalRef(ref);
   if (goal) return { kind: "goal", day: goal.day };
-  const day = journeyDayOf(ref);
+  const next = view.journey.next?.day;
+  const day = journeyDayOf(ref) ?? (next && view.journeyRef(next) === ref ? next : null);
   if (day && view.journey.canStart(day)) return { kind: "journey", day };
   return { kind: "bonus" };
 }

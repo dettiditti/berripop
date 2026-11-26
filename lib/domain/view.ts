@@ -1,4 +1,6 @@
-import { questThemes } from "../content";
+import { journeyNodes, questThemes } from "../content";
+import { bankQuestion } from "../questions/bank";
+import { journeyQuestionFor } from "../questions/journeyDay";
 import { getLevelInfo, streakOf, type LevelInfo, type StreakInfo } from "../progress";
 import type { QuestTheme, Question } from "../types";
 import { personalFacts } from "./personal";
@@ -50,6 +52,10 @@ export type View = {
   otherNames: string[];
   question: (ref: QuestionRef) => Question | null;
   answerFor: (ref: QuestionRef) => AnswerDTO | undefined;
+  /** The question of a journey day for this member: the one they answered it with, or the one they get (maybe an easier stand-in, lib/questions/journeyDay). */
+  journeyRef: (day: number) => QuestionRef;
+  /** A finished day answered with an easier stand-in: its own, deeper question, offered but never required. */
+  deeperFor: (day: number) => QuestionRef | null;
   sharedFor: (ref: QuestionRef) => SharedAnswerDTO[];
   memberName: (id: string | null) => string;
   isSaved: (ref: QuestionRef) => boolean;
@@ -78,6 +84,7 @@ export function buildView(snapshot: Snapshot, unnamed: string): View {
       }
     : own;
 
+  const answered = new Set([...progress.answeredRefs, ...(circle?.myAnswers.map(a => a.questionRef) ?? [])]);
   const myAnswers = [
     ...(circle?.myAnswers ?? []),
     ...progress.answers.filter(a => !circle?.myAnswers.some(c => c.questionRef === a.questionRef)),
@@ -132,6 +139,15 @@ export function buildView(snapshot: Snapshot, unnamed: string): View {
       return day ? goalQuestion(g.journeyId, day) : null;
     },
     answerFor: ref => myAnswers.find(a => a.questionRef === ref),
+    journeyRef: day => (progress.journey[day] && progress.journeyRefs?.[day]) || journeyQuestionFor(day, answered).ref,
+    deeperFor: day => {
+      const own = journeyNodes[day - 1]?.questionId;
+      const used = progress.journeyRefs?.[day];
+      if (!own || !progress.journey[day] || !used || used === own) return null;
+      // Only after a stand-in from the bank (not a day walked with the first journey's question).
+      if (bankQuestion(own)?.depth !== 2 || !bankQuestion(used)) return null;
+      return answered.has(own) ? null : own;
+    },
     sharedFor: ref => circle?.sharedAnswers.filter(a => a.questionRef === ref) ?? [],
     memberName: id => (id ? names.get(id) ?? unnamed : ""),
     isSaved: ref => snapshot.saved.includes(ref),

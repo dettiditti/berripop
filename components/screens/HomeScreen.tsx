@@ -75,11 +75,15 @@ export default function HomeScreen({ view, run, notify, go, startQuest, openQues
   const jNodes = own ? goalNodes : chapterNodes(chapter);
   const jDone = jNodes.filter(n => (own?.done ?? view.myJourney)[n.day]).length;
   const startJourneyDay = (day: number) =>
-    own ? startQuest(goalRef(goal!.id, day), { kind: "goal", day }) : startQuest(journeyNodes[day - 1].questionId, { kind: "journey", day });
+    own ? startQuest(goalRef(goal!.id, day), { kind: "goal", day }) : startQuest(view.journeyRef(day), { kind: "journey", day });
 
   // Feeding Berri: today's question (or the next journey day), the check-in card, or a moment in the inner world.
   const toCheckin = () => document.getElementById("home-checkin")?.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "start" });
   // Tomorrow's stop once today's is done: something to come back for.
+  // A day done today with an easier question: its own, deeper question is offered, never required.
+  const doneTodayDay = own ? null : journeyNodes.find(n => view.myJourney[n.day] === view.today)?.day ?? null;
+  const deeperRef = doneTodayDay ? view.deeperFor(doneTodayDay) : null;
+  const deeperQ = deeperRef ? view.question(deeperRef) : null;
   const tomorrow = jNext && jState.doneToday ? { day: jNext.day, title: own ? own.title(jNext.day) : d.journey.titles[jNext.day - 1] } : null;
   const feed = (meal: Meal) => {
     if (meal === "checkin") return toCheckin();
@@ -158,7 +162,7 @@ export default function HomeScreen({ view, run, notify, go, startQuest, openQues
             {step.kind === "journey" && together && circle && (
               <p className="journey-members">{t(h.journeyMembers, { done: members.filter(m => circle.participation.journey[m.id]?.[step.day]).length, total: members.length })}</p>
             )}
-            <button className="btn btn--white btn--lg btn--block" onClick={() => { started(); if (step.kind === "goal") startQuest(goalRef(goal!.id, step.day), { kind: "goal", day: step.day }); else startQuest(journeyNodes[step.day - 1].questionId, { kind: "journey", day: step.day }); }}>
+            <button className="btn btn--white btn--lg btn--block" onClick={() => { started(); if (step.kind === "goal") startQuest(goalRef(goal!.id, step.day), { kind: "goal", day: step.day }); else startQuest(view.journeyRef(step.day), { kind: "journey", day: step.day }); }}>
               {t(h.journeyStart, { n: step.day })} <ArrowRight size={20} />
             </button>
           </>
@@ -176,6 +180,13 @@ export default function HomeScreen({ view, run, notify, go, startQuest, openQues
               </div>
             ) : null}
             <p>{tomorrow ? td.restBodyTomorrow : td.restBody}</p>
+            {deeperRef && deeperQ && (
+              <div className="deeper-offer">
+                <span className="shared-progress-label">{td.deeperLabel}</span>
+                <strong>{questionText(deeperQ, d)}</strong>
+                <button className="btn btn--white btn--sm" onClick={() => startQuest(deeperRef, { kind: "bonus" })}>{td.deeperCta} <ArrowRight size={16} /></button>
+              </div>
+            )}
             <div className="sheet-actions">
               <button className="btn btn--white" onClick={() => go("journal")}><NotebookPen size={16} /> {td.restJournal}</button>
               <button className="btn btn--white" onClick={() => go("world")}><Sparkles size={16} /> {td.restWorld}</button>

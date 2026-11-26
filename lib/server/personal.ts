@@ -4,7 +4,8 @@ import { getDb } from "../db";
 import { answers, worldMoments } from "../db/schema";
 import { CHAPTER_DAYS, journeyNodes } from "../content";
 import { cleanMoment, type MomentInput } from "../domain/personal";
-import { journeyDayOf, journeyStateFor, resolveQuestion, XP_RULES } from "../domain/rules";
+import { journeyStateFor, resolveQuestion, XP_RULES } from "../domain/rules";
+import { journeyDayAccepts } from "../questions/journeyDay";
 import { goalNodes, goalQuestion, goalRef, parseGoalRef } from "../journey/goal";
 import type { ActionResult, AnswerContext, QuestionRef, RewardDTO } from "../domain/types";
 import type { QuestTheme } from "../types";
@@ -60,7 +61,7 @@ export async function savePersonalAnswer(userId: string, input: {
   } else if (context.kind === "goal") return fail("invalid");
   if (context.kind === "daily" && progress.dailyQuestion?.questionRef !== questionRef) context = { kind: "bonus" };
   if (context.kind === "journey") {
-    if (journeyDayOf(questionRef) !== context.day) return fail("invalid");
+    if (!journeyDayAccepts(context.day, questionRef, progress.answeredRefs, progress.journeyRefs[context.day])) return fail("invalid");
     if (!journeyStateFor(progress.journey, today).canStart(context.day)) return fail("locked");
   }
 

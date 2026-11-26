@@ -138,9 +138,10 @@ export async function loadProgress(userId: string, inCircle: boolean, today = ci
       .orderBy(asc(dailyCheckins.date)),
   ]);
   const journey: Record<number, string> = {};
+  const journeyRefs: Record<number, string> = {};
   const daily: string[] = [];
   for (const a of activityRows) {
-    if (a.kind === "journey") journey[Number(a.key)] = a.date;
+    if (a.kind === "journey") { journey[Number(a.key)] = a.date; journeyRefs[Number(a.key)] = a.questionRef; }
     else if (a.kind === "daily") daily.push(a.date);
   }
   const goalJourney: GoalJourneyDTO | null = goalRow ? {
@@ -156,6 +157,7 @@ export async function loadProgress(userId: string, inCircle: boolean, today = ci
   return {
     today,
     journey,
+    journeyRefs,
     daily: daily.sort(),
     dailyQuestion: dailyRef ? { questionRef: dailyRef, done: daily.includes(today) } : null,
     answers: answerRows.map(a => ({
