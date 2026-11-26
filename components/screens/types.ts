@@ -25,8 +25,8 @@ export type ScreenProps = {
   journeyBuilding: boolean;
   /** The member's own journey is being translated after a language switch. */
   journeyTranslating: boolean;
-  /** The member's assessment status (null: not started), and opening it. */
-  assessmentStatus: AssessmentStatus | null;
+  /** The member's assessment status (null: not started, undefined: not loaded yet), and opening it. */
+  assessmentStatus: AssessmentStatus | null | undefined;
   openAssessment: () => void;
   /** Opens a new journal entry starting with this text. */
   writeInJournal: (starter: string) => void;

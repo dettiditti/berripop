@@ -28,15 +28,17 @@ export const assessmentOpen = (inCircle: boolean, status: AssessmentStatus | nul
   !inCircle && status !== "accepted" && status !== "skipped";
 
 /** Today is the day the member's own path begins: they are setting it up, or its journey was built today. */
-export function pathStartsToday(view: NextView, assessment: AssessmentStatus | null): boolean {
+export function pathStartsToday(view: NextView, assessment: AssessmentStatus | null | undefined): boolean {
   if (view.circle || assessment === "skipped") return false;
   if (view.goalJourney) return dateKey(new Date(view.goalJourney.createdAt)) === view.today;
   return view.facts.answered === 0;
 }
 
-export function recommendNext(view: NextView, assessment: AssessmentStatus | null, building: boolean): NextStep {
+export function recommendNext(view: NextView, assessment: AssessmentStatus | null | undefined, building: boolean): NextStep {
   if (view.dailyRef && !view.dailyDoneByMe && !pathStartsToday(view, assessment)) return { kind: "daily" };
-  if (assessmentOpen(!!view.circle, assessment)) return { kind: "assessment", resume: assessment !== null };
+  // undefined: not loaded yet. A member already walking a goal journey has finished it, so it isn't offered meanwhile.
+  const offerAssessment = assessment === undefined ? !view.circle && !view.goalJourney : assessmentOpen(!!view.circle, assessment);
+  if (offerAssessment) return { kind: "assessment", resume: assessment != null };
   if (building && !view.goalJourney) return { kind: "building" };
   const goalNext = view.goalState?.next;
   if (goalNext && view.goalState!.stateOf(goalNext.day) === "current") return { kind: "goal", day: goalNext.day };

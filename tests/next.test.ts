@@ -118,3 +118,13 @@ describe("recommendNext without a daily question", () => {
     expect(recommendNext(view({ daily: false, circle: true }), null, false)).toEqual({ kind: "journey", day: 1 });
   });
 });
+
+describe("before the assessment state has loaded", () => {
+  it("does not offer the assessment to a member already walking a goal journey", () => {
+    expect(recommendNext(view({ dailyDone: true, goal: done(2) }), undefined, false)).toEqual({ kind: "goal", day: 3 });
+  });
+
+  it("still offers it to a member without a path yet", () => {
+    expect(recommendNext(view({ dailyDone: true }), undefined, false)).toEqual({ kind: "assessment", resume: false });
+  });
+});
