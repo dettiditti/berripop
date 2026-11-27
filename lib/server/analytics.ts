@@ -21,6 +21,8 @@ export const FUNNEL_EVENTS = [
   "signup_error_shown",
   // Which part of the form the error belongs to (context: field name only, never the message or what was typed).
   "signup_error_field",
+  // Landing page: a tap on an App Store link, anonymous like the sign-up steps (context: which link).
+  "app_store_clicked",
   // Advent calendar: a window opened (no day, no content).
   "advent_window_opened",
   "first_goal_created",
@@ -101,6 +103,8 @@ const CONTEXTS = new Set([
   "personal", "circle", "daily", "journey", "goal", "assessment", "building", "rest", "thought",
   "sandbox", "production", "app", "settings", "converted", "not_converted",
   "google", "apple", "social",
+  // Which App Store link on the landing page (app_store_clicked).
+  "landing_strip", "landing_phone",
   // Sign-up form error fields (signup_error_field); "app_" prefix in the iPhone app.
   "password", "email", "code", "form", "other", "app_password", "app_email", "app_code", "app_form", "app_other",
   // Kapcsolati világ features (PREMIUM_FEATURES in lib/relationship/types.ts).

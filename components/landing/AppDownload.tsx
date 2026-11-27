@@ -3,7 +3,8 @@
 import { useId, useState } from "react";
 import { ArrowUpRight, Smartphone } from "lucide-react";
 import { useI18n } from "@/lib/i18n/client";
-import { APP_STORE_URL } from "@/lib/native";
+import { appStoreLink, type AppStorePlacement } from "@/lib/native";
+import { trackAction } from "@/lib/server/actions";
 import BerripopMascot from "../berripop/BerripopMascot";
 
 /**
@@ -47,6 +48,22 @@ export function PhoneMock({ winter = false }: { winter?: boolean }) {
 }
 
 /**
+ * Counts a tap on an App Store link: only the event and which link, no id, no
+ * cookie (the visitor is not signed in). Once per link per tab, so repeated
+ * taps do not inflate it.
+ */
+export function trackAppStoreClick(placement: AppStorePlacement) {
+  const key = `berripop.appStore.${placement}`;
+  try {
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+  } catch {
+    // Without storage it is simply counted.
+  }
+  void trackAction("app_store_clicked", placement).catch(() => {});
+}
+
+/**
  * The slim "get the iPhone app" strip under the hero buttons: a link to the
  * App Store and a line for Android, where the app is not out yet.
  */
@@ -60,7 +77,7 @@ export default function AppDownload() {
         <Smartphone size={18} aria-hidden />
         <span><strong id={`${id}-title`}>{w.title}</strong> {w.body}</span>
       </p>
-      <a className="btn lp-store-btn" href={APP_STORE_URL} target="_blank" rel="noopener">
+      <a className="btn lp-store-btn" href={appStoreLink("landing_strip")} target="_blank" rel="noopener" onClick={() => trackAppStoreClick("landing_strip")}>
         <span className="lp-store-btn-text"><small>{w.storeSmall}</small><strong>App Store</strong></span>
         <ArrowUpRight size={18} aria-hidden />
       </a>

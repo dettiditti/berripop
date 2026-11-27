@@ -7,8 +7,8 @@ import { PLAN_LIMITS, PRICES } from "@/lib/billing/plans";
 import { localeLabels, locales } from "@/lib/i18n/config";
 import { setLocale, useI18n } from "@/lib/i18n/client";
 import BerripopMascot from "./berripop/BerripopMascot";
-import { APP_STORE_URL } from "@/lib/native";
-import AppDownload, { PhoneMock } from "./landing/AppDownload";
+import { appStoreLink } from "@/lib/native";
+import AppDownload, { PhoneMock, trackAppStoreClick } from "./landing/AppDownload";
 import { MOOD_COLORS, moodImage, type Mood } from "@/lib/journal/moods";
 import { winterLookActive } from "@/lib/advent";
 import { circleToday } from "@/lib/domain/rules";
@@ -137,7 +137,7 @@ function Hero({ winter }: { winter: boolean }) {
               </span>
             ))}
           </div>
-          <a className="lp-phone-tag" href={APP_STORE_URL} target="_blank" rel="noopener"><Smartphone size={15} aria-hidden /> {l.appDownload.phoneTag}</a>
+          <a className="lp-phone-tag" href={appStoreLink("landing_phone")} target="_blank" rel="noopener" onClick={() => trackAppStoreClick("landing_phone")}><Smartphone size={15} aria-hidden /> {l.appDownload.phoneTag}</a>
           <PhoneMock winter={winter} />
           <div className="lp-stage-card" aria-hidden>
             <span className="lp-chip lp-chip--sun"><MessageCircle size={14} /> {h.cardTag}</span>
