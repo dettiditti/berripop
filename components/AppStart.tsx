@@ -3,7 +3,9 @@
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Check, Lock } from "lucide-react";
+import { winterLookActive } from "@/lib/advent";
 import { AREAS, areasOf, MAX_AREAS, OBSTACLES, SUPPORTS, TIMES, toggleArea } from "@/lib/assessment/model";
+import { circleToday } from "@/lib/domain/rules";
 import { useI18n } from "@/lib/i18n/client";
 import { hapticSuccess, hapticTap } from "@/lib/nativeBridge";
 import { clearStart, readStart, saveStart, type StartAnswers } from "@/lib/onboarding/start";
@@ -90,7 +92,7 @@ export default function AppStart() {
   if (step === "hello") {
     return (
       <main className="berri-stage app-welcome">
-        <BerriStill className="app-welcome-berri" />
+        <BerriStill className="app-welcome-berri" xmas={winterLookActive(circleToday())} />
         <div className="app-welcome-copy">
           <h1>{d.appWelcome.title}</h1>
           <p>{d.appWelcome.body}</p>

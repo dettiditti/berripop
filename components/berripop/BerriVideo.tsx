@@ -109,7 +109,18 @@ export const wearSrc = (item: HeadItemId) => `/berri/wear/${item}.png`;
  * like the transparent clips. A new pose pops in gently (not with reduced
  * motion). Decorative: the text next to it carries the meaning.
  */
-export function BerriStill({ pose = "hi", wear, className }: { pose?: BerriPose; wear?: HeadItemId | null; className?: string }) {
+/** `xmas` shows Berri in the winter hat and scarf instead of the pose (the winter look). */
+export function BerriStill({ pose = "hi", wear, className, xmas }: { pose?: BerriPose; wear?: HeadItemId | null; className?: string; xmas?: boolean }) {
+  if (xmas) {
+    return (
+      <div className={`berri-video berri-video--clear berri-video--still${className ? ` ${className}` : ""}`} aria-hidden>
+        <span className="berri-pose" style={{ ["--r" as string]: 611 / 720 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- transparent still */}
+          <img src="/berri/berri-xmas.png" alt="" width={611} height={720} decoding="async" fetchPriority="high" />
+        </span>
+      </div>
+    );
+  }
   const [w, h] = POSE_SIZE[pose];
   const top = wear ? HEAD_TOP[pose] : null;
   return (
