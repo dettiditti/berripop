@@ -2229,6 +2229,14 @@ html[data-app] body:has(.berri-stage)::before { content: none; }
 .lp-waitlist-trap { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
 .lp-waitlist-done { display: flex; align-items: center; gap: 10px; }
 .lp-waitlist-done strong { display: inline-flex; align-items: center; gap: 6px; color: #11795a; }
+.lp-download { display: flex; flex-direction: column; gap: 10px; }
+.lp-download .lp-waitlist-lead { margin: 0; }
+.lp a.lp-store-btn { align-self: flex-start; display: inline-flex; align-items: center; gap: 12px; padding: 8px 16px 8px 18px; min-height: 48px; border-radius: 14px; background: #111; color: #fff; text-decoration: none; box-shadow: 0 12px 24px -14px rgba(17, 17, 17, 0.7); }
+.lp a.lp-store-btn:hover { background: #2b2b2b; }
+.lp-store-btn-text { display: flex; flex-direction: column; line-height: 1.05; text-align: left; }
+.lp-store-btn-text small { font-size: 11px; font-weight: 700; opacity: 0.85; }
+.lp-store-btn-text strong { font-size: 19px; font-weight: 800; letter-spacing: -0.01em; }
+.lp-download-note { margin: 0; font-size: 13px; color: var(--muted); }
 .lp-waitlist-done p { margin: 2px 0 0; font-size: 14px; color: var(--ink-2); }
 
 @media (max-width: 1080px) { .lp-hero-stage--phone .lp-phone { font-size: 15px; } .lp-hero-stage--phone { min-height: 540px; } }

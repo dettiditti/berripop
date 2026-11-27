@@ -12,3 +12,7 @@ export const isNativeApp = (userAgent: string | null | undefined): boolean => !!
 
 /** Where the app starts: the welcome for signed-out visitors (signed-in members go on to the app). */
 export const APP_HOME = "/app";
+
+/** The iPhone app in the App Store (Apple picks the visitor's own store from this link). */
+export const APP_STORE_ID = "6832949814";
+export const APP_STORE_URL = `https://apps.apple.com/app/berripop/id${APP_STORE_ID}`;

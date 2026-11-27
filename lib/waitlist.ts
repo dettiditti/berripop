@@ -6,7 +6,7 @@ import { isLocale, type Locale } from "./i18n/config";
  * the version of the consent wording they ticked are kept. The address is
  * used for the launch notice only, never a newsletter.
  *
- * Bump the version whenever the consent sentence (landing.appWaitlist.consent)
+ * Bump the version whenever the consent sentence (formerly landing.appWaitlist.consent; the landing page no longer collects sign-ups since the app is out)
  * changes, so each row records the wording that was actually agreed to.
  */
 export const WAITLIST_CONSENT_VERSION = "2026-11-06";

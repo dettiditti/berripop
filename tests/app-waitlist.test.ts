@@ -24,10 +24,10 @@ describe("phone-app waitlist", () => {
     expect(readWaitlist({ email: "a@b.hu", consent: true, locale: "hu", website: "spam" })).toEqual({ ok: false, error: "bot" });
   });
 
-  it("has the texts in both languages and mentions the list in the privacy policy", () => {
+  it("has the download texts in both languages and still mentions the list in the privacy policy", () => {
     for (const [loc, d] of Object.entries(dictionaries)) {
-      const w = d.landing.appWaitlist;
-      for (const v of Object.values(w)) expect(v.length).toBeGreaterThan(0);
+      const w = d.landing.appDownload;
+      for (const v of [w.phoneTag, w.title, w.body, w.storeSmall, w.android, w.phoneLabel]) expect(v.length).toBeGreaterThan(0);
       const policy = JSON.stringify(legal[loc as "hu" | "en"].docs.privacy);
       expect(policy).toMatch(loc === "hu" ? /mobilapp-értesítő/i : /phone-app notice/i);
     }

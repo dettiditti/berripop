@@ -6,7 +6,7 @@ import KozosApp from "@/components/KozosApp";
 import Welcome from "@/components/Welcome";
 import { defaultLocale, isLocale, LOCALE_COOKIE } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionaries";
-import { APP_HOME, isNativeApp } from "@/lib/native";
+import { APP_HOME, APP_STORE_ID, isNativeApp } from "@/lib/native";
 import { relationshipEnabled } from "@/lib/server/relationship";
 import { thoughtEnabled } from "@/lib/server/thought";
 
@@ -29,6 +29,8 @@ export async function generateMetadata(): Promise<Metadata> {
       alternateLocale: [locale === "hu" ? "en_GB" : "hu_HU"],
     },
     twitter: { card: "summary_large_image", title: d.meta.title, description: d.meta.description },
+    // Safari on iPhone shows its own "Open in the app / Get" banner for the App Store app.
+    itunes: { appId: APP_STORE_ID },
   };
 }
 
